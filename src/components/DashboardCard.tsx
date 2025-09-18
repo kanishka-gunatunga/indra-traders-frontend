@@ -7,6 +7,7 @@ interface DashboardCardProps {
     backgroundColor: string;
     data: CardItemProps[];
     viewAllLink: string;
+    onItemClick?: (item: CardItemProps) => void;
 }
 
 
@@ -15,6 +16,7 @@ export interface CardItemProps {
     secondaryText: string;
     date: string;
     status?: "ongoing" | "won";
+    onViewClick?: (item: CardItemProps) => void;
 }
 
 const CardItem = ({
@@ -22,6 +24,7 @@ const CardItem = ({
                       secondaryText,
                       date,
                       status,
+                      onViewClick,
                   }: CardItemProps) => {
     const getStatusBadge = () => {
         if (status === "ongoing") {
@@ -58,9 +61,12 @@ const CardItem = ({
             {/* Bottom Row */}
             <div className="flex items-center justify-between">
                 {getStatusBadge()}
-                <Link href="#" className="text-base font-normal text-[#195FFC]">
+                <button
+                    onClick={() => onViewClick ? onViewClick({primaryText, secondaryText, date, status, onViewClick}) : null}
+                    className="text-base font-normal text-[#195FFC] hover:underline"
+                >
                     View
-                </Link>
+                </button>
             </div>
         </div>
     );
@@ -72,13 +78,15 @@ export default function DashboardCard({
                                           backgroundColor,
                                           data,
                                           viewAllLink,
+                                          onItemClick
                                       }: DashboardCardProps) {
     return (
         <div
-            className="relative h-[437px] w-[417px] backdrop-blur-[25px]">
+            className="relative h-[437px] w-[417px] rounded-[20px] stroke-1-[D8D8D8] backdrop-blur-[25px]">
             {/* Card Header */}
             <div
-                className={`flex h-[69px] items-center px-8 rounded-t-[20px] py-3`} style={{backgroundColor:backgroundColor}}
+                className={`flex h-[69px] items-center px-8 rounded-t-[20px] py-3`}
+                style={{backgroundColor: backgroundColor}}
             >
                 <div className="flex items-center gap-4">
                     <Image src={icon} alt={`${title} Icon`} width={24} height={24}/>
@@ -89,12 +97,12 @@ export default function DashboardCard({
             {/* Card Content */}
             <div className="flex flex-col gap-2 p-4">
                 {data.map((item, index) => (
-                    <CardItem key={index} {...item} />
+                    <CardItem key={index} {...item} onViewClick={onItemClick}/>
                 ))}
             </div>
 
             {/* View All Link */}
-            <div className="absolute bottom-5 rounded-t-[20px] left-0 right-0 text-center">
+            <div className="absolute bottom-5 left-0 right-0 text-center">
                 <Link
                     href={viewAllLink}
                     className="font-montserrat text-lg font-medium text-[#195FFC] hover:underline"
