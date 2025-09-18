@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Indra Traders",
-  description: "Indra Traders (pvt) limited system",
+  description: "Indra Traders pvt. limited system",
 };
 
 export default function RootLayout({
