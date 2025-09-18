@@ -129,7 +129,7 @@ export default function SalesDashboard() {
         <SalesHeader />
 
         {/* Leads Section */}
-        <section className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
+        <section className="relative bg-[#FFFFFF4D] bg-opacity-30 mb-5 rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
           <div className="w-full flex justify-between items-center">
             <span className="font-semibold text-[22px]">Leads</span>
             <button className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">

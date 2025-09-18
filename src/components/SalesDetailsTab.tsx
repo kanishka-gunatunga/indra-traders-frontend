@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiPlus } from "react-icons/fi";
 
 interface SalesDetailsTabProps {
@@ -11,6 +11,16 @@ interface SalesDetailsTabProps {
 export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
   const tabs = ["Follow up", "Reminders", "Events"];
   const [activeTab, setActiveTab] = useState(0);
+
+  // Modal states
+  const [isActivityModalOpen, setActivityModalOpen] = useState(false);
+  const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+
+  // Form states
+  const [activityText, setActivityText] = useState("");
+  const [reminderTitle, setReminderTitle] = useState("");
+  const [reminderDate, setReminderDate] = useState("");
+  const [reminderNote, setReminderNote] = useState("");
 
   const followUpData = [
     { activity: "Proposed Red Color Civic", date: "12 March, 2025" },
@@ -53,7 +63,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
         {tabs.map((tab, index) => (
           <div
             key={tab}
-            className={`flex-1 py-4 cursor-pointer text-lg text-center relative ${
+            className={`flex-1 py-4 cursor-pointer text-lg px-3 relative ${
               activeTab === index
                 ? "font-medium text-[#575757]"
                 : "text-gray-600"
@@ -74,7 +84,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
           <>
             <div className="mt-8 bg-white rounded-4xl py-8 px-8 relative h-[220px]">
               {/* Scrollable container */}
-              <div className="h-full  pr-2">
+              <div className="h-full pr-2">
                 {/* Table header */}
                 <div className="flex font-medium text-[#575757] min-w-[400px]">
                   <div className="w-1/2 px-2">Activity</div>
@@ -101,6 +111,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
               {/* Floating Add button */}
               <button
                 disabled={isAddDisabled}
+                onClick={() => setActivityModalOpen(true)}
                 className={`absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg ${
                   isAddDisabled
                     ? "bg-gray-400 cursor-not-allowed"
@@ -118,7 +129,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
             {/* Scrollable container */}
             <div className="h-full overflow-y-auto no-scrollbar pr-2">
               {/* Table header */}
-              <div className="flex font-medium text-[#575757] min-w-[600px]">
+              <div className="flex font-medium text-[#575757] min-w-[400px]">
                 <div className="w-1/3 px-2">Task Title</div>
                 <div className="w-1/3 px-2">Task Date</div>
                 <div className="w-1/3 px-2">Note</div>
@@ -132,7 +143,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
                     key={idx}
                     className={`flex ${
                       idx > 0 ? "mt-3" : ""
-                    } font-medium text-black min-w-[600px]`}
+                    } font-medium text-black min-w-[400px]`}
                   >
                     <div className="w-1/3 px-2">{item.title}</div>
                     <div className="w-1/3 px-2">{item.date}</div>
@@ -145,6 +156,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
             {/* Floating Add button */}
             <button
               disabled={isAddDisabled}
+              onClick={() => setReminderModalOpen(true)}
               className={`absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg ${
                 isAddDisabled
                   ? "bg-gray-400 cursor-not-allowed"
@@ -183,6 +195,88 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
           </div>
         )}
       </div>
+      {/* Activity Modal */}
+      {isActivityModalOpen && (
+        <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-white rounded-2xl shadow-xl p-6 w-[400px] z-50">
+          <h2 className="text-lg font-semibold mb-4">Add Activity</h2>
+          <input
+            type="text"
+            value={activityText}
+            onChange={(e) => setActivityText(e.target.value)}
+            placeholder="Enter activity"
+            className="w-full border rounded-lg p-2 mb-4"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setActivityModalOpen(false)}
+              className="px-4 py-2 rounded-lg bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                console.log("Activity saved:", activityText);
+                setActivityText("");
+                setActivityModalOpen(false);
+              }}
+              className="px-4 py-2 rounded-lg bg-[#DB2727] text-white"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reminder Modal */}
+      {isReminderModalOpen && (
+        <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-white rounded-2xl shadow-xl p-6 w-[400px] z-50">
+          <h2 className="text-lg font-semibold mb-4">Add Reminder</h2>
+          <input
+            type="text"
+            value={reminderTitle}
+            onChange={(e) => setReminderTitle(e.target.value)}
+            placeholder="Reminder Title"
+            className="w-full border rounded-lg p-2 mb-3"
+          />
+          <input
+            type="date"
+            value={reminderDate}
+            onChange={(e) => setReminderDate(e.target.value)}
+            className="w-full border rounded-lg p-2 mb-3"
+          />
+          <input
+            type="text"
+            value={reminderNote}
+            onChange={(e) => setReminderNote(e.target.value)}
+            placeholder="Note"
+            className="w-full border rounded-lg p-2 mb-4"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setReminderModalOpen(false)}
+              className="px-4 py-2 rounded-lg bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                console.log("Reminder saved:", {
+                  reminderTitle,
+                  reminderDate,
+                  reminderNote,
+                });
+                setReminderTitle("");
+                setReminderDate("");
+                setReminderNote("");
+                setReminderModalOpen(false);
+              }}
+              className="px-4 py-2 rounded-lg bg-[#DB2727] text-white"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

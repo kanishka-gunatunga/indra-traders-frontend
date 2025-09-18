@@ -40,7 +40,12 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
 
   const MaskedSVG = ({ src, color }: { src: string; color: string }) => (
     <div
-      className="w-[282px] h-[50px] max-w-full"
+      className="
+        w-[282px] h-[50px] 
+        max-[1250px]:w-[240px] 
+        max-[1130px]:w-[210px] 
+        max-[1000px]:w-[190px]
+      "
       style={{
         backgroundColor: color,
         WebkitMaskImage: `url(${src})`,
@@ -56,15 +61,12 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
   return (
     <div
       className="
-        flex justify-center gap-4 max-w-[1000px] mx-auto
-        scale-100 origin-top
-        max-[1000px]:scale-90
-        max-[800px]:scale-75
-        max-[650px]:scale-60
+        flex justify-center gap-4 mx-auto 
+        max-w-[1000px]
       "
     >
       {/* Step 1: New */}
-      <div className="relative w-[282px] -mr-14">
+      <div className="relative -mr-14 max-[1250px]:-mr-10 max-[1100px]:-mr-[36px] max-[1130px]:-mr-[36px] max-[1000px]:-mr-8">
         <MaskedSVG src="/images/sales/flow_bar1.svg" color={getColor("New")} />
         <span className="absolute inset-0 flex items-center justify-center text-white font-semibold text-[16px]">
           New
@@ -72,7 +74,7 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
       </div>
 
       {/* Step 2: Ongoing */}
-      <div className="relative w-[282px] -mr-14">
+      <div className="relative -mr-14 max-[1250px]:-mr-10 max-[1100px]:-mr-[36px] max-[1130px]:-mr-[36px] max-[1000px]:-mr-8">
         <MaskedSVG
           src="/images/sales/flow_bar2.svg"
           color={getColor("Ongoing")}
@@ -83,12 +85,11 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
       </div>
 
       {/* Step 3: Won/Lost */}
-      <div className="relative w-[282px]">
+      <div className="relative">
         <MaskedSVG
           src="/images/sales/flow_bar3.svg"
           color={getColor("WonLost")}
         />
-
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
             <select
@@ -100,7 +101,7 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
               className={`
                 appearance-none bg-transparent text-white font-semibold text-[16px] pr-6
                 cursor-pointer rounded-md py-1 pl-2
-                focus:outline-none focus:ring-2 focus:ring-red-500
+                focus:outline-none focus:ring-2 
                 ${
                   currentStatus !== "Ongoing"
                     ? "opacity-50 cursor-not-allowed"
@@ -108,7 +109,6 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
                 }
               `}
             >
-              {/* Transparent dropdown with readable items */}
               <option className="bg-[#1e1e1e] text-white" value="Won">
                 Won
               </option>
