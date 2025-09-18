@@ -68,12 +68,10 @@ export default function SalesDetailsPage() {
               <InfoRow label="Additional Note:" value="White color" />
             </div>
             <div className="w-3/5 flex flex-col min-h-[400px]">
-              {/* Content area takes all available space */}
               <div className="flex-1">
                 <SalesDetailsTab status={status} />
               </div>
 
-              {/* Save button sticks to bottom */}
               <div className="mt-6 flex w-full justify-end">
                 <button className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
                   Save

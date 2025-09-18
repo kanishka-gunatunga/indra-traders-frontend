@@ -159,7 +159,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
         {activeTab === 2 && (
           <div className="mt-8">
             <div className="relative flex items-start gap-4">
-              {/* Circle / Ellipse */}
+              {/* Circle*/}
               <div className="w-5 h-5 rounded-full border-2 border-[#DB2727]"></div>
 
               {/* Text block */}
