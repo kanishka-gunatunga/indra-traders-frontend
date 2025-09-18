@@ -3,6 +3,11 @@ import Image from "next/image";
 import DashboardCard, {CardItemProps} from "@/components/DashboardCard";
 import {useState} from "react";
 import ComplainModal from "@/components/ComplainModal";
+import InquiriesModal from "@/components/InquiriesModal";
+import VehicleSalesModal from "@/components/VehicleSalesModal";
+import ServiceParkModal from "@/components/ServiceBookingModal";
+import SparePartsModal from "@/components/SparePartsModal";
+import FastTrackModal from "@/components/FastTrackModal";
 
 const customerDetails = [
     {
@@ -75,12 +80,172 @@ const tabs = [
     {label: "Fast Track", active: false},
 ];
 
+
+const mockVehicleData = {
+    title: "Honda Civic 2019",
+    image: "/car1.png",
+    price: "LKR 6,500,000",
+    details: {
+        millage: "50,000 km",
+        owners: "2",
+        vehicleNo: "ITPL12245874565",
+        color: "White",
+        capacity: "5 seats",
+        model: "Civic",
+        fuel: "Petrol",
+        transmission: "Auto",
+        year: "2019",
+        grade: "FK7 Ex Tech Pack Edition",
+    },
+    thumbnailImages: [
+        "/car1.png",
+        "/car2.png",
+        "/car3.png",
+        "/car4.png",
+        "/car5.png",
+    ],
+    salesPerson: "Guy Hawkins",
+    purchaseDate: "12 March 2025",
+};
+
+const mockServiceData = {
+    invoiceNo: "INV123456",
+    date: "18 September 2025",
+    serviceAdvisor: "John Doe",
+    branch: "Colombo",
+    line: "Line A",
+    repairs: [
+        {name: "Oil Change", price: 5000},
+        {name: "Brake Pad Replacement", price: 15000},
+        {name: "Tire Rotation", price: 3000},
+    ],
+};
+
+const mockSparePartsData = {
+    invoiceNo: "INV34556",
+    date: "12 Dec 2024",
+    parts: [
+        { name: "Brake Fluid - BF-DOT4", units: 2, compatibility: "Hydraulic Brake Systems", price: 5500 },
+        { name: "Engine Oil - EO-5W30", units: 4, compatibility: "Petrol And Diesel Engines", price: 6800 },
+        { name: "Coolant - CC-50/50", units: 3, compatibility: "Radiator Systems", price: 3200 },
+    ],
+};
+
+const mockFastTrackData = {
+    requests: [
+        {
+            vehicle: "Toyota Hilux",
+            type: "SUV",
+            grade: "SR5",
+            year: "2020",
+            mileage: "210,000km",
+            priceRange: "20,000,000 - 22,500,000",
+            status: "Ongoing",
+        },
+        {
+            vehicle: "Honda Civic",
+            type: "Sedan",
+            grade: "EX",
+            year: "2019",
+            mileage: "150,000km",
+            priceRange: "6,000,000 - 6,800,000",
+            status: "Won",
+        },
+    ],
+};
+
 export default function Dashboard() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+    const [selectedInquiry, setSelectedInquiry] = useState<CardItemProps | null>(null);
+    const [isVehicleSalesModalOpen, setIsVehicleSalesModalOpen] = useState(false);
+    const [selectedVehicle, setSelectedVehicle] = useState<typeof mockVehicleData | null>(null);
+    const [isServiceParkModalOpen, setIsServiceParkModalOpen] = useState(false);
+    const [selectedService, setSelectedService] = useState<typeof mockServiceData | null>(null);
+    const [isSparePartsModalOpen, setIsSparePartsModalOpen] = useState(false);
+    const [selectedSpareParts, setSelectedSpareParts] = useState<typeof mockSparePartsData | null>(null);
+    const [isFastTrackModalOpen, setIsFastTrackModalOpen] = useState(false);
+    const [selectedFastTrack, setSelectedFastTrack] = useState<typeof mockFastTrackData | null>(null);
 
-    const openModal = () => setIsModalOpen(true);
-    const closeModal = () => setIsModalOpen(false);
+    const openComplainModal = () => setIsModalOpen(true);
+    const closeComplainModal = () => setIsModalOpen(false);
+
+
+    const openInquiryModal = (inquiryData: CardItemProps) => {
+        setSelectedInquiry(inquiryData);
+        setIsInquiryModalOpen(true);
+    };
+
+    const closeInquiryModal = () => {
+        setIsInquiryModalOpen(false);
+        setSelectedInquiry(null);
+    };
+
+    const openVehicleSalesModal = () => {
+        setSelectedVehicle(mockVehicleData);
+        setIsVehicleSalesModalOpen(true);
+    };
+
+    const closeVehicleSalesModal = () => {
+        setIsVehicleSalesModalOpen(false);
+        setSelectedVehicle(null);
+    };
+
+    const openServiceParkModal = () => {
+        setSelectedService(mockServiceData);
+        setIsServiceParkModalOpen(true);
+    };
+
+    const closeServiceParkModal = () => {
+        setIsServiceParkModalOpen(false);
+        setSelectedService(null);
+    };
+
+    const openSparePartsModal = () => {
+        setSelectedSpareParts(mockSparePartsData);
+        setIsSparePartsModalOpen(true);
+    };
+
+    const closeSparePartsModal = () => {
+        setIsSparePartsModalOpen(false);
+        setSelectedSpareParts(null);
+    };
+
+    const openFastTrackModal = () => {
+        setSelectedFastTrack(mockFastTrackData);
+        setIsFastTrackModalOpen(true);
+    };
+
+    const closeFastTrackModal = () => {
+        setIsFastTrackModalOpen(false);
+        setSelectedFastTrack(null);
+    };
+
+
+    const recentInquiriesData: CardItemProps[] = [
+        {
+            primaryText: "Toyota Hilux",
+            secondaryText: "Sales: Ongoing",
+            status: "ongoing",
+            date: "08 Sep 2025",
+            onViewClick: (item: CardItemProps) => openInquiryModal(item),
+        },
+        {
+            primaryText: "Toyota Hilux",
+            secondaryText: "Sales: Won",
+            status: "won",
+            date: "08 Sep 2025",
+            onViewClick: (item: CardItemProps) => openInquiryModal(item),
+        },
+        {
+            primaryText: "Toyota Hilux",
+            secondaryText: "Sales: Won",
+            status: "won",
+            date: "08 Sep 2025",
+            onViewClick: (item: CardItemProps) => openInquiryModal(item),
+        },
+    ];
 
     const serviceBookingsData: CardItemProps[] = [
         {
@@ -99,6 +264,7 @@ export default function Dashboard() {
             date: "08 Sep 2025",
         },
     ];
+
 
     const sparePartsData: CardItemProps[] = [
         {
@@ -182,7 +348,7 @@ export default function Dashboard() {
                         </div>
                         <button
                             id="complain-btn"
-                            onClick={openModal}
+                            onClick={openComplainModal}
                             className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
                             {/*<MdWarningAmber size={24} className="text-red-700"/>*/}
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -203,9 +369,14 @@ export default function Dashboard() {
                         <button
                             className="w-10 h-10 bg-white rounded-full shadow flex items-center justify-center">
                             {/*<MdWarningAmber size={24} className="text-red-700"/>*/}
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7 7H6C5.46957 7 4.96086 7.21071 4.58579 7.58579C4.21071 7.96086 4 8.46957 4 9V18C4 18.5304 4.21071 19.0391 4.58579 19.4142C4.96086 19.7893 5.46957 20 6 20H15C15.5304 20 16.0391 19.7893 16.4142 19.4142C16.7893 19.0391 17 18.5304 17 18V17" stroke="#575757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M16 4.99998L19 7.99998M20.385 6.58499C20.7788 6.19114 21.0001 5.65697 21.0001 5.09998C21.0001 4.543 20.7788 4.00883 20.385 3.61498C19.9912 3.22114 19.457 2.99988 18.9 2.99988C18.343 2.99988 17.8088 3.22114 17.415 3.61498L9 12V15H12L20.385 6.58499Z" stroke="#575757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M7 7H6C5.46957 7 4.96086 7.21071 4.58579 7.58579C4.21071 7.96086 4 8.46957 4 9V18C4 18.5304 4.21071 19.0391 4.58579 19.4142C4.96086 19.7893 5.46957 20 6 20H15C15.5304 20 16.0391 19.7893 16.4142 19.4142C16.7893 19.0391 17 18.5304 17 18V17"
+                                    stroke="#575757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path
+                                    d="M16 4.99998L19 7.99998M20.385 6.58499C20.7788 6.19114 21.0001 5.65697 21.0001 5.09998C21.0001 4.543 20.7788 4.00883 20.385 3.61498C19.9912 3.22114 19.457 2.99988 18.9 2.99988C18.343 2.99988 17.8088 3.22114 17.415 3.61498L9 12V15H12L20.385 6.58499Z"
+                                    stroke="#575757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </button>
                     </div>
@@ -257,8 +428,9 @@ export default function Dashboard() {
                             title="Recent Inquiries"
                             icon="/dashboard/question-line.svg"
                             backgroundColor="#1862FD"
-                            data={serviceBookingsData}
+                            data={recentInquiriesData}
                             viewAllLink="/service-bookings"
+                            onItemClick={openInquiryModal}
                         />
                         <DashboardCard
                             title="Recent Complains"
@@ -266,6 +438,7 @@ export default function Dashboard() {
                             backgroundColor="#DB2727"
                             data={sparePartsData}
                             viewAllLink="/spare-parts"
+                            onItemClick={openComplainModal}
                         />
                         <DashboardCard
                             title="Recent Vehicle Sales"
@@ -273,6 +446,7 @@ export default function Dashboard() {
                             backgroundColor="#00A93F"
                             data={fastTrackData}
                             viewAllLink="/fast-track"
+                            onItemClick={openVehicleSalesModal}
                         />
                         <DashboardCard
                             title="Recent Service Bookings"
@@ -280,6 +454,7 @@ export default function Dashboard() {
                             backgroundColor="#9C1EFC"
                             data={serviceBookingsData}
                             viewAllLink="/service-bookings"
+                            onItemClick={openServiceParkModal}
                         />
                         <DashboardCard
                             title="Recent Spare Parts"
@@ -287,6 +462,7 @@ export default function Dashboard() {
                             backgroundColor="#F74E00"
                             data={sparePartsData}
                             viewAllLink="/spare-parts"
+                            onItemClick={openSparePartsModal}
                         />
                         <DashboardCard
                             title="Recent Fast Track"
@@ -294,10 +470,36 @@ export default function Dashboard() {
                             backgroundColor="#DB2784"
                             data={fastTrackData}
                             viewAllLink="/fast-track"
+                            onItemClick={openFastTrackModal}
                         />
                     </section>
                 </div>
-                <ComplainModal isOpen={isModalOpen} onClose={closeModal} />
+                <ComplainModal isOpen={isModalOpen} onClose={closeComplainModal}/>
+                <InquiriesModal
+                    isOpen={isInquiryModalOpen}
+                    onClose={closeInquiryModal}
+                    inquiryData={selectedInquiry}
+                />
+                <VehicleSalesModal
+                    isOpen={isVehicleSalesModalOpen}
+                    onClose={closeVehicleSalesModal}
+                    vehicleData={selectedVehicle}
+                />
+                <ServiceParkModal
+                    isOpen={isServiceParkModalOpen}
+                    onClose={closeServiceParkModal}
+                    serviceData={selectedService}
+                />
+                <SparePartsModal
+                    isOpen={isSparePartsModalOpen}
+                    onClose={closeSparePartsModal}
+                    sparePartsData={selectedSpareParts}
+                />
+                <FastTrackModal
+                    isOpen={isFastTrackModalOpen}
+                    onClose={closeFastTrackModal}
+                    fastTrackData={selectedFastTrack}
+                />
             </main>
         </div>
     );

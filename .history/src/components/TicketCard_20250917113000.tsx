@@ -1,3 +1,0 @@
-interface TicketCardProps{
-    id: string;
-}
