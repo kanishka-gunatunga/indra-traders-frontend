@@ -1,0 +1,20 @@
+<svg width="271" height="58" viewBox="0 0 271 58" fill="none" xmlns="http://www.w3.org/2000/svg">
+<foreignObject x="-46" y="-46" width="325.269" height="150"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(25px);clip-path:url(#bgblur_0_981_6953_clip_path);height:100%;width:100%"></div></foreignObject><g filter="url(#filter0_d_981_6953)" data-figma-bg-blur-radius="50">
+<path d="M201.641 4C203.098 4.0001 204.506 4.53041 205.601 5.49219L227.229 24.4922C229.948 26.8818 229.949 31.1183 227.229 33.5078L205.601 52.5078C204.506 53.4696 203.098 53.9999 201.641 54H5.35938C4.89163 54 4.43695 53.944 4 53.8428C4.95693 53.6201 5.85206 53.1654 6.60059 52.5078L28.2285 33.5078C30.9485 31.1183 30.9485 26.8818 28.2285 24.4922L6.60059 5.49219C5.852 4.83457 4.95702 4.37887 4 4.15625C4.43689 4.05503 4.89171 4 5.35938 4H201.641Z" fill="#C0C0C0"/>
+</g>
+<foreignObject x="-46" y="-46" width="325.269" height="150"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(25px);clip-path:url(#bgblur_1_981_6953_clip_path);height:100%;width:100%"></div></foreignObject><path data-figma-bg-blur-radius="50" d="M37.3594 10V48C37.3594 51.3137 40.0457 54 43.3594 54H239.64C241.098 54 242.505 53.4695 243.6 52.5077L265.228 33.5077C267.948 31.1181 267.948 26.8819 265.228 24.4923L243.6 5.49234C242.505 4.53046 241.098 4 239.64 4H43.3594C40.0457 4 37.3594 6.68629 37.3594 10Z" fill="#C0C0C0"/>
+<defs>
+<filter id="filter0_d_981_6953" x="-46" y="-46" width="325.269" height="150" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset/>
+<feGaussianBlur stdDeviation="2"/>
+<feComposite in2="hardAlpha" operator="out"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_981_6953"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_981_6953" result="shape"/>
+</filter>
+<clipPath id="bgblur_0_981_6953_clip_path" transform="translate(46 46)"><path d="M201.641 4C203.098 4.0001 204.506 4.53041 205.601 5.49219L227.229 24.4922C229.948 26.8818 229.949 31.1183 227.229 33.5078L205.601 52.5078C204.506 53.4696 203.098 53.9999 201.641 54H5.35938C4.89163 54 4.43695 53.944 4 53.8428C4.95693 53.6201 5.85206 53.1654 6.60059 52.5078L28.2285 33.5078C30.9485 31.1183 30.9485 26.8818 28.2285 24.4922L6.60059 5.49219C5.852 4.83457 4.95702 4.37887 4 4.15625C4.43689 4.05503 4.89171 4 5.35938 4H201.641Z"/>
+</clipPath><clipPath id="bgblur_1_981_6953_clip_path" transform="translate(46 46)"><path d="M37.3594 10V48C37.3594 51.3137 40.0457 54 43.3594 54H239.64C241.098 54 242.505 53.4695 243.6 52.5077L265.228 33.5077C267.948 31.1181 267.948 26.8819 265.228 24.4923L243.6 5.49234C242.505 4.53046 241.098 4 239.64 4H43.3594C40.0457 4 37.3594 6.68629 37.3594 10Z"/>
+</clipPath></defs>
+</svg>
