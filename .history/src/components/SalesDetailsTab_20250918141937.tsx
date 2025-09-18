@@ -15,10 +15,6 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
   const followUpData = [
     { activity: "Proposed Red Color Civic", date: "12 March, 2025" },
     { activity: "Proposed FK7 Ex Tech Pack Edition", date: "10 March, 2025" },
-    { activity: "Another Follow-up Example", date: "15 March, 2025" },
-    { activity: "Proposed Red Color Civic", date: "12 March, 2025" },
-    { activity: "Proposed FK7 Ex Tech Pack Edition", date: "10 March, 2025" },
-    { activity: "Another Follow-up Example", date: "15 March, 2025" },
   ];
 
   const reminderData = [
@@ -28,19 +24,9 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
       note: "Color White or Red",
     },
     {
-      title: "Follow-up call",
-      date: "14 March, 2025",
-      note: "Discuss pricing",
-    },
-    {
       title: "Find FK7 Ex Techpack",
       date: "12 March, 2025",
       note: "Color White or Red",
-    },
-    {
-      title: "Follow-up call",
-      date: "14 March, 2025",
-      note: "Discuss pricing",
     },
   ];
 
@@ -72,31 +58,26 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
       <div className="mt-4">
         {activeTab === 0 && (
           <>
-            <div className="mt-8 bg-white rounded-4xl py-8 px-8 relative h-[220px]">
-              {/* Scrollable container */}
-              <div className="h-full  pr-2">
-                {/* Table header */}
-                <div className="flex font-medium text-[#575757] min-w-[400px]">
-                  <div className="w-1/2 px-2">Activity</div>
-                  <div className="w-1/2 px-2">Date</div>
-                </div>
-                <hr className="border-gray-300 my-4" />
-
-                <div className="h-[100] overflow-y-auto no-scrollbar">
-                  {/* Table rows */}
-                  {followUpData.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex ${
-                        idx > 0 ? "mt-3" : ""
-                      } font-medium text-black min-w-[400px]`}
-                    >
-                      <div className="w-1/2 px-2">{item.activity}</div>
-                      <div className="w-1/2 px-2">{item.date}</div>
-                    </div>
-                  ))}
-                </div>
+            <div className="mt-8 bg-white rounded-4xl py-8 px-8 relative">
+              {/* Table header */}
+              <div className="flex font-medium text-[#575757]">
+                <div className="w-1/2 px-2">Activity</div>
+                <div className="w-1/2 px-2">Date</div>
               </div>
+              <hr className="border-gray-300 my-4" />
+
+              {/* Table rows */}
+              {followUpData.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${
+                    idx > 0 ? "mt-3" : ""
+                  } font-medium text-black`}
+                >
+                  <div className="w-1/2 px-2">{item.activity}</div>
+                  <div className="w-1/2 px-2">{item.date}</div>
+                </div>
+              ))}
 
               {/* Floating Add button */}
               <button
@@ -110,37 +91,33 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
                 <FiPlus size={24} />
               </button>
             </div>
+            
           </>
         )}
 
         {activeTab === 1 && (
-          <div className="mt-8 bg-white rounded-4xl py-8 px-8 relative h-[220px]">
-            {/* Scrollable container */}
-            <div className="h-full overflow-y-auto no-scrollbar pr-2">
-              {/* Table header */}
-              <div className="flex font-medium text-[#575757] min-w-[600px]">
-                <div className="w-1/3 px-2">Task Title</div>
-                <div className="w-1/3 px-2">Task Date</div>
-                <div className="w-1/3 px-2">Note</div>
-              </div>
-              <hr className="border-gray-300 my-4" />
-
-              <div className="h-[100] overflow-y-auto no-scrollbar">
-                {/* Table rows */}
-                {reminderData.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${
-                      idx > 0 ? "mt-3" : ""
-                    } font-medium text-black min-w-[600px]`}
-                  >
-                    <div className="w-1/3 px-2">{item.title}</div>
-                    <div className="w-1/3 px-2">{item.date}</div>
-                    <div className="w-1/3 px-2">{item.note}</div>
-                  </div>
-                ))}
-              </div>
+          <div className="mt-8 bg-white rounded-4xl py-8 px-8 relative">
+            {/* Table header */}
+            <div className="flex font-medium text-[#575757]">
+              <div className="w-1/3 px-2">Task Title</div>
+              <div className="w-1/3 px-2">Task Date</div>
+              <div className="w-1/3 px-2">Note</div>
             </div>
+            <hr className="border-gray-300 my-4" />
+
+            {/* Table rows */}
+            {reminderData.map((item, idx) => (
+              <div
+                key={idx}
+                className={`flex ${
+                  idx > 0 ? "mt-3" : ""
+                } font-medium text-black`}
+              >
+                <div className="w-1/3 px-2">{item.title}</div>
+                <div className="w-1/3 px-2">{item.date}</div>
+                <div className="w-1/3 px-2">{item.note}</div>
+              </div>
+            ))}
 
             {/* Floating Add button */}
             <button
@@ -155,27 +132,45 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
             </button>
           </div>
         )}
-
         {activeTab === 2 && (
           <div className="mt-8">
             <div className="relative flex items-start gap-4">
               {/* Circle / Ellipse */}
-              <div className="w-5 h-5 rounded-full border-2 border-[#DB2727]"></div>
+              <div
+                className="w-5 h-5 rounded-full border-2 border-[#DB2727]"
+                style={{
+                  top: "418px", // optional absolute positioning if needed
+                  left: "488px",
+                  opacity: 1,
+                  transform: "rotate(0deg)",
+                }}
+              ></div>
 
               {/* Text block */}
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="font-medium text-[18px] font-montserrat">
+                  {/* Main text */}
+                  <span
+                    className="font-medium text-[18px] leading-[100%] font-montserrat"
+                    style={{ fontWeight: 500 }}
+                  >
                     Emily Charlotte’s Birthday
                   </span>
+
+                  {/* SVG Icon */}
                   <Image
                     src={"/images/sales/cake.svg"}
-                    alt="Cake image"
+                    alt="Cacke image"
                     width={15}
                     height={15}
                   />
                 </div>
-                <span className="font-medium text-[15px] font-montserrat text-[#575757]">
+
+                {/* Date text */}
+                <span
+                  className="font-medium text-[15px] leading-[100%] font-montserrat text-[#575757]"
+                  style={{ fontWeight: 500 }}
+                >
                   12 March, 2025
                 </span>
               </div>

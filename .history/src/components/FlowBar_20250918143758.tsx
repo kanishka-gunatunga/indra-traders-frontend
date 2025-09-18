@@ -64,7 +64,7 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
       "
     >
       {/* Step 1: New */}
-      <div className="relative w-[282px] -mr-14">
+      <div className="relative w-[282px] -mr-10">
         <MaskedSVG src="/images/sales/flow_bar1.svg" color={getColor("New")} />
         <span className="absolute inset-0 flex items-center justify-center text-white font-semibold text-[16px]">
           New
@@ -72,7 +72,7 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
       </div>
 
       {/* Step 2: Ongoing */}
-      <div className="relative w-[282px] -mr-14">
+      <div className="relative w-[282px] -mr-10">
         <MaskedSVG
           src="/images/sales/flow_bar2.svg"
           color={getColor("Ongoing")}

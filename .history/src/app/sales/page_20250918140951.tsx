@@ -65,7 +65,7 @@ const dummyTickets: TicketCardProps[] = [
     status: "Lost",
   },
   {
-    id: "ITPL122455174565",
+    id: "ITPL122455874565",
     priority: 4,
     user: "Sophie",
     phone: "0771234567",
@@ -143,7 +143,7 @@ export default function SalesDashboard() {
           </div>
 
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="w-full mt-6 flex gap-6 overflow-x-auto ">
+            <div className="w-full mt-6 flex gap-6 overflow-x-auto lg:overflow-x-hidden">
               {columns.map((col) => (
                 <TicketColumn
                   key={col}

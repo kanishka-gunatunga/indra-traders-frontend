@@ -114,7 +114,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
         )}
 
         {activeTab === 1 && (
-          <div className="mt-8 bg-white rounded-4xl py-8 px-8 relative h-[220px]">
+          <div className="mt-8 bg-white rounded-4xl py-8 px-8 relative h-[200px]">
             {/* Scrollable container */}
             <div className="h-full overflow-y-auto no-scrollbar pr-2">
               {/* Table header */}
@@ -125,21 +125,19 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
               </div>
               <hr className="border-gray-300 my-4" />
 
-              <div className="h-[100] overflow-y-auto no-scrollbar">
-                {/* Table rows */}
-                {reminderData.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${
-                      idx > 0 ? "mt-3" : ""
-                    } font-medium text-black min-w-[600px]`}
-                  >
-                    <div className="w-1/3 px-2">{item.title}</div>
-                    <div className="w-1/3 px-2">{item.date}</div>
-                    <div className="w-1/3 px-2">{item.note}</div>
-                  </div>
-                ))}
-              </div>
+              {/* Table rows */}
+              {reminderData.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${
+                    idx > 0 ? "mt-3" : ""
+                  } font-medium text-black min-w-[600px]`}
+                >
+                  <div className="w-1/3 px-2">{item.title}</div>
+                  <div className="w-1/3 px-2">{item.date}</div>
+                  <div className="w-1/3 px-2">{item.note}</div>
+                </div>
+              ))}
             </div>
 
             {/* Floating Add button */}

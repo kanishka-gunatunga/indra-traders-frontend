@@ -125,7 +125,7 @@ export default function SalesDashboard() {
 
   return (
     <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
-      <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
+      <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col itce gap-8">
         <SalesHeader />
 
         {/* Leads Section */}
@@ -143,7 +143,7 @@ export default function SalesDashboard() {
           </div>
 
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="w-full mt-6 flex gap-6 overflow-x-auto ">
+            <div className="w-full mt-6 flex gap-6 overflow-x-auto lg:overflow-x-hidden">
               {columns.map((col) => (
                 <TicketColumn
                   key={col}

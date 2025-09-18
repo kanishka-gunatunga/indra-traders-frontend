@@ -125,20 +125,21 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
               </div>
               <hr className="border-gray-300 my-4" />
 
-              <div className="h-[100] overflow-y-auto no-scrollbar">
-                {/* Table rows */}
-                {reminderData.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${
-                      idx > 0 ? "mt-3" : ""
-                    } font-medium text-black min-w-[600px]`}
-                  >
-                    <div className="w-1/3 px-2">{item.title}</div>
-                    <div className="w-1/3 px-2">{item.date}</div>
-                    <div className="w-1/3 px-2">{item.note}</div>
-                  </div>
-                ))}
+<div className="h-[100] overflow-y-auto no-scrollbar">
+
+              {/* Table rows */}
+              {reminderData.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${
+                    idx > 0 ? "mt-3" : ""
+                  } font-medium text-black min-w-[600px]`}
+                >
+                  <div className="w-1/3 px-2">{item.title}</div>
+                  <div className="w-1/3 px-2">{item.date}</div>
+                  <div className="w-1/3 px-2">{item.note}</div>
+                </div>
+              ))}
               </div>
             </div>
 
