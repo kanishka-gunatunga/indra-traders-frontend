@@ -1,106 +1,102 @@
+"use client";
+
+import FlowBar from "@/components/FlowBar";
+import SalesDetailsTab from "@/components/SalesDetailsTab";
 import SalesHeader from "@/components/SalesHeader";
 import InfoRow from "@/components/SalesInfoRow";
-import React from "react";
+import Modal from "@/components/Modal";
+import React, { useState } from "react";
 
 export default function SalesDetailsPage() {
+  const [status, setStatus] = useState<"New" | "Ongoing" | "Won" | "Lost">(
+    "New"
+  );
+
+  const [isActivityModalOpen, setActivityModalOpen] = useState(false);
+  const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+
+  const [activityText, setActivityText] = useState("");
+  const [reminderTitle, setReminderTitle] = useState("");
+  const [reminderDate, setReminderDate] = useState("");
+  const [reminderNote, setReminderNote] = useState("");
+
+  const handleAssignClick = () => {
+    if (status === "New") setStatus("Ongoing");
+  };
+
+  const buttonText =
+    status === "New" ? "Assign to me" : "Sales person: Robert Fox";
+
   return (
     <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
       <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
         <SalesHeader />
 
-        <section className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
-          <div className="flex w-full justify-between">
-            <div className="flex w-full gap-4 items-center">
-              <span className="font-semibold text-[22px] leading-[100%] tracking-normal">
+        <section className="relative bg-[#FFFFFF4D] mb-5 bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-9 py-10 flex flex-col justify-center items-center">
+          {/* Header */}
+          <div className="flex w-full justify-between items-center">
+            <div className="flex flex-wrap w-full gap-4 items-center">
+              <span className="font-semibold text-[22px]">
                 ITPL122455874565
               </span>
-              <span
-                className="w-[67px] h-[26px] rounded-[22.98px] 
-             pt-[5.74px] pb-[5.74px] pl-[17.23px] pr-[17.23px]
-             flex items-center justify-center bg-[#DBDBDB] text-sm"
-              >
+              <span className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] bg-[#DBDBDB] text-sm flex items-center justify-center">
                 ITPL
               </span>
-              <span
-                className="w-[61px] h-[26px] rounded-[22.98px] 
-             pt-[5.74px] pb-[5.74px] pl-[10px] pr-[10px] text-sm
-             flex items-center justify-center text-black bg-[#FFA7A7]"
-              >
-                P0
-              </span>
-            </div>
-
-            {/* Flow bar */}
-
-            <div className="w-[786px] h-[50px] flex rounded-[30px] overflow-hidden bg-[#C0C0C0]">
-              {/* Step 1: New */}
-              <div className="relative flex-1 ">
-                <div
-                  className="absolute inset-0 bg-[#DB2727] flex items-center justify-center text-white font-semibold text-[16px] rounded-l-[30px]"
-                  style={{
-                    clipPath:
-                      "polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)",
-                  }}
+              <div className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
+                <select
+                  className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
+                  style={{ textAlignLast: "center" }}
                 >
-                  New
-                </div>
-                {/* White border at arrow edge */}
-                <div
-                  className="absolute top-0 right-0 h-full"
-                  style={{
-                    clipPath: "polygon(0 0, 100% 50%, 0 100%)",
-                    background: "#DB2727",
-                    width: "20px",
-                  }}
-                />
-              </div>
-
-              {/* Step 2: Ongoing */}
-              <div className="relative flex-1">
-                <div
-                  className="absolute inset-0 bg-[#C0C0C0] flex items-center justify-center text-white font-semibold text-[16px]"
-                  style={{
-                    clipPath:
-                      "polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)",
-                  }}
-                >
-                  Ongoing
-                </div>
-                {/* White border at arrow edge */}
-                <div
-                  className="absolute top-0 right-0 h-full"
-                  style={{
-                    clipPath: "polygon(0 0, 100% 50%, 0 100%)",
-                    background: "#C0C0C0",
-                    width: "20px",
-                  }}
-                />
-              </div>
-
-              {/* Step 3: Won/Lost */}
-              <div className="flex-1 bg-[#C0C0C0] flex items-center justify-center text-white font-semibold text-[16px] rounded-r-[30px]">
-                Won/Lost
+                  <option value="P0">P0</option>
+                  <option value="P1">P1</option>
+                  <option value="P2">P2</option>
+                  <option value="P3">P3</option>
+                  <option value="P5">P5</option>
+                </select>
               </div>
             </div>
+            <FlowBar status={status} onStatusChange={setStatus} />
           </div>
-          <div className="w-full flex mt-2 mb-8">
+
+          {/* Assign + Sales Level */}
+          <div className="w-full flex items-center gap-3 mt-2 mb-8">
             <button
-              className="w-[145px] h-[32px] bg-[#DB2727] rounded-[22.98px] 
-               px-[17.23px] py-[5.74px] 
-               text-white font-light flex items-center justify-center"
+              onClick={handleAssignClick}
+              className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
+                status === "New"
+                  ? "bg-[#DB2727] text-white"
+                  : "bg-[#EBD4FF] text-[#1D1D1D]"
+              }`}
+              disabled={status !== "New"}
             >
-              Assign to me
+              {buttonText}
             </button>
+            {status !== "New" && (
+              <div className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
+                <select
+                  className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
+                  style={{ textAlignLast: "center" }}
+                >
+                  <option value="S0">Sales Level 1</option>
+                  <option value="S1">Sales Level 2</option>
+                  <option value="S2">Sales Level 3</option>
+                  <option value="S3">Sales Level 4</option>
+                </select>
+              </div>
+            )}
           </div>
+
+          {/* Tabs */}
           <div className="w-full flex">
             <div className="w-2/5">
-              <div className="mb-6 font-semibold text-[20px] leading-[100%] tracking-[0%]">
+              <div className="mb-6 font-semibold text-[20px]">
                 Customer Details
               </div>
               <InfoRow label="Customer Name:" value="Emily Charlotte" />
               <InfoRow label="Contact No:" value="077 5898712" />
               <InfoRow label="Email:" value="Info@indra.com" />
-              <div className="mt-8 mb-6 font-semibold text-[20px] leading-[100%] tracking-[0%]">
+
+              <div className="mt-8 mb-6 font-semibold text-[20px]">
                 Vehicle Details
               </div>
               <InfoRow label="Vehicle Made:" value="Honda" />
@@ -112,10 +108,94 @@ export default function SalesDetailsPage() {
               <InfoRow label="Price Range:" value="6,000,000 - 8,000,000" />
               <InfoRow label="Additional Note:" value="White color" />
             </div>
-            <div className="w-3/5">2</div>
+
+            <div className="w-3/5 flex flex-col min-h-[400px]">
+              <SalesDetailsTab
+                status={status}
+                onOpenActivity={() => setActivityModalOpen(true)}
+                onOpenReminder={() => setReminderModalOpen(true)}
+              />
+              <div className="mt-6 flex w-full justify-end">
+                <button className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
+                  Save
+                </button>
+              </div>
+            </div>
           </div>
         </section>
       </main>
+
+      {/* Activity Modal */}
+      {isActivityModalOpen && (
+        <Modal
+          title="Add New Activity"
+          onClose={() => setActivityModalOpen(false)}
+          onSave={() => {
+            console.log("Activity saved:", activityText);
+            setActivityText("");
+            setActivityModalOpen(false);
+          }}
+        >
+          <div className="w-full">
+            <label className="block mb-2 font-semibold">Activity</label>
+            <input
+              type="text"
+              value={activityText}
+              onChange={(e) => setActivityText(e.target.value)}
+              className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 mt-2"
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Reminder Modal */}
+      {isReminderModalOpen && (
+        <Modal
+          title="Add New Reminder"
+          onClose={() => setReminderModalOpen(false)}
+          onSave={() => {
+            console.log("Reminder saved:", {
+              reminderTitle,
+              reminderDate,
+              reminderNote,
+            });
+            setReminderTitle("");
+            setReminderDate("");
+            setReminderNote("");
+            setReminderModalOpen(false);
+          }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+            <div>
+              <label className="block mb-2 font-medium">Task Title</label>
+              <input
+                type="text"
+                value={reminderTitle}
+                onChange={(e) => setReminderTitle(e.target.value)}
+                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 font-medium">Task Date</label>
+              <input
+                type="date"
+                value={reminderDate}
+                onChange={(e) => setReminderDate(e.target.value)}
+                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 font-medium">Note</label>
+              <input
+                type="text"
+                value={reminderNote}
+                onChange={(e) => setReminderNote(e.target.value)}
+                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
