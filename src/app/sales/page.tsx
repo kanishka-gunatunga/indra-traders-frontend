@@ -50,30 +50,6 @@ const dummyTickets: TicketCardProps[] = [
     date: "12 Mar, 2025",
     status: "Won",
   },
-  {
-    id: "ITPL122455874593",
-    priority: 2,
-    user: "Sophie",
-    phone: "0771234567",
-    date: "12 Mar, 2025",
-    status: "New",
-  },
-  {
-    id: "ITPL122455874504",
-    priority: 3,
-    user: "Alex",
-    phone: "0777654321",
-    date: "13 Mar, 2025",
-    status: "Lost",
-  },
-  {
-    id: "ITPL122455174565",
-    priority: 4,
-    user: "Sophie",
-    phone: "0771234567",
-    date: "12 Mar, 2025",
-    status: "Won",
-  },
 ];
 
 const vehicleMakes = [
@@ -90,7 +66,6 @@ const vehicleModels = [
 
 export default function SalesDashboard() {
   const [tickets, setTickets] = useState<TicketCardProps[]>(dummyTickets);
-
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
 
   const [customerName, setCustomerName] = useState("");
@@ -98,7 +73,8 @@ export default function SalesDashboard() {
   const [email, setEmail] = useState("");
   const [city, setCity] = useState("");
   const [leadSource, setLeadSource] = useState("");
-  const [remark, setremark] = useState("");
+  const [remark, setRemark] = useState("");
+  const [priority, setPriority] = useState("P0"); // priority selector value
 
   const allowedTransitions: Record<
     TicketCardProps["status"],
@@ -112,28 +88,21 @@ export default function SalesDashboard() {
 
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
-
     if (!destination) return;
-
-    // If dropped in same place → do nothing
     if (
       destination.droppableId === source.droppableId &&
       destination.index === source.index
-    ) {
+    )
       return;
-    }
 
     setTickets((prev) =>
       prev.map((t) => {
         if (t.id !== draggableId) return t;
-
         const currentStatus = t.status;
         const newStatus = destination.droppableId as TicketCardProps["status"];
-
         if (allowedTransitions[currentStatus].includes(newStatus)) {
           return { ...t, status: newStatus };
         }
-
         return t;
       })
     );
@@ -146,13 +115,59 @@ export default function SalesDashboard() {
     "Lost",
   ];
 
+  const nextActionData = [
+    {
+      ticketNo: "ITPL122455874564",
+      name: "Emily Charlotte",
+      contactNo: "0773839322",
+    },
+    {
+      ticketNo: "ITPL122455874595",
+      name: "Emily Charlotte",
+      contactNo: "0773839322",
+    },
+    {
+      ticketNo: "ITPL122455874165",
+      name: "Emily Charlotte",
+      contactNo: "0773839322",
+    },
+    {
+      ticketNo: "ITPL122455874505",
+      name: "Emily Charlotte",
+      contactNo: "0773839322",
+    },
+  ];
+
+  const upcomingEventsData = [
+    {
+      customerName: "Emily Charlotte",
+      date: "March 15",
+      eventType: "BirthDay",
+    },
+    {
+      customerName: "Albert Flore",
+      date: "March 16",
+      eventType: "Reminder",
+    },
+    {
+      customerName: "Guy Hawkins",
+      date: "May 12",
+      eventType: "Reminder",
+    },
+    {
+      customerName: "Wade Warren",
+      date: "May 6",
+      eventType: "BirthDay",
+    },
+  ];
+
   return (
     <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
       <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
         <SalesHeader />
 
         {/* Leads Section */}
-        <section className="relative bg-[#FFFFFF4D] bg-opacity-30 mb-5 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
+        <section className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
           <div className="w-full flex justify-between items-center">
             <span className="font-semibold text-[22px]">Leads</span>
             <button
@@ -180,24 +195,97 @@ export default function SalesDashboard() {
             </div>
           </DragDropContext>
         </section>
+
+        {/* Next action and Upcomming events */}
+        <section className="relative  flex flex-wrap w-full mb-5 gap-3 justify-center items-center">
+          <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
+            <span className="font-semibold text-[22px]">Next Action</span>
+            <div className="h-full mt-5 overflow-y-auto no-scrollbar pr-2">
+              {/* Table header */}
+              <div className="flex font-medium text-[#575757] min-w-[400px]">
+                <div className="w-1/3 px-2">Ticket No.</div>
+                <div className="w-1/3 px-2">Customer Name</div>
+                <div className="w-1/3 px-2">Conatct No.</div>
+              </div>
+              <hr className="border-gray-300 my-4" />
+
+              <div className="h-[100] overflow-y-auto no-scrollbar">
+                {/* Table rows */}
+                {nextActionData.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex ${
+                      idx > 0 ? "mt-3" : ""
+                    } font-medium text-black min-w-[400px]`}
+                  >
+                    <div className="w-1/3 px-2">{item.ticketNo}</div>
+                    <div className="w-1/3 px-2">{item.name}</div>
+                    <div className="w-1/3 px-2">{item.contactNo}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
+            <span className="font-semibold text-[22px]">Upcoming Events</span>
+            <div className="h-full mt-5 overflow-y-auto no-scrollbar pr-2">
+              {/* Table header */}
+              <div className="flex font-medium text-[#575757] min-w-[400px]">
+                <div className="w-1/3 px-2">Customer Name</div>
+                <div className="w-1/3 px-2">Date</div>
+                <div className="w-1/3 px-2">Event Type</div>
+              </div>
+              <hr className="border-gray-300 my-4" />
+
+              <div className="h-[100] overflow-y-auto no-scrollbar">
+                {/* Table rows */}
+                {upcomingEventsData.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex ${
+                      idx > 0 ? "mt-3" : ""
+                    } font-medium text-black min-w-[400px]`}
+                  >
+                    <div className="w-1/3 px-2">{item.customerName}</div>
+                    <div className="w-1/3 px-2">{item.date}</div>
+                    <div className="w-1/3 px-2">{item.eventType}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* Activity Modal */}
+      {/* Add Lead Modal */}
       {isAddLeadModalOpen && (
         <Modal
-          title="Add New lead"
+          title="Add New Lead"
           onClose={() => setIsAddLeadModalOpen(false)}
           onSave={() => {
-            console.log("Activity saved:", {
+            console.log("Saved lead data:", {
               customerName,
               contactNumber,
               email,
+              city,
+              leadSource,
+              remark,
+              priority,
             });
+            // Reset form
             setCustomerName("");
             setContactNumber("");
             setEmail("");
+            setCity("");
+            setLeadSource("");
+            setRemark("");
+            setPriority("P0");
             setIsAddLeadModalOpen(false);
           }}
+          saveLabel="Add"
+          isPriorityAvailable={true}
+          priority={priority}
+          onPriorityChange={setPriority}
         >
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
             <div>
@@ -241,56 +329,55 @@ export default function SalesDashboard() {
               />
             </div>
           </div>
+
+          {/* Lead Source & Vehicle Type */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">
             {/* Lead Source */}
             <div>
               <label className="block mb-2 font-medium">Lead Source</label>
-
-              <div className="relative w-full">
-                <div className="h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] flex items-center px-4">
-                  <select
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full bg-transparent outline-none appearance-none"
-                  >
-                    <option value="Direct Call">Direct Call</option>
-                    <option value="Website">Website</option>
-                    <option value="Referral">Referral</option>
-                  </select>
-                  {/* Custom Dropdown Arrow */}
-                  <span className="absolute right-4 text-gray-600 pointer-events-none">
-                    <Image
-                      src={"images/sales/icon-park-solid_down-one.svg"}
-                      alt="Dropdown arrow"
-                      width={19}
-                      height={19}
-                    />
-                  </span>
-                </div>
+              <div className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+                <select
+                  value={leadSource}
+                  onChange={(e) => setLeadSource(e.target.value)}
+                  className="w-full bg-transparent outline-none appearance-none"
+                >
+                  <option value="">Select Lead Source</option>
+                  <option value="Direct Call">Direct Call</option>
+                  <option value="Website">Website</option>
+                  <option value="Referral">Referral</option>
+                </select>
+                <span className="absolute right-4 pointer-events-none">
+                  <Image
+                    src={"/images/sales/icon-park-solid_down-one.svg"}
+                    width={19}
+                    height={19}
+                    alt="Arrow"
+                  />
+                </span>
               </div>
             </div>
 
             {/* Vehicle Type */}
             <div>
               <label className="block mb-2 font-medium">Vehicle Type</label>
-              <div className="h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] flex items-center px-4">
+              <div className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
                 <select
-                  value={customerName}
+                  value={customerName} // replace with correct state if needed
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full bg-transparent outline-none appearance-none"
                 >
+                  <option value="">Select Vehicle Type</option>
                   <option value="SUV">SUV</option>
-                  <option value="Hatchback">Sedan</option>
+                  <option value="Sedan">Sedan</option>
                   <option value="Hatchback">Hatchback</option>
                   <option value="Truck">Truck</option>
                 </select>
-                {/* Custom Dropdown Arrow */}
-                <span className="absolute right-4 text-gray-600 pointer-events-none">
+                <span className="absolute right-4 pointer-events-none">
                   <Image
-                    src={"images/sales/icon-park-solid_down-one.svg"}
-                    alt="Dropdown arrow"
+                    src={"/images/sales/icon-park-solid_down-one.svg"}
                     width={19}
                     height={19}
+                    alt="Arrow"
                   />
                 </span>
               </div>
@@ -341,13 +428,13 @@ export default function SalesDashboard() {
             </div>
           </div>
 
-          {/* Remark Full Width */}
+          {/* Remark */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">
             <div className="md:col-span-4">
               <label className="block mb-2 font-medium">Remark</label>
               <textarea
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                value={remark}
+                onChange={(e) => setRemark(e.target.value)}
                 className="w-full h-[120px] rounded-[20px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 py-2"
                 placeholder="Enter remarks here..."
               />

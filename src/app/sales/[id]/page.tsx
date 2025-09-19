@@ -135,6 +135,7 @@ export default function SalesDetailsPage() {
             setActivityText("");
             setActivityModalOpen(false);
           }}
+          saveLabel="Save"
         >
           <div className="w-full">
             <label className="block mb-2 font-semibold">Activity</label>
@@ -164,6 +165,7 @@ export default function SalesDetailsPage() {
             setReminderNote("");
             setReminderModalOpen(false);
           }}
+          saveLabel="Save"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             <div>

@@ -44,6 +44,7 @@ export default function FlowBar({ status, onStatusChange }: FlowBarProps) {
         w-[282px] h-[50px] 
         max-[1250px]:w-[240px] 
         max-[1130px]:w-[210px] 
+        max-[1060px]:w-[190px]
         max-[1000px]:w-[190px]
       "
       style={{
