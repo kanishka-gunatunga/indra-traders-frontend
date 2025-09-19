@@ -9,7 +9,7 @@ export default function SalesHeader() {
       </h1>
 
       {/* Welcome Card */}
-      <section className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
+      <section className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-14 py-10 flex justify-between items-center">
         {/* Left Side - Welcome */}
         <div className="flex items-center">
           <div className="space-y-1">

@@ -1,26 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiPlus } from "react-icons/fi";
 
 interface SalesDetailsTabProps {
   status: string;
+  onOpenActivity: () => void;
+  onOpenReminder: () => void;
 }
 
-export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
+export default function SalesDetailsTab({
+  status,
+  onOpenActivity,
+  onOpenReminder,
+}: SalesDetailsTabProps) {
   const tabs = ["Follow up", "Reminders", "Events"];
   const [activeTab, setActiveTab] = useState(0);
-
-  // Modal states
-  const [isActivityModalOpen, setActivityModalOpen] = useState(false);
-  const [isReminderModalOpen, setReminderModalOpen] = useState(false);
-
-  // Form states
-  const [activityText, setActivityText] = useState("");
-  const [reminderTitle, setReminderTitle] = useState("");
-  const [reminderDate, setReminderDate] = useState("");
-  const [reminderNote, setReminderNote] = useState("");
 
   const followUpData = [
     { activity: "Proposed Red Color Civic", date: "12 March, 2025" },
@@ -51,6 +47,33 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
       title: "Follow-up call",
       date: "14 March, 2025",
       note: "Discuss pricing",
+    },
+  ];
+
+  const birthDayData = [
+    {
+      title: "Emily Charlotte’s Birthday",
+      date: "12 March, 2025",
+    },
+    {
+      title: "Emily Charlotte’s Birthday",
+      date: "12 March, 2025",
+    },
+    {
+      title: "Emily Charlotte’s Birthday",
+      date: "12 March, 2025",
+    },
+    {
+      title: "Emily Charlotte’s Birthday",
+      date: "12 March, 2025",
+    },
+    {
+      title: "Emily Charlotte’s Birthday",
+      date: "12 March, 2025",
+    },
+    {
+      title: "Emily Charlotte’s Birthday",
+      date: "12 March, 2025",
     },
   ];
 
@@ -111,7 +134,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
               {/* Floating Add button */}
               <button
                 disabled={isAddDisabled}
-                onClick={() => setActivityModalOpen(true)}
+                onClick={onOpenActivity}
                 className={`absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg ${
                   isAddDisabled
                     ? "bg-gray-400 cursor-not-allowed"
@@ -156,7 +179,7 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
             {/* Floating Add button */}
             <button
               disabled={isAddDisabled}
-              onClick={() => setReminderModalOpen(true)}
+              onClick={onOpenReminder}
               className={`absolute bottom-4 right-4 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg ${
                 isAddDisabled
                   ? "bg-gray-400 cursor-not-allowed"
@@ -169,114 +192,34 @@ export default function SalesDetailsTab({ status }: SalesDetailsTabProps) {
         )}
 
         {activeTab === 2 && (
-          <div className="mt-8">
-            <div className="relative flex items-start gap-4">
-              {/* Circle*/}
-              <div className="w-5 h-5 rounded-full border-2 border-[#DB2727]"></div>
+          <div className="mt-8 flex flex-col gap-4 h-[220px] overflow-y-auto no-scrollbar">
+            {birthDayData.map((item, idx) => (
+              <div key={idx} className="relative flex items-start gap-4">
+                {/* Circle */}
+                <div className="w-5 h-5 rounded-full border-2 border-[#DB2727]" />
 
-              {/* Text block */}
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-medium text-[18px] font-montserrat">
-                    Emily Charlotte’s Birthday
+                {/* Text block */}
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-medium text-[18px] font-montserrat">
+                      {item.title}
+                    </span>
+                    <Image
+                      src="/images/sales/cake.svg"
+                      alt="Cake image"
+                      width={15}
+                      height={15}
+                    />
+                  </div>
+                  <span className="font-medium text-[15px] font-montserrat text-[#575757]">
+                    {item.date}
                   </span>
-                  <Image
-                    src={"/images/sales/cake.svg"}
-                    alt="Cake image"
-                    width={15}
-                    height={15}
-                  />
                 </div>
-                <span className="font-medium text-[15px] font-montserrat text-[#575757]">
-                  12 March, 2025
-                </span>
               </div>
-            </div>
+            ))}
           </div>
         )}
       </div>
-      {/* Activity Modal */}
-      {isActivityModalOpen && (
-        <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-white rounded-2xl shadow-xl p-6 w-[400px] z-50">
-          <h2 className="text-lg font-semibold mb-4">Add Activity</h2>
-          <input
-            type="text"
-            value={activityText}
-            onChange={(e) => setActivityText(e.target.value)}
-            placeholder="Enter activity"
-            className="w-full border rounded-lg p-2 mb-4"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setActivityModalOpen(false)}
-              className="px-4 py-2 rounded-lg bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                console.log("Activity saved:", activityText);
-                setActivityText("");
-                setActivityModalOpen(false);
-              }}
-              className="px-4 py-2 rounded-lg bg-[#DB2727] text-white"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Reminder Modal */}
-      {isReminderModalOpen && (
-        <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 bg-white rounded-2xl shadow-xl p-6 w-[400px] z-50">
-          <h2 className="text-lg font-semibold mb-4">Add Reminder</h2>
-          <input
-            type="text"
-            value={reminderTitle}
-            onChange={(e) => setReminderTitle(e.target.value)}
-            placeholder="Reminder Title"
-            className="w-full border rounded-lg p-2 mb-3"
-          />
-          <input
-            type="date"
-            value={reminderDate}
-            onChange={(e) => setReminderDate(e.target.value)}
-            className="w-full border rounded-lg p-2 mb-3"
-          />
-          <input
-            type="text"
-            value={reminderNote}
-            onChange={(e) => setReminderNote(e.target.value)}
-            placeholder="Note"
-            className="w-full border rounded-lg p-2 mb-4"
-          />
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setReminderModalOpen(false)}
-              className="px-4 py-2 rounded-lg bg-gray-200"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                console.log("Reminder saved:", {
-                  reminderTitle,
-                  reminderDate,
-                  reminderNote,
-                });
-                setReminderTitle("");
-                setReminderDate("");
-                setReminderNote("");
-                setReminderModalOpen(false);
-              }}
-              className="px-4 py-2 rounded-lg bg-[#DB2727] text-white"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
