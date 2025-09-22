@@ -11,9 +11,9 @@ const Navbar = () => {
     ];
 
     return (
-        <div>
+        <div className="">
             <header
-                className="fixed top-0 left-0 right-0 backdrop-blur-md montserrat z-50 px-6 flex items-center h-24">
+                className="fixed top-0 left-0 right-0 backdrop-blur-md montserrat z-50 px-6 flex items-center h-24 max-w-[1800px] mx-auto container">
                 <div className="flex flex-row w-full items-center justify-between">
                     {/* Logo */}
                     <div className="w-20 h-20 bg-[url('/indra-logo.png')] bg-contain bg-no-repeat"/>
