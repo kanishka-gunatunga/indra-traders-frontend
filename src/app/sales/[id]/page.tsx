@@ -2,7 +2,7 @@
 
 import FlowBar from "@/components/FlowBar";
 import SalesDetailsTab from "@/components/SalesDetailsTab";
-import SalesHeader from "@/components/SalesHeader";
+import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
 import React, { useState } from "react";
@@ -30,21 +30,21 @@ export default function SalesDetailsPage() {
   return (
     <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
       <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-        <SalesHeader />
+        <Header name="Sophie Eleanor" location="Bambalapitiya" title="Indra Traders Sales Dashboard"/>
 
         <section className="relative bg-[#FFFFFF4D] mb-5 bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-9 py-10 flex flex-col justify-center items-center">
           {/* Header */}
           <div className="flex w-full justify-between items-center">
-            <div className="flex flex-wrap w-full gap-4 items-center">
-              <span className="font-semibold text-[22px]">
+            <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
+              <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
                 ITPL122455874565
               </span>
-              <span className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] bg-[#DBDBDB] text-sm flex items-center justify-center">
+              <span className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
                 ITPL
               </span>
               <div className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
                 <select
-                  className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
+                  className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
                   style={{ textAlignLast: "center" }}
                 >
                   <option value="P0">P0</option>
@@ -59,7 +59,7 @@ export default function SalesDetailsPage() {
           </div>
 
           {/* Assign + Sales Level */}
-          <div className="w-full flex items-center gap-3 mt-2 mb-8">
+          <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
             <button
               onClick={handleAssignClick}
               className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
@@ -89,14 +89,14 @@ export default function SalesDetailsPage() {
           {/* Tabs */}
           <div className="w-full flex">
             <div className="w-2/5">
-              <div className="mb-6 font-semibold text-[20px]">
+              <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                 Customer Details
               </div>
               <InfoRow label="Customer Name:" value="Emily Charlotte" />
               <InfoRow label="Contact No:" value="077 5898712" />
               <InfoRow label="Email:" value="Info@indra.com" />
 
-              <div className="mt-8 mb-6 font-semibold text-[20px]">
+              <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                 Vehicle Details
               </div>
               <InfoRow label="Vehicle Made:" value="Honda" />
@@ -135,6 +135,7 @@ export default function SalesDetailsPage() {
             setActivityText("");
             setActivityModalOpen(false);
           }}
+          saveLabel="Save"
         >
           <div className="w-full">
             <label className="block mb-2 font-semibold">Activity</label>
@@ -164,6 +165,7 @@ export default function SalesDetailsPage() {
             setReminderNote("");
             setReminderModalOpen(false);
           }}
+          saveLabel="Save"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             <div>
