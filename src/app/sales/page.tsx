@@ -1,7 +1,7 @@
 "use client";
 
 import Modal from "@/components/Modal";
-import SalesHeader from "@/components/SalesHeader";
+import Header from "@/components/Header";
 import { TicketCardProps } from "@/components/TicketCard";
 import { TicketColumn } from "@/components/TicketColumn";
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
@@ -74,7 +74,7 @@ export default function SalesDashboard() {
   const [city, setCity] = useState("");
   const [leadSource, setLeadSource] = useState("");
   const [remark, setRemark] = useState("");
-  const [priority, setPriority] = useState("P0"); // priority selector value
+  const [priority, setPriority] = useState("P0");
 
   const allowedTransitions: Record<
     TicketCardProps["status"],
@@ -164,7 +164,11 @@ export default function SalesDashboard() {
   return (
     <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
       <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-        <SalesHeader />
+        <Header
+          name="Sophie Eleanor"
+          location="Bambalapitiya"
+          title="Indra Traders Sales Dashboard"
+        />
 
         {/* Leads Section */}
         <section className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
@@ -362,7 +366,7 @@ export default function SalesDashboard() {
               <label className="block mb-2 font-medium">Vehicle Type</label>
               <div className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
                 <select
-                  value={customerName} // replace with correct state if needed
+                  value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full bg-transparent outline-none appearance-none"
                 >

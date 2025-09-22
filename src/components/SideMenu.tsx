@@ -4,7 +4,7 @@ const SideMenu = () => {
 
     return (
         <div>
-            <aside className="fixed top-32 left-8 flex flex-col gap-6 z-40">
+            <aside className="fixed top-32 left-8 flex flex-col gap-6 z-40 ">
                 <button
                     className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition"
                 >
