@@ -22,7 +22,7 @@ export default function Header({name, location, title}: HeaderProps) {
             <p className="font-semibold text-[24px] max-[1140px]:text-[20px] leading-[100%] tracking-normal text-black">
               Welcome Back, {name}
             </p>
-            <p className="font-normal text-[20px] max-[1140px]:text-[18px] max-[1140px]:mt-2 leading-[100%] tracking-normal text-[#575757] flex items-center space-x-2">
+            <p className="font-normal text-[20px] mt-1 max-[1140px]:text-[18px] max-[1140px]:mt-2 leading-[100%] tracking-normal text-[#575757] flex items-center space-x-2">
               <Image
                 src="/images/sales/tdesign_location.svg"
                 alt="location icon"

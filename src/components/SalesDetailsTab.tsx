@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import { FiPlus } from "react-icons/fi";
 
+type Role = "user" | "admin";
+
 interface SalesDetailsTabProps {
   status: string;
   onOpenActivity: () => void;
@@ -15,6 +17,8 @@ export default function SalesDetailsTab({
   onOpenActivity,
   onOpenReminder,
 }: SalesDetailsTabProps) {
+  const [role, setRole] = useState<Role>("admin");
+
   const tabs = ["Follow up", "Reminders", "Events"];
   const [activeTab, setActiveTab] = useState(0);
 
@@ -77,7 +81,7 @@ export default function SalesDetailsTab({
     },
   ];
 
-  const isAddDisabled = status === "New";
+  const isAddDisabled = status === "New" && role !== "admin";
 
   return (
     <div className="w-full relative">
