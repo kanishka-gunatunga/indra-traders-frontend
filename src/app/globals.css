@@ -30,3 +30,57 @@
   scrollbar-width: none !important; /* Firefox */
   -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
 }
+
+
+
+.fc-toolbar-chunk .fc-toolbar-title {
+    font-size: 14px !important;
+    color: #1D1D1D !important;
+    font-weight: 700 !important;
+    padding-left: 20px !important;
+    padding-top: 20px !important;
+}
+
+.fc-prev-button{
+    background-color: white !important;
+    border: none !important;
+    color: #DB2727 !important;
+    padding-top: 20px !important;
+}
+
+.fc-next-button {
+    background-color: white !important;
+    border: none !important;
+    color: #DB2727 !important;
+    padding-top: 20px !important;
+    appearance: none;
+}
+
+.fc-prev-button:focus {
+    outline: none;
+}
+
+.fc-col-header-cell-cushion {
+    font-size: 10px;
+    color: #969696;
+    font-weight: 500;
+    text-align: left;
+    justify-content: start;
+    display: flex;
+    align-content: start;
+    font-family: Inter, sans-serif !important;
+}
+
+.fc-scrollgrid-sync-inner {
+    text-align: start;
+}
+
+.fc-daygrid-day-top {
+    display: flex;
+    flex-direction: row !important;
+}
+
+.fc-daygrid-day-number {
+    font-size: 10px !important;
+    font-weight: 500 !important;
+}

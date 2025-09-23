@@ -118,11 +118,76 @@ const ServicePark = () => {
     ];
 
 
+    const paintsData = [
+        {
+            paintName: 'Engine Oil',
+            estimatePrice: 'LKR 40,000',
+        },
+        {
+            paintName: 'Engine Oil',
+            estimatePrice: 'LKR 40,000',
+        },
+        {
+            paintName: 'Engine Oil',
+            estimatePrice: 'LKR 40,000',
+        },
+        {
+            paintName: 'Engine Oil',
+            estimatePrice: 'LKR 40,000',
+        },
+    ];
+
+
+    const addOnData = [
+        {
+            addOnName: 'Engine Oil',
+            estimatePrice: 'LKR 40,000',
+        },
+        {
+            addOnName: 'Engine Oil',
+            estimatePrice: 'LKR 40,000',
+        },
+        {
+            addOnName: 'Engine Oil',
+            estimatePrice: 'LKR 40,000',
+        },
+        {
+            addOnName: 'Engine Oil',
+            estimatePrice: 'LKR 40,000',
+        },
+    ];
+
+    const loyaltyData = [
+        {
+            category: 'Indra Traders (ITPL)',
+            points: '500',
+            promoCode: 'NEWBUY500'
+        },
+        {
+            category: 'Indra Traders (ITPL)',
+            points: '500',
+            promoCode: 'NEWBUY500'
+        },
+        {
+            category: 'Indra Traders (ITPL)',
+            points: '500',
+            promoCode: 'NEWBUY500'
+        },
+        {
+            category: 'Indra Traders (ITPL)',
+            points: '500',
+            promoCode: 'NEWBUY500'
+        },
+    ];
+
+
     const [packageData, setPackageData] = useState(initialPackageData);
     const [maintenanceData, setMaintenanceData] = useState(initialMaintenanceData);
     const [allServicesData, setAllServicesData] = useState(initialAllServicesData);
 
     const [value, setValue] = useState("Services");
+
+    const [copiedIndex, setCopiedIndex] = useState(null);
 
     const handleSelectPackage = (index: number) => {
         setPackageData(prevData => {
@@ -150,6 +215,18 @@ const ServicePark = () => {
 
     const handleClick = (buttonValue: string) => {
         setValue(buttonValue);
+    };
+
+
+    const handleCopy = (promoCode: string, index: number) => {
+        navigator.clipboard.writeText(promoCode)
+            .then(() => {
+                setCopiedIndex(index);
+                setTimeout(() => setCopiedIndex(null), 2000);
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+            });
     };
 
 
@@ -463,7 +540,8 @@ const ServicePark = () => {
                         <div
                             className="w-full">
                             <div className="flex flex-row items-center justify-between">
-                                <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">All Services</h2>
+                                <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">All
+                                    Services</h2>
                                 <div className="flex flex-row gap-6">
                                     <button
                                         className="ml-auto text-white text-base font-medium rounded-full">
@@ -529,7 +607,6 @@ const ServicePark = () => {
                     </section>
 
 
-
                     <section
                         id="repairs-section"
                         className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
@@ -568,8 +645,12 @@ const ServicePark = () => {
                                         </tr>
                                     ))}
                                     <tr className="border-y-1 border-[#575757]">
-                                        <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total Estimate Price</td>
-                                        <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">LKR 112,000</td>
+                                        <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total Estimate
+                                            Price
+                                        </td>
+                                        <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">LKR
+                                            112,000
+                                        </td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -578,8 +659,259 @@ const ServicePark = () => {
                     </section>
 
 
+                    <section
+                        id="paints-section"
+                        className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
+                        <div
+                            className="w-full">
+                            <div className="flex flex-row items-center justify-between">
+                                <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Paint</h2>
+                                <div className="flex flex-row gap-6">
+                                    <button
+                                        className="ml-auto text-white text-base font-medium rounded-full">
+                                        <Image src="/add.svg" alt="search" height={36}
+                                               width={36} className="h-12 w-12"/>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Table Headers */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-black">
+                                    <thead>
+                                    <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
+                                        <th className="py-5 px-4 text-left">Paint Service</th>
+                                        <th className="py-5 px-4 text-right justify-items-end">Estimate Price</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {paintsData.map((item, index) => (
+                                        <tr key={index} className="text-lg font-medium justify-between text-[#1D1D1D]">
+                                            <td className="py-4 px-4 text-[#1D1D1D]">{item.paintName}</td>
+                                            <td className="py-4 px-4 text-right text-[#1D1D1D]">{item.estimatePrice}</td>
+                                        </tr>
+                                    ))}
+                                    <tr className="border-y-1 border-[#575757]">
+                                        <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total Estimate
+                                            Price
+                                        </td>
+                                        <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">LKR
+                                            112,000
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
 
 
+                    <section
+                        id="add-ons-section"
+                        className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
+                        <div
+                            className="w-full">
+                            <div className="flex flex-row items-center justify-between">
+                                <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Add-On
+                                    Packages</h2>
+                                <div className="flex flex-row gap-6">
+                                    <button
+                                        className="ml-auto text-white text-base font-medium rounded-full">
+                                        <Image src="/add.svg" alt="search" height={36}
+                                               width={36} className="h-12 w-12"/>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Table Headers */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-black">
+                                    <thead>
+                                    <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
+                                        <th className="py-5 px-4 text-left">Add-On Packages</th>
+                                        <th className="py-5 px-4 text-right justify-items-end">Estimate Price</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {addOnData.map((item, index) => (
+                                        <tr key={index} className="text-lg font-medium justify-between text-[#1D1D1D]">
+                                            <td className="py-4 px-4 text-[#1D1D1D]">{item.addOnName}</td>
+                                            <td className="py-4 px-4 text-right text-[#1D1D1D]">{item.estimatePrice}</td>
+                                        </tr>
+                                    ))}
+                                    <tr className="border-y-1 border-[#575757]">
+                                        <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total Estimate
+                                            Price
+                                        </td>
+                                        <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">LKR
+                                            112,000
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section
+                        id="loyalty-section"
+                        className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
+                        <div
+                            className="w-full">
+                            <div className="flex flex-row items-center justify-between">
+                                <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Loyalty Points
+                                    & Promotions</h2>
+                            </div>
+
+                            {/* Table Headers */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-black">
+                                    <thead>
+                                    <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                        <th className="py-5 px-4 text-left">Category</th>
+                                        <th className="py-5 px-4 text-left">Points (Loyalty programme)</th>
+                                        <th className="py-5 px-4 text-left">Promo Codes</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {loyaltyData.map((item, index) => (
+                                        <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
+                                            <td className="py-4 px-4 text-[#1D1D1D]">{item.category}</td>
+                                            <td className="py-4 px-4 text-[#1D1D1D]">{item.points}</td>
+                                            <td className="py-4 px-4 items-center flex"><span
+                                                className="mr-8">{item.promoCode}</span>
+                                                <button
+                                                    onClick={() => handleCopy(item.promoCode, index)}
+                                                    className="font-medium rounded-full">
+                                                    <Image src="/copy.svg" alt="info" height={36}
+                                                           width={36} className="h-5 w-5"/>
+                                                </button>
+                                                {copiedIndex === index && (
+                                                    <span
+                                                        className="absolute right-40 transform -translate-y-1/2 ml-2 bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                                        Copied!
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+
+                    <section
+                        id="summary-section"
+                        className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
+                        <div
+                            className="w-full">
+                            <div className="flex flex-row items-center justify-between">
+                                <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Summary</h2>
+                                <div className="flex flex-row gap-6">
+                                    <button
+                                        className="ml-auto text-white text-base font-medium rounded-full">
+                                        <Image src="/message.svg" alt="search" height={36}
+                                               width={36} className="h-12 w-12"/>
+                                    </button>
+                                    <button
+                                        className="ml-auto text-white text-base font-medium rounded-full">
+                                        <Image src="/whatsapp.svg" alt="search" height={36}
+                                               width={36} className="h-12 w-12"/>
+                                    </button>
+                                    <button
+                                        className="ml-auto text-white text-base font-medium rounded-full">
+                                        <Image src="/mail.svg" alt="search" height={36}
+                                               width={36} className="h-12 w-12"/>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Table Headers */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-black">
+                                    <thead>
+                                    <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
+                                        <th className="py-5 px-4 text-left">Services</th>
+                                        <th className="py-5 px-4 text-right justify-items-end">Estimate Total Price</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {/*{addOnData.map((item, index) => (*/}
+                                    {/*    <tr key={index} className="text-lg font-medium justify-between text-[#1D1D1D]">*/}
+                                    {/*        <td className="py-4 px-4 text-[#1D1D1D]">{item.addOnName}</td>*/}
+                                    {/*        <td className="py-4 px-4 text-right text-[#1D1D1D]">{item.estimatePrice}</td>*/}
+                                    {/*    </tr>*/}
+                                    {/*))}*/}
+                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                        <td className="py-4 px-4 text-[#1D1D1D] font-semibold">Vehicle Repair</td>
+                                        <td className="py-4 px-4 text-right text-[#1D1D1D] font-semibold">LKR 112,000
+                                        </td>
+                                    </tr>
+                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
+                                        <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium"><input type="text"
+                                                                                                         placeholder="Enter Promo Code"
+                                                                                                         className="border-none focus:border-none focus:outline-none"/>
+                                        </td>
+                                        <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold ">
+                                            <button
+                                                className="font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2">Apply
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>‎</td>
+                                        <td>‎</td>
+                                    </tr>
+                                    <tr className="border-y-1 border-[#575757]">
+                                        <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D] mt-8">Estimate Price
+                                        </td>
+                                        <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D] mt-8">LKR
+                                            112,000
+                                        </td>
+                                    </tr>
+                                    <tr className="">
+                                        <td className="py-4 px-4 font-semibold text-[19px] text-[#1D1D1D] mt-8">
+                                            Total Discount
+                                        </td>
+                                        <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D] mt-8">
+                                        </td>
+                                    </tr>
+                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                        <td className="py-4 px-4 text-[#1D1D1D]">Sub Total</td>
+                                        <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR 112,000</td>
+                                    </tr>
+                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                        <td className="py-4 px-4 text-[#1D1D1D]">Applied Promo Code</td>
+                                        <td className="py-4 px-4 text-right text-[#1D1D1D]">NEWSERVICE500</td>
+                                    </tr>
+                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                        <td className="py-4 px-4 text-[#1D1D1D]">Discount Amount</td>
+                                        <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR 30,000</td>
+                                    </tr>
+                                    <tr className="border-t-1 border-[#575757]">
+                                        <td className="py-4 px-4 font-bold text-xl text-[#DB2727] mt-8">Final Estimate
+                                            Price
+                                        </td>
+                                        <td className="py-4 px-4 font-bold text-xl text-right text-[#DB2727] mt-8">LKR
+                                            112,000
+                                        </td>
+                                    </tr>
+                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
+                                        <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium"></td>
+                                        <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold ">
+                                            <button
+                                                className="font-bold text-[#FFFFFF] bg-[#DB2727] rounded-[20] px-14 py-2">Book
+                                                Now
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
 
 
                     <section
@@ -618,15 +950,20 @@ const ServicePark = () => {
                                         className="flex justify-center items-center h-8 px-4 rounded-md bg-white/30 text-gray-400 font-medium">Prev
                                     </button>
                                     <div className="flex items-center space-x-2">
-                                        <button className="w-8 h-8 text-[13px] rounded-lg bg-[#DB2727] text-white font-semibold">1
+                                        <button
+                                            className="w-8 h-8 text-[13px] rounded-lg bg-[#DB2727] text-white font-semibold">1
                                         </button>
-                                        <button className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">2
+                                        <button
+                                            className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">2
                                         </button>
-                                        <button className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">3
+                                        <button
+                                            className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">3
                                         </button>
-                                        <button className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">4
+                                        <button
+                                            className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">4
                                         </button>
-                                        <button className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">5
+                                        <button
+                                            className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">5
                                         </button>
                                     </div>
                                     <button
