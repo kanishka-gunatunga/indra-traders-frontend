@@ -9,8 +9,15 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   onClose: () => void;
-  onSave?: () => void;
-  saveLabel?: string;
+
+  // Flexible action button
+  actionButton?: {
+    label: string;
+    icon?: ReactNode;
+    onClick: () => void;
+    className?: string;
+  };
+
   isPriorityAvailable?: boolean;
   priority?: string;
   onPriorityChange?: (value: string) => void;
@@ -20,8 +27,7 @@ export default function Modal({
   title,
   children,
   onClose,
-  onSave,
-  saveLabel,
+  actionButton,
   isPriorityAvailable = false,
   priority,
   onPriorityChange,
@@ -50,7 +56,10 @@ export default function Modal({
     setMounted(true);
 
     return () => {
-      if (containerRef.current && containerRef.current.parentNode === document.body) {
+      if (
+        containerRef.current &&
+        containerRef.current.parentNode === document.body
+      ) {
         document.body.removeChild(containerRef.current);
       }
       // restore scroll
@@ -93,13 +102,17 @@ export default function Modal({
       aria-labelledby="modal-title"
     >
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       {/* Modal box */}
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="relative rounded-[45px] border border-[#E7E7E7] bg-[#FFFFFF] backdrop-blur-[60px] shadow-2xl p-8 z-10 max-h-[90vh] w-[90vw] max-w-[1350px] overflow-y-auto"
+        className={`relative rounded-[45px] border border-[#E7E7E7] bg-[#FFFFFF] backdrop-blur-[60px] shadow-2xl p-8 z-10 max-h-[90vh] 
+         max-w-[1350px] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Title row */}
@@ -138,14 +151,23 @@ export default function Modal({
           )}
         </div>
 
-        {/* Save button */}
-        {onSave && (
+        {actionButton && (
           <button
-            onClick={onSave}
-            className="absolute top-6 right-8 w-[121px] h-[41px] rounded-[30px] bg-[#DB2727] text-white flex items-center justify-center px-[18px] hover:bg-red-700"
+            onClick={actionButton.onClick}
+            className={`absolute top-6 right-8 flex items-center justify-center ${
+              actionButton.icon
+                ? // Icon-only button
+                  "w-[50px] h-[50px] rounded-full bg-[#E7E7E7] shadow-md"
+                : // Text-only button
+                  "w-[121px] h-[41px] rounded-[30px] bg-[#DB2727] text-white px-[18px] hover:bg-red-700"
+            } ${actionButton.className || ""}`}
             type="button"
           >
-            {saveLabel}
+            {actionButton.icon ? (
+              <span>{actionButton.icon}</span>
+            ) : (
+              <span>{actionButton.label}</span>
+            )}
           </button>
         )}
 

@@ -9,6 +9,8 @@ import Image from "next/image";
 import React, { useState } from "react";
 import Select from "react-select";
 
+type OptionType = { value: string; label: string };
+
 const dummyTickets: TicketCardProps[] = [
   {
     id: "ITPL122455874561",
@@ -75,6 +77,9 @@ export default function SalesDashboard() {
   const [leadSource, setLeadSource] = useState("");
   const [remark, setRemark] = useState("");
   const [priority, setPriority] = useState("P0");
+  const [vehicleType, setVehicleType] = useState("");
+  const [selectedMake, setSelectedMake] = useState<OptionType | null>(null);
+  const [selectedModel, setSelectedModal] = useState<OptionType | null>(null);
 
   const allowedTransitions: Record<
     TicketCardProps["status"],
@@ -266,27 +271,29 @@ export default function SalesDashboard() {
         <Modal
           title="Add New Lead"
           onClose={() => setIsAddLeadModalOpen(false)}
-          onSave={() => {
-            console.log("Saved lead data:", {
-              customerName,
-              contactNumber,
-              email,
-              city,
-              leadSource,
-              remark,
-              priority,
-            });
-            // Reset form
-            setCustomerName("");
-            setContactNumber("");
-            setEmail("");
-            setCity("");
-            setLeadSource("");
-            setRemark("");
-            setPriority("P0");
-            setIsAddLeadModalOpen(false);
+          actionButton={{
+            label: "Add",
+            onClick: () => {
+              console.log("Saved lead data:", {
+                customerName,
+                contactNumber,
+                email,
+                city,
+                leadSource,
+                remark,
+                priority,
+              });
+              // Reset form
+              setCustomerName("");
+              setContactNumber("");
+              setEmail("");
+              setCity("");
+              setLeadSource("");
+              setRemark("");
+              setPriority("P0");
+              setIsAddLeadModalOpen(false);
+            },
           }}
-          saveLabel="Add"
           isPriorityAvailable={true}
           priority={priority}
           onPriorityChange={setPriority}
@@ -366,8 +373,8 @@ export default function SalesDashboard() {
               <label className="block mb-2 font-medium">Vehicle Type</label>
               <div className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
                 <select
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
                   className="w-full bg-transparent outline-none appearance-none"
                 >
                   <option value="">Select Vehicle Type</option>
@@ -394,6 +401,8 @@ export default function SalesDashboard() {
                 options={vehicleMakes}
                 placeholder="Select Vehicle Make"
                 isSearchable
+                value={selectedMake}
+                onChange={(option) => setSelectedMake(option)}
                 className="w-full"
                 styles={{
                   control: (base) => ({
@@ -416,6 +425,8 @@ export default function SalesDashboard() {
                 options={vehicleModels}
                 placeholder="Select Vehicle Model"
                 isSearchable
+                value={selectedModel}
+                onChange={(option) => setSelectedModal(option)}
                 className="w-full mt-3"
                 styles={{
                   control: (base) => ({
