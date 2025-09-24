@@ -21,7 +21,16 @@ const priorityColors = [
   "bg-[#D6B3FF]",
   "bg-green-300",
   "bg-blue-300",
-  "bg-purple-300",
+  "bg-[#D6B3FF]",
+];
+
+const priorityBorders = [
+  "border-[#FFA7A7]",
+  "border-[#FFCBA4]",
+  "border-[#D6B3FF]",
+  "border-green-300",
+  "border-blue-300",
+  "border-[#D6B3FF]",
 ];
 
 export const TicketCard = ({
@@ -62,7 +71,7 @@ export const TicketCard = ({
           {...provided.dragHandleProps}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
-          className="bg-white rounded-2xl border border-[#DB272780]/50 p-4 shadow mb-4 cursor-pointer"
+          className={`bg-white rounded-2xl border ${priorityBorders[priority]} p-4 shadow mb-4 cursor-pointer`}
         >
           {/* Top Row */}
           <div className="flex justify-between items-center mb-2">
