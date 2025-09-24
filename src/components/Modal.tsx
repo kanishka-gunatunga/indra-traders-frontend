@@ -12,7 +12,7 @@ interface ModalProps {
 
   // Flexible action button
   actionButton?: {
-    label: string;
+    label?: string;
     icon?: ReactNode;
     onClick: () => void;
     className?: string;
@@ -111,7 +111,7 @@ export default function Modal({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className={`relative rounded-[45px] border border-[#E7E7E7] bg-[#FFFFFF] backdrop-blur-[60px] shadow-2xl p-8 z-10 max-h-[90vh] 
+        className={`relative rounded-[45px] border border-[#E7E7E7] bg-[#FFFFFF]/70 opacity-70 backdrop-blur-[60px] shadow-2xl p-8 z-10 max-h-[90vh] 
          max-w-[1350px] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >

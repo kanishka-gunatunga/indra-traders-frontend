@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Modal from "@/components/Modal";
+import React from "react";
 
 interface ComplainModalProps {
     isOpen: boolean;
@@ -11,30 +13,16 @@ export default function ComplainModal({ isOpen, onClose }: ComplainModalProps) {
     }
 
     return (
-        <div className="fixed z-50 flex items-center justify-center p-4">
-            {/* Modal Overlay */}
-            <div
-                className="fixed inset-0 bg-white/30 bg-opacity-30"
-                onClick={onClose}
-            ></div>
-
-            {/* Modal Content */}
-            <div className="relative z-50 w-[1305px] h-[242px] transform rounded-[45px] border border-[#E7E7E7] bg-[#FFFFFFB2] p-8 text-left shadow-lg backdrop-blur-[30px]">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-semibold text-black">
-                        Recent Complain
-                    </h2>
-                    <button type="button" onClick={onClose}>
-                        <Image
-                            src="/close-icon.svg"
-                            alt="Close"
-                            width={24}
-                            height={24}
-                        />
-                    </button>
-                </div>
-
-                {/* Table Headers */}
+        <Modal
+            title="Recent Complain"
+            onClose={() => onClose}
+            actionButton={{
+                icon:"/close-icon.svg",
+                onClick: () => onClose,
+            }}
+            isPriorityAvailable={false}
+        >
+            <div>
                 <div className="mt-6 flex text-gray-500">
                     <div className="w-[197px] border-b-[1.5px] border-gray-300 pb-2 text-lg font-medium">
                         Date
@@ -74,6 +62,33 @@ export default function ComplainModal({ isOpen, onClose }: ComplainModalProps) {
                     </div>
                 </div>
             </div>
-        </div>
+        </Modal>
+        // <div className="fixed z-50 flex items-center justify-center p-4">
+        //     {/* Modal Overlay */}
+        //     <div
+        //         className="fixed inset-0 bg-white/30 bg-opacity-30"
+        //         onClick={onClose}
+        //     ></div>
+        //
+        //     {/* Modal Content */}
+        //     <div className="relative z-50 w-[1305px] h-[242px] transform rounded-[45px] border border-[#E7E7E7] bg-[#FFFFFFB2] p-8 text-left shadow-lg backdrop-blur-[30px]">
+        //         <div className="flex items-center justify-between">
+        //             <h2 className="text-2xl font-semibold text-black">
+        //                 Recent Complain
+        //             </h2>
+        //             <button type="button" onClick={onClose}>
+        //                 <Image
+        //                     src="/close-icon.svg"
+        //                     alt="Close"
+        //                     width={24}
+        //                     height={24}
+        //                 />
+        //             </button>
+        //         </div>
+        //
+        //         {/* Table Headers */}
+        //
+        //     </div>
+        // </div>
     );
 }

@@ -1,108 +1,115 @@
 "use client"
 import Image from "next/image";
-import {useState} from "react";
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
+import {Key, useState} from "react";
+import {Badge, Calendar} from "antd";
+import dayjs from "dayjs";
+
+
+interface ScheduleSlot {
+    time: string;
+    type: string;
+    cab: string | number | bigint | boolean;
+    duration: string | number | bigint | boolean;
+    status: string;
+}
+
+interface Schedules {
+    [date: string]: ScheduleSlot[];
+}
+
+interface DotsData {
+    [date: string]: string[];
+}
+
 
 const ServiceParkSale = () => {
 
-    const [selectedDate, setSelectedDate] = useState('2025-03-05');
+    const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs('2025-03-05'));
+    const [calendarValue, setCalendarValue] = useState<dayjs.Dayjs>(dayjs('2025-03-05'));
 
-    const dotsData = {
-        '2025-02-24': ['green'], // Mon
-        '2025-02-25': ['red'],    // Tue
-        '2025-02-26': ['green', 'orange'], // Wed
-        '2025-02-27': ['red'],    // Thu
-        '2025-02-28': ['red'],    // Fri
-        '2025-03-01': ['green', 'orange'], // Sat
-        '2025-03-02': ['green'],  // Sun
-        '2025-03-03': [],         // Mon 3, no dot in image approximation
-        '2025-03-04': ['green'],  // Tue 4 -> green
-        '2025-03-05': [],         // Wed 5, highlighted, no dot
-        '2025-03-06': ['red'],    // Thu 6 -> red? Adjust based on image
-        '2025-03-07': ['green', 'orange'], // Fri 7
-        '2025-03-08': ['green'],  // Sat 8
-        '2025-03-09': ['red'],    // Sun 9
-        '2025-03-10': ['green'],  // Mon 10
-        '2025-03-11': ['orange'], // Tue 11
-        '2025-09-23': ['green'],  // etc., add more as needed
-        // Add more dates if required
+    const dotsData: DotsData = {
+        '2025-03-05': ['green'],
+        '2025-03-06': ['red'],
+        '2025-03-07': ['green', 'orange'],
+        '2025-03-08': ['green'],
+        '2025-03-09': ['red'],
+        '2025-03-10': ['green'],
+        '2025-03-11': ['orange'],
+        '2025-03-13': ['green'],
+        '2025-03-14': ['red'],
+        '2025-03-15': ['green', 'orange'],
+        '2025-03-16': ['green'],
+        '2025-03-18': ['green', 'orange'],
+        '2025-03-19': ['green', 'orange'],
+        '2025-03-20': ['green'],
+        '2025-03-21': ['green', 'orange'],
+        '2025-03-22': ['green', 'orange'],
+        '2025-03-23': ['green'],
+        '2025-03-24': ['red'],
+        '2025-03-25': ['green', 'orange'],
+        '2025-03-26': ['green', 'orange'],
+        '2025-03-27': ['red'],
+        '2025-03-28': ['green', 'orange'],
+        '2025-03-29': ['red'],
+        '2025-03-30': ['green'],
+        '2025-03-31': ['red'],
     };
 
-    // Schedule data for selected date (hardcoded for March 5)
-    const schedules = {
+
+    const schedules: Schedules = {
         '2025-03-05': [
-            {
-                time: '8:00',
-                type: 'booked',
-                cab: 'CAB - 5482',
-                duration: '8:00 - 8:30',
-                status: 'Booked',
-            },
-            {
-                time: '8:30',
-                type: 'available',
-                cab: 'Available',
-                duration: '8:30 - 9:00',
-                status: 'Available',
-            },
-            {
-                time: '9:00',
-                type: 'booked',
-                cab: 'CAB - 7824',
-                duration: '9:00 - 9:30',
-                status: 'Booked',
-            },
-            {
-                time: '9:30',
-                type: 'pending',
-                cab: 'CAB - 4862',
-                duration: '9:30 - 10:00',
-                status: 'Pending',
-            },
-            {
-                time: '10:00',
-                type: 'available',
-                cab: 'Available',
-                duration: '10:00 - 10:30',
-                status: 'Available',
-            },
-            {
-                time: '10:30',
-                type: 'available',
-                cab: 'Available',
-                duration: '10:30 - 11:00',
-                status: 'Available',
-            },
-            // Add more slots as needed
+            {time: '8:00', type: 'booked', cab: 'CAB - 5482', duration: '8:00 - 8:30', status: 'Booked'},
+            {time: '8:30', type: 'available', cab: 'Available', duration: '8:30 - 9:00', status: 'Available'},
+            {time: '9:00', type: 'booked', cab: 'CAB - 7824', duration: '9:00 - 9:30', status: 'Booked'},
+            {time: '9:30', type: 'pending', cab: 'CAB - 4862', duration: '9:30 - 10:00', status: 'Pending'},
+            {time: '10:00', type: 'available', cab: 'Available', duration: '10:00 - 10:30', status: 'Available'},
+            {time: '10:30', type: 'available', cab: 'Available', duration: '10:30 - 11:00', status: 'Available'},
         ],
     };
 
-    const handleDateClick = (info) => {
-        setSelectedDate(info.dateStr);
+    const getDotBadges = (dateStr: string) => {
+        const dots = dotsData[dateStr] || [];
+        return dots.map((color: string, index: Key | null | undefined) => (
+            <Badge
+                key={index}
+                color={color === 'green' ? '#039855' : color === 'red' ? '#DB2727' : '#FF961B'}
+                style={{width: 8, height: 8, marginRight: 2}}
+            />
+        ));
     };
 
-    const dayCellDidMount = (info) => {
-        const dateStr = info.date.toISOString().slice(0, 10);
-        const dots = dotsData[dateStr] || [];
+    const dateCellRender = (date: dayjs.Dayjs) => {
+        const dateStr = date.format('YYYY-MM-DD');
+        const isSelected = date.isSame(selectedDate, 'day');
+        const dots = getDotBadges(dateStr);
 
-        if (dots.length > 0) {
-            const dotContainer = document.createElement('div');
-            dotContainer.className = 'flex justify-center gap-1 absolute bottom-1 left-0 right-0';
-            dots.forEach((color) => {
-                const dot = document.createElement('div');
-                dot.className = `w-1.5 h-1.5 rounded-full ${
-                    color === 'green' ? 'bg-green-600' : color === 'red' ? 'bg-red-600' : 'bg-orange-500'
-                }`;
-                dotContainer.appendChild(dot);
-            });
-            info.el.appendChild(dotContainer);
-        }
+        return (
+            <div
+                className={`relative h-full flex flex-col justify-between p-1`}
+            >
+                {dots.length > 0 && (
+                    <div className="flex justify-start mt-auto pb-4 overflow-hidden">
+                        {dots}
+                    </div>
+                )}
+            </div>
+        );
+    };
 
-        // Highlight selected day
-        if (dateStr === selectedDate) {
-            info.el.style.backgroundColor = '#FFE5E5';
-        }
+    const onSelect = (date: dayjs.Dayjs) => {
+        setSelectedDate(date);
+    };
+
+    const getScheduleForDate = (date: dayjs.Dayjs) => {
+        return schedules[date.format("YYYY-MM-DD")] || [];
+    };
+
+    const handlePrevMonth = () => {
+        setCalendarValue((prev) => prev.subtract(1, 'month'));
+    };
+
+    const handleNextMonth = () => {
+        setCalendarValue((prev) => prev.add(1, 'month'));
     };
 
     return (
@@ -269,73 +276,128 @@ const ServiceParkSale = () => {
                             <div className="flex flex-row items-center gap-10">
                                 <h2 className="font-semibold text-[22px]">Service Schedule</h2>
                                 <div className="flex flex-row gap-12 mt-1">
-                                    <div className="font-medium text-[17px] text-[#1D1D1D] flex flex-row gap-3 items-center">
+                                    <div
+                                        className="font-medium text-[17px] text-[#1D1D1D] flex flex-row gap-3 items-center">
                                         <h3>Kandy</h3>
                                         <svg className="" width="10" height="6"
                                              viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757"/>
+                                            <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
+                                                  fill="#575757"/>
                                         </svg>
                                     </div>
 
-                                    <div className="font-medium text-[17px] text-[#1D1D1D] flex flex-row gap-3 items-center">
+                                    <div
+                                        className="font-medium text-[17px] text-[#1D1D1D] flex flex-row gap-3 items-center">
                                         <h3>Repair</h3>
                                         <svg className="" width="10" height="6"
                                              viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757"/>
+                                            <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
+                                                  fill="#575757"/>
                                         </svg>
                                     </div>
                                 </div>
-
-
-
                             </div>
 
                             <div className="flex gap-8 mt-12">
-                                {/* Calendar Section */}
-                                <div className="w-1/2 bg-white rounded-2xl shadow-md overflow-hidden">
-                                    <FullCalendar
-                                        plugins={[dayGridPlugin]}
-                                        initialView="dayGridMonth"
-                                        initialDate="2025-03-01"
-                                        headerToolbar={{
-                                            left: 'title',
-                                            center: '',
-                                            right: 'prev,next',
-                                        }}
-                                        titleFormat={{ year: 'numeric', month: 'long' }}
-                                        height="auto"
-                                        dateClick={handleDateClick}
-                                        dayCellDidMount={dayCellDidMount}
-                                        fixedWeekCount={false} // Show only necessary weeks
-                                    />
+                                <div className="w-1/2">
+                                    <div className="bg-white rounded-2xl overflow-hidden">
+                                        <Calendar
+                                            value={calendarValue}
+                                            onSelect={onSelect}
+                                            cellRender={dateCellRender}
+                                            mode="month"
+                                            className="custom-calendar"
+                                            headerRender={({value, type, onTypeChange}) => (
+                                                <div className="px-6 py-4 flex justify-between items-center">
+                                                    <div className="text-sm font-bold flex flex-row gap-2 items-center">
+                                                        {value.format('MMMM YYYY')} <span><Image src="/next-arrow.svg"
+                                                                                                 alt="prev arrow"
+                                                                                                 width={32} height={32}
+                                                                                                 className="w-5 h-5"/></span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={handlePrevMonth}
+                                                            className="text-gray-500 hover:text-gray-700"
+                                                        >
+                                                            <Image src="/prev-arrow.svg" alt="prev arrow" width={32}
+                                                                   height={32} className="w-5 h-5"/>
+                                                        </button>
+                                                        <button
+                                                            onClick={handleNextMonth}
+                                                            className="text-gray-500 hover:text-gray-700"
+                                                        >
+                                                            <Image src="/next-arrow.svg" alt="prev arrow" width={32}
+                                                                   height={32} className="w-5 h-5"/>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="flex flex-row items-center gap-8 mt-8 justify-center">
+                                        <h3 className="text-[#1D1D1D] text-[12px] font-medium flex gap-2 items-center">
+                                            <span className="bg-[#DB2727] w-2 h-2 rounded-full"></span> Booked
+                                        </h3>
+                                        <h3 className="text-[#1D1D1D] text-[12px] font-medium flex gap-2 items-center">
+                                            <span className="bg-[#FF961B] w-2 h-2 rounded-full"></span> Pending
+                                        </h3>
+                                        <h3 className="text-[#1D1D1D] text-[12px] font-medium flex gap-2 items-center">
+                                            <span className="bg-[#039855] w-2 h-2 rounded-full"></span> Available
+                                        </h3>
+                                    </div>
                                 </div>
+
                                 {/* Schedule Section */}
                                 <div className="w-1/2 flex flex-col gap-2">
-                                    {(schedules[selectedDate] || []).map((slot, index) => (
+                                    {getScheduleForDate(selectedDate).map((slot: {
+                                        type: string;
+                                        time: string;
+                                        cab: string | number | bigint | boolean;
+                                        duration: string | number | bigint | boolean;
+                                    }, index: Key | null | undefined) => (
                                         <div
                                             key={index}
-                                            className={`flex items-center gap-2 p-2 rounded-full ${
+                                            className={`flex flex-row justify-between items-center gap-2 py-3 px-4 rounded-[20] ${
                                                 slot.type === 'booked'
-                                                    ? 'bg-pink-200'
+                                                    ? 'bg-[#FFA7A7]/50'
                                                     : slot.type === 'available'
-                                                        ? 'bg-green-200'
-                                                        : 'bg-orange-200'
+                                                        ? 'bg-[#A7FFA7]/50'
+                                                        : 'bg-[#FFCBA7]/50'
                                             }`}
                                         >
-                                            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-black font-bold">
-                                                {slot.type === 'available' ? '+' : slot.time.slice(0, -3)}
+                                            <div className="flex flex-row gap-6 items-center">
+                                                <div
+                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-black font-bold">
+                                                    {slot.type === 'available' ? '+' : slot.time.slice(0, -3)}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span
+                                                        className="text-base text-[#1D1D1D] font-semibold">{slot.cab}</span>
+                                                    <span className="text-sm text-[#1D1D1D]">{slot.duration}</span>
+                                                </div>
                                             </div>
-                                            <span className="flex-1">{slot.cab}</span>
-                                            <div className="flex items-center gap-2 bg-white/50 rounded-full px-3 py-1">
-                                                <span>{slot.duration}</span>
-                                                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            <div className={`flex items-center gap-2 rounded-full px-3 py-1 shadow-md ${
+                                                slot.type === 'booked'
+                                                    ? 'bg-[#FFA7A7]'
+                                                    : slot.type === 'available'
+                                                        ? 'bg-[#A7FFA7]'
+                                                        : 'bg-[#FFCBA7]'
+                                            }`}>
+                                                <span className="text-[#1D1D1D] text-[10px]">{slot.type}</span>
+                                                <svg className="w-4 h-4 text-[#1D1D1D]" fill="none"
+                                                     stroke="currentColor"
+                                                     viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                          d="M19 9l-7 7-7-7"/>
                                                 </svg>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
+
+
                         </div>
                     </section>
 
@@ -362,10 +424,7 @@ function VerificationDropdown({label, placeholder, isIcon}: VerificationDropdown
                     placeholder={placeholder}
                     className={`w-full ${isIcon ? "px-10" : "px-4"} py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                 />
-                {/*<FiSearch*/}
-                {/*    size={18}*/}
-                {/*    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"*/}
-                {/*/>*/}
+
                 {
                     isIcon && (
                         <svg className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="20" height="20"
@@ -377,10 +436,6 @@ function VerificationDropdown({label, placeholder, isIcon}: VerificationDropdown
                     )
                 }
 
-                {/*<BiChevronDown*/}
-                {/*    size={18}*/}
-                {/*    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"*/}
-                {/*/>*/}
                 <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="10" height="6"
                      viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757"/>
@@ -391,3 +446,4 @@ function VerificationDropdown({label, placeholder, isIcon}: VerificationDropdown
 }
 
 export default ServiceParkSale;
+

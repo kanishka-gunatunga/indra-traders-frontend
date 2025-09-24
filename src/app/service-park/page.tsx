@@ -1,6 +1,6 @@
 "use client"
 import Image from "next/image";
-import {useState} from "react";
+import {Key, useState} from "react";
 
 const ServicePark = () => {
 
@@ -187,7 +187,7 @@ const ServicePark = () => {
 
     const [value, setValue] = useState("Services");
 
-    const [copiedIndex, setCopiedIndex] = useState(null);
+    const [copiedIndex, setCopiedIndex] = useState<null | number>(null);
 
     const handleSelectPackage = (index: number) => {
         setPackageData(prevData => {
