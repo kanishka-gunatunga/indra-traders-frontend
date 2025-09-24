@@ -1,13 +1,14 @@
 "use client";
 
+import { Role } from "@/types/role";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-type Role = "user" | "admin";
-
 const SideMenu = () => {
-  const [role, setRole] = useState<Role>("admin");
+  const [role, setRole] = useState<Role>(
+    process.env.NEXT_PUBLIC_USER_ROLE as Role
+  );
 
   return (
     <div>

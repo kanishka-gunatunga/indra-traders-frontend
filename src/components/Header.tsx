@@ -1,13 +1,19 @@
+import { Role } from "@/types/role";
 import Image from "next/image";
-import React from "react";
 
-interface HeaderProps{
+interface HeaderProps {
   name: string;
   location: string;
   title: string;
+  reminders?: number;
 }
 
-export default function Header({name, location, title}: HeaderProps) {
+export default function Header({
+  name,
+  location,
+  title,
+  reminders,
+}: HeaderProps) {
   return (
     <>
       <h1 className="font-bold text-[25px] leading-[100%] tracking-normal text-[#1D1D1D] ml-8 max-[1140px]:text-[23px]">
@@ -22,15 +28,22 @@ export default function Header({name, location, title}: HeaderProps) {
             <p className="font-semibold text-[24px] max-[1140px]:text-[20px] leading-[100%] tracking-normal text-black">
               Welcome Back, {name}
             </p>
-            <p className="font-normal text-[20px] mt-1 max-[1140px]:text-[18px] max-[1140px]:mt-2 leading-[100%] tracking-normal text-[#575757] flex items-center space-x-2">
-              <Image
-                src="/images/sales/tdesign_location.svg"
-                alt="location icon"
-                width={200}
-                height={200}
-                className="w-5 h-5"
-              />
-              <span>{location}</span>
+            <p className="font-normal text-[20px] mt-2 max-[1140px]:text-[18px] max-[1140px]:mt-2 leading-[100%] tracking-normal text-[#575757] flex items-center space-x-2">
+              {reminders ? (
+                <span>You have {reminders} reminders</span>
+              ) : (
+                <>
+                  <Image
+                    src="/images/sales/tdesign_location.svg"
+                    alt="location icon"
+                    width={200}
+                    height={200}
+                    className="w-5 h-5"
+                  />
+
+                  <span>{location}</span>
+                </>
+              )}
             </p>
           </div>
         </div>
