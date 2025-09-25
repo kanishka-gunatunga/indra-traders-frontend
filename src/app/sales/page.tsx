@@ -8,6 +8,7 @@ import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import Image from "next/image";
 import React, { useState } from "react";
 import Select from "react-select";
+import { Role } from "@/types/role";
 
 type OptionType = { value: string; label: string };
 
@@ -67,6 +68,10 @@ const vehicleModels = [
 ];
 
 export default function SalesDashboard() {
+  const [role, setRole] = useState<Role>(
+    process.env.NEXT_PUBLIC_USER_ROLE as Role
+  );
+
   const [tickets, setTickets] = useState<TicketCardProps[]>(dummyTickets);
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
 
@@ -172,7 +177,11 @@ export default function SalesDashboard() {
         <Header
           name="Sophie Eleanor"
           location="Bambalapitiya"
-          title="Indra Traders Sales Dashboard"
+          title={
+            role === "tele-marketer"
+              ? "Indra Fast Track Sales Dashboard"
+              : "Indra Traders Sales Dashboard"
+          }
         />
 
         {/* Leads Section */}

@@ -1,10 +1,9 @@
 "use client";
 
+import { Role } from "@/types/role";
 import Image from "next/image";
 import { useState } from "react";
 import { FiPlus } from "react-icons/fi";
-
-type Role = "user" | "admin";
 
 interface SalesDetailsTabProps {
   status: string;
@@ -17,7 +16,9 @@ export default function SalesDetailsTab({
   onOpenActivity,
   onOpenReminder,
 }: SalesDetailsTabProps) {
-  const [role, setRole] = useState<Role>("admin");
+  const [role, setRole] = useState<Role>(
+    process.env.NEXT_PUBLIC_USER_ROLE as Role
+  );
 
   const tabs = ["Follow up", "Reminders", "Events"];
   const [activeTab, setActiveTab] = useState(0);
@@ -81,7 +82,8 @@ export default function SalesDetailsTab({
     },
   ];
 
-  const isAddDisabled = status === "New" && role !== "admin";
+  const isAddDisabled =
+    status === "New" && role !== "admin" && role !== "tele-marketer";
 
   return (
     <div className="w-full relative">

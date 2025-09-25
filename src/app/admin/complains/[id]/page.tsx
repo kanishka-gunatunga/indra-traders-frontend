@@ -6,11 +6,12 @@ import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
 import React, { useState } from "react";
-
-type Role = "user" | "admin";
+import { Role } from "@/types/role";
 
 export default function ComplainDetailsPage() {
-  const [role, setRole] = useState<Role>("admin");
+  const [role, setRole] = useState<Role>(
+    process.env.NEXT_PUBLIC_USER_ROLE as Role
+  );
 
   const [status, setStatus] = useState<ComplainStatus>("New");
 
