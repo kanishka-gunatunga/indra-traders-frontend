@@ -82,7 +82,7 @@ export default function DashboardCard({
                                       }: DashboardCardProps) {
     return (
         <div
-            className="relative h-[437px] w-[417px] rounded-[20px] stroke-1-[D8D8D8] backdrop-blur-[25px]">
+            className="relative h-[437px] w-[417px] rounded-[20px] shadow-[#D8D8D8] shadow-md border-1 border-[#D8D8D8] backdrop-blur-[25px]">
             {/* Card Header */}
             <div
                 className={`flex h-[69px] items-center px-8 rounded-t-[20px] py-3`}
@@ -102,7 +102,7 @@ export default function DashboardCard({
             </div>
 
             {/* View All Link */}
-            <div className="absolute bottom-5 left-0 right-0 text-center">
+            <div className="absolute bottom-5 left-0 right-0 text-center px-2 pt-4 border-t-1 border-[#D8D8D8]">
                 <Link
                     href={viewAllLink}
                     className="font-montserrat text-lg font-medium text-[#195FFC] hover:underline"
