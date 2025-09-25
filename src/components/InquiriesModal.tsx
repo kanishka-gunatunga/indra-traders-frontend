@@ -1,6 +1,7 @@
 import React from 'react';
 import {CardItemProps} from "@/components/DashboardCard";
 import Image from "next/image";
+import DetailsModal from "@/components/DetailsModal";
 
 interface InquiriesModalProps {
     isOpen: boolean;
@@ -34,43 +35,33 @@ const InquiriesModal = ({isOpen, onClose, inquiryData}: InquiriesModalProps) => 
     ];
 
     return (
-        <div className="fixed inset-0 z-50 flex bg-white/30 items-center justify-center p-4">
-            {/* Modal Overlay */}
+        <DetailsModal isOpen={isOpen} onClose={onClose}>
             <div
-                className="fixed inset-0 bg-white/20 bg-opacity-30"
-                onClick={onClose}
-            ></div>
-
-            {/* Modal Content */}
-            <div
-                className="relative z-50 w-[1305px] h-[616px] transform rounded-[45px] border border-[#E7E7E7] bg-[#FFFFFFB2] p-8 text-left shadow-lg backdrop-blur-[60px] flex flex-col">
+                className="w-full">
 
                 {/* Header */}
                 <div className="flex justify-between items-start">
                     <div className="flex flex-row gap-2">
                         <h2 className="text-[22px] font-semibold text-[#1D1D1D] montserrat">{inquiryData.primaryText}</h2>
                         <div className="flex flex-row items-center gap-3">
-              <span className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
-                Sales person: Guy Hawkins
-              </span>
+                          <span className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
+                            Sales person: Guy Hawkins
+                          </span>
                             <span
                                 className="bg-[#DBDBDB] rounded-[22.9787px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
-                ITPL
-              </span>
+                                ITPL
+                            </span>
                             <span
                                 className="bg-[#DB2727] rounded-[22.9787px] px-4 py-1 text-[15px] font-medium text-white">
-                Ongoing
-              </span>
+                                Ongoing
+                          </span>
                         </div>
                     </div>
-                    <button type="button" onClick={onClose}>
-                        <Image src="/close-icon.svg" alt="Close" width={24} height={24}/>
-                    </button>
                 </div>
 
-                <div className="flex flex-row mt-12 gap-16">
+                <div className="flex flex-row mt-12 gap-16 w-full">
                     {/* Vehicle Details Section */}
-                    <div className="flex flex-col gap-4 w-[395px]">
+                    <div className="flex flex-col gap-4 w-[400px]">
                         <h3 className="text-[20px] font-semibold text-[#1D1D1D] montserrat">Vehicle Details</h3>
                         <div className="flex flex-col gap-4 text-[18px]">
                             <div className="flex justify-between">
@@ -109,7 +100,7 @@ const InquiriesModal = ({isOpen, onClose, inquiryData}: InquiriesModalProps) => 
                     </div>
 
                     {/* Follow Up Section */}
-                    <div className="flex flex-col gap-4 flex-1">
+                    <div className="flex flex-col gap-4 min-w-[600px] flex-1">
                         <h3 className="text-[20px] font-semibold text-[#1D1D1D] montserrat border-b-[1.5px] border-[#DB2727] pb-2 w-[270px]">
                             Follow up
                         </h3>
@@ -132,7 +123,7 @@ const InquiriesModal = ({isOpen, onClose, inquiryData}: InquiriesModalProps) => 
                     </div>
                 </div>
             </div>
-        </div>
+        </DetailsModal>
     );
 };
 

@@ -1,10 +1,29 @@
 "use client"
 import Image from "next/image";
-import {useState} from "react";
+import React, {useState} from "react";
+import Modal from "@/components/Modal";
 
 const VehicleSales = () => {
 
     const [showStockAvailability, setShowStockAvailability] = useState(false);
+    const [isVehicleAvailabilityModalOpen, setIsVehicleAvailabilityModalOpen] = useState(false);
+
+    const [priceFrom, setPriceFrom] = useState<number | "">("");
+    const [priceTo, setPriceTo] = useState<number | "">("");
+
+    const handleIncrement = (
+        setter: React.Dispatch<React.SetStateAction<number | "">>,
+        value: number | ""
+    ) => {
+        setter(value === "" ? 1 : value + 1);
+    };
+
+    const handleDecrement = (
+        setter: React.Dispatch<React.SetStateAction<number | "">>,
+        value: number | ""
+    ) => {
+        setter(value === "" ? 0 : Math.max(0, value - 1));
+    };
 
     const stockData = [
         {
@@ -134,6 +153,7 @@ const VehicleSales = () => {
                                     Availability</h2>
                                 <div>
                                     <button
+                                        onClick={() => setIsVehicleAvailabilityModalOpen(true)}
                                         className="ml-auto text-white text-base font-medium rounded-full">
                                         <Image src="/dashboard/availability.svg" alt="availability" height={36}
                                                width={36} className="h-12 w-12"/>
@@ -363,6 +383,156 @@ const VehicleSales = () => {
                     </div>
                 </section>
             </main>
+
+            {isVehicleAvailabilityModalOpen && (
+                <Modal
+                    title="Unavailable Vehicle"
+                    onClose={() => setIsVehicleAvailabilityModalOpen(false)}
+                    actionButton={{
+                        label: "Submit",
+                        onClick: () => {
+                            console.log("filtered data");
+                        },
+                    }}
+                    isPriorityAvailable={false}
+                >
+                    <div>
+                        <div className="mb-8">
+                            <div className="flex flex-col justify-center items-center">
+                                <Image src="/search.gif" alt="search" width={128} height={128} className="w-32 h-32"/>
+                                <div className="text-center">
+                                    <h2 className="font-semibold text-xl text-[#000000]">Oops! That Spare Part is Not
+                                        Available</h2>
+                                    <h3 className="text-[#575757] text-[15px] font-medium">Please add it to the
+                                        unavailable Spare Parts list.</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make" isIcon={true}/>
+                            <VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"
+                                                  isIcon={true}/>
+                            <VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"
+                                                  isIcon={true}/>
+                            <VerificationDropdown label="Transmission" placeholder="Select Transmission"
+                                                  isIcon={true}/>
+                            <VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type"
+                                                  isIcon={false}/>
+                            <div>
+                                <label className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span
+                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Down Payment</span>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="Enter Down Payment"
+                                            className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                        />
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div className="flex flex-col space-y-2 font-medium text-gray-900">
+                                <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
+                                  Price Range
+                                </span>
+
+                                <div className="flex gap-4">
+                                    {/* Price From */}
+                                    <div className="relative w-1/2">
+                                        <input
+                                            type="number"
+                                            placeholder="Price From"
+                                            value={priceFrom}
+                                            onChange={(e) =>
+                                                setPriceFrom(
+                                                    e.target.value === "" ? "" : Number(e.target.value)
+                                                )
+                                            }
+                                            className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                        />
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleIncrement(setPriceFrom, priceFrom)}
+                                                className="p-1 hover:bg-gray-200 rounded"
+                                            >
+                                                <svg
+                                                    width="10"
+                                                    height="6"
+                                                    viewBox="0 0 10 6"
+                                                    fill="none"
+                                                >
+                                                    <path d="M0 6L5 0L10 6H0Z" fill="#575757"/>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDecrement(setPriceFrom, priceFrom)}
+                                                className="p-1 hover:bg-gray-200 rounded"
+                                            >
+                                                <svg
+                                                    width="10"
+                                                    height="6"
+                                                    viewBox="0 0 10 6"
+                                                    fill="none"
+                                                >
+                                                    <path d="M0 0L5 6L10 0H0Z" fill="#575757"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Price To */}
+                                    <div className="relative w-1/2">
+                                        <input
+                                            type="number"
+                                            placeholder="Price To"
+                                            value={priceTo}
+                                            onChange={(e) =>
+                                                setPriceTo(
+                                                    e.target.value === "" ? "" : Number(e.target.value)
+                                                )
+                                            }
+                                            className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                        />
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleIncrement(setPriceTo, priceTo)}
+                                                className="p-1 hover:bg-gray-200 rounded"
+                                            >
+                                                <svg
+                                                    width="10"
+                                                    height="6"
+                                                    viewBox="0 0 10 6"
+                                                    fill="none"
+                                                >
+                                                    <path d="M0 6L5 0L10 6H0Z" fill="#575757"/>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDecrement(setPriceTo, priceTo)}
+                                                className="p-1 hover:bg-gray-200 rounded"
+                                            >
+                                                <svg
+                                                    width="10"
+                                                    height="6"
+                                                    viewBox="0 0 10 6"
+                                                    fill="none"
+                                                >
+                                                    <path d="M0 0L5 6L10 0H0Z" fill="#575757"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 }

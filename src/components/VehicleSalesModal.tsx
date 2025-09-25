@@ -45,12 +45,12 @@ export default function VehicleSalesModal({isOpen, onClose, vehicleData}: Vehicl
                     <div className="flex flex-col gap-2">
                         <h2 className="text-[22px] font-semibold text-[#000000] montserrat">{vehicleData.title}</h2>
                         <div className="flex flex-row items-center gap-3 mt-1">
-              <span className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
-                Sales person: {vehicleData.salesPerson}
-              </span>
+                            <span className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
+                                Sales person: {vehicleData.salesPerson}
+                            </span>
                             <span className="bg-[#039855] rounded-[20px] px-4 py-1 text-[15px] font-medium text-white">
-                Purchase: {vehicleData.purchaseDate}
-              </span>
+                                Purchase: {vehicleData.purchaseDate}
+                            </span>
                         </div>
                     </div>
                     <button type="button" onClick={onClose}>

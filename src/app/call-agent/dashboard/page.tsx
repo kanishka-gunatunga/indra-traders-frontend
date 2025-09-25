@@ -1,13 +1,14 @@
 "use client"
 import Image from "next/image";
 import DashboardCard, {CardItemProps} from "@/components/DashboardCard";
-import {useState} from "react";
+import React, {useState} from "react";
 import ComplainModal from "@/components/ComplainModal";
 import InquiriesModal from "@/components/InquiriesModal";
 import VehicleSalesModal from "@/components/VehicleSalesModal";
 import ServiceParkModal from "@/components/ServiceBookingModal";
 import SparePartsModal from "@/components/SparePartsModal";
 import FastTrackModal from "@/components/FastTrackModal";
+import DetailsModal from "@/components/DetailsModal";
 
 const customerDetails = [
     {
@@ -108,6 +109,24 @@ const mockVehicleData = {
     purchaseDate: "12 March 2025",
 };
 
+
+const vehicleDetails = [
+    {label: "Millage:", value: "210,000km"},
+    {label: "No. of Owners:", value: "2"},
+    {label: "Vehicle No:", value: "Brand New"},
+    {label: "Color:", value: "Rallye Red"},
+    {label: "Capacity:", value: "2800cc"},
+    {label: "Model:", value: "2020 Toyota Hilux GR S"},
+    {label: "Fuel:", value: "Diesel"},
+    {
+        label: "Transmission:",
+        value: "Continuously Variable Transmission (CVT)",
+    },
+    {label: "Year:", value: "2020"},
+    {label: "Grade:", value: "GR S"},
+];
+
+
 const mockServiceData = {
     invoiceNo: "INV123456",
     date: "18 September 2025",
@@ -125,9 +144,9 @@ const mockSparePartsData = {
     invoiceNo: "INV34556",
     date: "12 Dec 2024",
     parts: [
-        { name: "Brake Fluid - BF-DOT4", units: 2, compatibility: "Hydraulic Brake Systems", price: 5500 },
-        { name: "Engine Oil - EO-5W30", units: 4, compatibility: "Petrol And Diesel Engines", price: 6800 },
-        { name: "Coolant - CC-50/50", units: 3, compatibility: "Radiator Systems", price: 3200 },
+        {name: "Brake Fluid - BF-DOT4", units: 2, compatibility: "Hydraulic Brake Systems", price: 5500},
+        {name: "Engine Oil - EO-5W30", units: 4, compatibility: "Petrol And Diesel Engines", price: 6800},
+        {name: "Coolant - CC-50/50", units: 3, compatibility: "Radiator Systems", price: 3200},
     ],
 };
 
@@ -480,11 +499,11 @@ export default function Dashboard() {
                     onClose={closeInquiryModal}
                     inquiryData={selectedInquiry}
                 />
-                <VehicleSalesModal
-                    isOpen={isVehicleSalesModalOpen}
-                    onClose={closeVehicleSalesModal}
-                    vehicleData={selectedVehicle}
-                />
+                {/*<VehicleSalesModal*/}
+                {/*    isOpen={isVehicleSalesModalOpen}*/}
+                {/*    onClose={closeVehicleSalesModal}*/}
+                {/*    vehicleData={selectedVehicle}*/}
+                {/*/>*/}
                 <ServiceParkModal
                     isOpen={isServiceParkModalOpen}
                     onClose={closeServiceParkModal}
@@ -501,6 +520,81 @@ export default function Dashboard() {
                     fastTrackData={selectedFastTrack}
                 />
             </main>
+
+
+            {isVehicleSalesModalOpen && (
+                <DetailsModal
+                    isOpen={isVehicleSalesModalOpen}
+                    onClose={() => setIsVehicleSalesModalOpen(false)}
+                >
+                    <div>
+                        <div className="flex flex-row gap-2">
+                            <h2 className="text-[22px] font-semibold text-[#000000] montserrat">2025 Honda Civic Hatchback</h2>
+                            <div className="flex flex-row items-center gap-3 mt-1">
+                            <span
+                                className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
+                                Sales person: Guy Hawkins
+                            </span>
+                                <span
+                                    className="bg-[#039855] rounded-[20px] px-4 py-1 text-[15px] font-medium text-white">
+                                Purchase: 12 Dec 2024
+                            </span>
+                            </div>
+                        </div>
+                        <div className="w-full flex justify-center mt-8 gap-6">
+                            {/* Left: Images */}
+                            <div className="flex-1 flex flex-col gap-4">
+                                {/* Main vehicle image */}
+                                <div
+                                    className="w-[600px] max-[1250px]:w-[500px] h-[331px] lg:h-[400px] border border-gray-200 bg-white/80 backdrop-blur-[50px] rounded-[30px] shadow-md flex items-center justify-center bg-cover bg-center"
+                                    style={{backgroundImage: `url("/images/main-vehicle.png")`}}
+                                />
+
+                                {/* Small images grid */}
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[
+                                        "/images/vehicle1.png",
+                                        "/images/vehicle2.png",
+                                        "/images/vehicle3.png",
+                                        "/images/vehicle4.png",
+                                    ].map((img, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`h-[94px] border border-gray-200 bg-white/80 backdrop-blur-[50px] shadow-md flex items-center justify-center bg-cover bg-center
+                                              ${idx === 0 ? "rounded-tl-[30px] lg:rounded-l-[30px]" : ""}
+                                              ${idx === 1 ? "" : ""}
+                                              ${idx === 2 ? "" : ""}
+                                              ${idx === 3 ? "rounded-tr-[30px] lg:rounded-r-[30px]" : ""}`}
+                                            style={{backgroundImage: `url(${img})`}}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Right: Vehicle details */}
+                            <div className="flex-1 px-4 lg:px-10 flex flex-col">
+              <span className="text-[20px] font-semibold tracking-wide">
+                Vehicle Details
+              </span>
+                                <div className="text-[23px] mb-3 font-semibold tracking-wide text-[#DB2727] mt-5">
+                                    Rs. 22,400,000
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    {vehicleDetails.map((detail, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="w-full flex text-lg font-medium tracking-wide"
+                                        >
+                                            <div className="w-2/6">{detail.label}</div>
+                                            <div className="w-4/6 text-[#575757]">{detail.value}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </DetailsModal>
+            )}
         </div>
     );
 }

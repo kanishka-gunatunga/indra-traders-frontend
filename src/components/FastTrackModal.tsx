@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import DetailsModal from "@/components/DetailsModal";
 
 interface FastTrackRequestModalProps {
     isOpen: boolean;
@@ -36,51 +37,39 @@ const FastTrackModal = ({ isOpen, onClose, fastTrackData }: FastTrackRequestModa
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Modal Overlay */}
-            <div className="fixed inset-0 bg-white/70 bg-opacity-30" onClick={onClose}></div>
+        <DetailsModal title="Fast Track Request" isOpen={isOpen} onClose={onClose}>
+        <div className="min-w-5xl">
+            {/* Table Header */}
+            <div className="mt-8 border-b-2 border-gray-300 pb-2 flex justify-between items-center">
+                <div className="w-[17%] font-medium text-[18px] text-[#575757]">Vehicle</div>
+                <div className="w-[10%] font-medium text-[18px] text-[#575757]">Type</div>
+                <div className="w-[9%] font-medium text-[18px] text-[#575757]">Grade</div>
+                <div className="w-[9%] font-medium text-[18px] text-[#575757]">Year</div>
+                <div className="w-[14%] font-medium text-[18px] text-[#575757]">Mileage</div>
+                <div className="w-[22%] font-medium text-[18px] text-[#575757]">Price Range</div>
+                <div className="w-[16%] font-medium text-[18px] text-[#575757]">Status</div>
+            </div>
 
-            {/* Modal Content */}
-            <div className="relative z-50 w-[1305px] h-[250px] transform rounded-[45px] border border-[#E7E7E7] bg-white bg-opacity-70 p-8 text-left shadow-lg backdrop-blur-[30px] flex flex-col">
-                {/* Header */}
-                <div className="flex justify-between items-center">
-                    <h2 className="text-[22px] font-semibold text-[#000000] montserrat">Fast Track Request</h2>
-                    <button type="button" onClick={onClose}>
-                        <Image src="/close-icon.svg" alt="Close" width={24} height={24} />
-                    </button>
-                </div>
-
-                {/* Table Header */}
-                <div className="mt-8 border-b-2 border-gray-300 pb-2 flex justify-between items-center">
-                    <div className="w-[17%] font-medium text-[18px] text-[#575757]">Vehicle</div>
-                    <div className="w-[10%] font-medium text-[18px] text-[#575757]">Type</div>
-                    <div className="w-[9%] font-medium text-[18px] text-[#575757]">Grade</div>
-                    <div className="w-[9%] font-medium text-[18px] text-[#575757]">Year</div>
-                    <div className="w-[14%] font-medium text-[18px] text-[#575757]">Mileage</div>
-                    <div className="w-[22%] font-medium text-[18px] text-[#575757]">Price Range</div>
-                    <div className="w-[16%] font-medium text-[18px] text-[#575757]">Status</div>
-                </div>
-
-                {/* Table Body */}
-                <div className="flex flex-col mt-4">
-                    {fastTrackData.requests.map((request, index) => (
-                        <div key={index} className="flex justify-between items-center py-2">
-                            <div className="w-[17%] font-medium text-[18px] text-[#1D1D1D]">{request.vehicle}</div>
-                            <div className="w-[10%] font-medium text-[18px] text-[#1D1D1D]">{request.type}</div>
-                            <div className="w-[9%] font-medium text-[18px] text-[#1D1D1D]">{request.grade}</div>
-                            <div className="w-[9%] font-medium text-[18px] text-[#1D1D1D]">{request.year}</div>
-                            <div className="w-[14%] font-medium text-[18px] text-[#1D1D1D]">{request.mileage}</div>
-                            <div className="w-[22%] font-medium text-[18px] text-[#1D1D1D]">{request.priceRange}</div>
-                            <div className="w-[16%] flex items-center">
+            {/* Table Body */}
+            <div className="flex flex-col mt-4">
+                {fastTrackData.requests.map((request, index) => (
+                    <div key={index} className="flex justify-between items-center py-2">
+                        <div className="w-[17%] font-medium text-[18px] text-[#1D1D1D]">{request.vehicle}</div>
+                        <div className="w-[10%] font-medium text-[18px] text-[#1D1D1D]">{request.type}</div>
+                        <div className="w-[9%] font-medium text-[18px] text-[#1D1D1D]">{request.grade}</div>
+                        <div className="w-[9%] font-medium text-[18px] text-[#1D1D1D]">{request.year}</div>
+                        <div className="w-[14%] font-medium text-[18px] text-[#1D1D1D]">{request.mileage}</div>
+                        <div className="w-[22%] font-medium text-[18px] text-[#1D1D1D]">{request.priceRange}</div>
+                        <div className="w-[16%] flex items-center">
                 <span className={`${getStatusColor(request.status)} rounded-[22.9787px] px-4 py-1 text-[15px] font-medium text-white`}>
                   {request.status}
                 </span>
-                            </div>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ))}
             </div>
         </div>
+        </DetailsModal>
     );
 };
 
