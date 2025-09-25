@@ -90,8 +90,9 @@
 // export default SparePartsModal;
 
 "use client";
-import { useState } from "react";
+import {useState} from "react";
 import Image from "next/image";
+import DetailsModal from "@/components/DetailsModal";
 
 interface SparePartsModalProps {
     isOpen: boolean;
@@ -103,34 +104,28 @@ interface SparePartsModalProps {
     } | null;
 }
 
-const SparePartsModal = ({ isOpen, onClose, sparePartsData }: SparePartsModalProps) => {
+const SparePartsModal = ({isOpen, onClose, sparePartsData}: SparePartsModalProps) => {
     if (!isOpen || !sparePartsData) {
         return null;
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Modal Overlay */}
-            <div className="fixed inset-0 bg-white/70 bg-opacity-30" onClick={onClose}></div>
-
-            {/* Modal Content */}
-            <div className="relative z-50 w-[1305px] h-[312px] transform rounded-[45px] border border-[#E7E7E7] bg-white bg-opacity-70 p-8 text-left shadow-lg backdrop-blur-[30px] flex flex-col">
+        <DetailsModal isOpen={isOpen} onClose={onClose}>
+            <div className="min-w-[800px]">
                 {/* Header */}
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-6">
                         <h2 className="text-[22px] font-semibold text-[#000000] montserrat">Spare Parts Details</h2>
                         <div className="flex flex-row gap-2">
-              <span className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
-                {sparePartsData.invoiceNo}
-              </span>
+                          <span
+                              className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
+                            {sparePartsData.invoiceNo}
+                          </span>
                             <span className="bg-[#039855] rounded-[20px] px-4 py-1 text-[15px] font-medium text-white">
-                {sparePartsData.date}
-              </span>
+                            {sparePartsData.date}
+                          </span>
                         </div>
                     </div>
-                    <button type="button" onClick={onClose}>
-                        <Image src="/close-icon.svg" alt="Close" width={24} height={24} />
-                    </button>
                 </div>
 
                 {/* Spare Parts Table Header */}
@@ -147,13 +142,15 @@ const SparePartsModal = ({ isOpen, onClose, sparePartsData }: SparePartsModalPro
                         <div key={index} className="flex justify-between items-center py-2">
                             <div className="w-1/3 text-left font-medium text-[18px] text-[#1D1D1D]">{part.name}</div>
                             <div className="w-1/6 text-left font-medium text-[18px] text-[#1D1D1D]">{part.units}</div>
-                            <div className="w-1/3 text-left font-medium text-[18px] text-[#1D1D1D] capitalize">{part.compatibility}</div>
-                            <div className="w-1/6 text-left font-medium text-[18px] text-[#1D1D1D]">LKR {part.price.toLocaleString()}</div>
+                            <div
+                                className="w-1/3 text-left font-medium text-[18px] text-[#1D1D1D] capitalize">{part.compatibility}</div>
+                            <div
+                                className="w-1/6 text-left font-medium text-[18px] text-[#1D1D1D]">LKR {part.price.toLocaleString()}</div>
                         </div>
                     ))}
                 </div>
             </div>
-        </div>
+        </DetailsModal>
     );
 };
 

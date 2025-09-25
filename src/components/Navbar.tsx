@@ -6,11 +6,11 @@ import Link from "next/link";
 import { useState } from "react";
 
 const userTabs = [
-  { label: "Customer Calls", href: "/dashboard" },
-  { label: "Vehicle Sales", href: "/vehicle-sales" },
-  { label: "Service Park", href: "/service-park" },
-  { label: "Spare Parts", href: "/spare-parts" },
-  { label: "Fast Track", href: "/fast-track" },
+  { label: "Customer Calls", href: "/call-agent/dashboard" },
+  { label: "Vehicle Sales", href: "/call-agent/vehicle-sales" },
+  { label: "Service Park", href: "/call-agent/service-park" },
+  { label: "Spare Parts", href: "/call-agent/spare-parts" },
+  { label: "Fast Track", href: "/call-agent/fast-track" },
 ];
 
 const adminTabs = [

@@ -3,12 +3,16 @@
 import { Role } from "@/types/role";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import React, { useState } from "react";
+import Modal from "@/components/Modal";
+import VerificationDropdown from "@/components/VerificationDropdown";
 
 const SideMenu = () => {
   const [role, setRole] = useState<Role>(
     process.env.NEXT_PUBLIC_USER_ROLE as Role
   );
+
+  const [isComplainModalOpen, setIsComplainModalOpen] = useState(false);
 
   return (
     <div>
@@ -46,7 +50,9 @@ const SideMenu = () => {
         </button>
         {role === "user" ? (
           <>
-            <button className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">
+            <button
+                onClick={() => setIsComplainModalOpen(true)}
+                className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">
               <svg
                 width="24"
                 height="24"
@@ -169,6 +175,113 @@ const SideMenu = () => {
           </svg>
         </button>
       </aside>
+
+
+        {isComplainModalOpen && (
+            <Modal
+                title="Complaints"
+                onClose={() => setIsComplainModalOpen(false)}
+                actionButton={{
+                    label: "Submit",
+                    onClick: () => {
+                        console.log("filtered data");
+                    },
+                }}
+                isPriorityAvailable={false}
+            >
+                <div>
+                    <div className="flex-1 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div>
+                                <VerificationDropdown label="Complain Category" placeholder="Indra Service Park" isIcon={false}/>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div className="flex-1 space-y-6 mt-10">
+                        <div className="flex flex-row items-center justify-between">
+                            <h2 className="font-semibold text-[19px] mb-6">Customer Details</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <label className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span
+                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Customer Name</span>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Customer Name"
+                                        className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                    />
+                                </div>
+                            </label>
+                            <label className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span
+                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Phone Number</span>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Phone Number"
+                                        className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                    />
+                                </div>
+                            </label>
+                            <label className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span
+                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Email Address</span>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Email Address"
+                                        className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                    />
+                                </div>
+                            </label>
+                            <label className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span
+                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Vehicle Number</span>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Vehicle Number"
+                                        className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                    />
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 space-y-6 mt-10">
+                        <div className="flex flex-row items-center justify-between">
+                            <h2 className="font-semibold text-[19px] mb-6">Complaint Details</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <label className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span
+                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Complain Title</span>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Complain Title"
+                                        className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                    />
+                                </div>
+                            </label>
+                            <VerificationDropdown label="Preferred Solution" placeholder="Preferred Solution" isIcon={false}/>
+                        </div>
+
+                        <div className="flex flex-col space-y-2 font-medium text-gray-900">
+                                <span
+                                    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Complaint Description</span>
+                            <textarea placeholder="Complaint Description" rows={5}
+                                      className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+        )}
     </div>
   );
 };

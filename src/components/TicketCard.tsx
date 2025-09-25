@@ -56,7 +56,7 @@ export const TicketCard = ({
 
     // If mouse didn’t move much → it's a click
     if (dx < 5 && dy < 5) {
-      router.push(`/sales/${id}`);
+      router.push(`/sales-agent/sales/${id}`);
     }
 
     dragStart.current = null;

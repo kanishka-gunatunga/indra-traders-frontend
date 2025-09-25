@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Modal from "@/components/Modal";
 import React from "react";
+import DetailsModal from "@/components/DetailsModal";
 
 interface ComplainModalProps {
     isOpen: boolean;
@@ -13,17 +14,9 @@ export default function ComplainModal({ isOpen, onClose }: ComplainModalProps) {
     }
 
     return (
-        <Modal
-            title="Recent Complain"
-            onClose={() => onClose}
-            actionButton={{
-                icon:"/close-icon.svg",
-                onClick: () => onClose,
-            }}
-            isPriorityAvailable={false}
-        >
+        <DetailsModal title={"Recent Complain"} isOpen={isOpen} onClose={onClose}>
             <div>
-                <div className="mt-6 flex text-gray-500">
+                <div className="mt-8 flex text-gray-500">
                     <div className="w-[197px] border-b-[1.5px] border-gray-300 pb-2 text-lg font-medium">
                         Date
                     </div>
@@ -50,9 +43,9 @@ export default function ComplainModal({ isOpen, onClose }: ComplainModalProps) {
                         Service Park
                     </div>
                     <div className="w-[208px] text-lg font-medium">
-            <span className="rounded-[20px] bg-[#039855] px-4 py-1 text-white">
-              Completed
-            </span>
+                    <span className="rounded-[20px] bg-[#039855] px-4 py-1 text-white">
+                      Completed
+                    </span>
                     </div>
                     <div className="w-[265px] text-lg font-medium text-black">
                         Replacement
@@ -62,7 +55,7 @@ export default function ComplainModal({ isOpen, onClose }: ComplainModalProps) {
                     </div>
                 </div>
             </div>
-        </Modal>
+        </DetailsModal>
         // <div className="fixed z-50 flex items-center justify-center p-4">
         //     {/* Modal Overlay */}
         //     <div
