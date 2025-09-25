@@ -6,11 +6,12 @@ import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
 import React, { useState } from "react";
-
-type Role = "user" | "admin";
+import { Role } from "@/types/role";
 
 export default function SalesDetailsPage() {
-  const [role, setRole] = useState<Role>("admin");
+  const [role, setRole] = useState<Role>(
+    process.env.NEXT_PUBLIC_USER_ROLE as Role
+  );
 
   const [status, setStatus] = useState<SalesStatus>("New");
 
@@ -36,7 +37,11 @@ export default function SalesDetailsPage() {
           name="Sophie Eleanor"
           location="Bambalapitiya"
           title={
-            role === "admin" ? "All Leads" : "Indra Traders Sales Dashboard"
+            role === "admin"
+              ? "All Leads"
+              : role === "tele-marketer"
+              ? "Indra Fast Track Sales Dashboard"
+              : "Indra Traders Sales Dashboard"
           }
         />
 
@@ -138,6 +143,15 @@ export default function SalesDetailsPage() {
                     label="Additional Note:"
                     value="hydraulic brake systems"
                   />
+                </>
+              ) : role === "tele-marketer" ? (
+                <>
+                  <InfoRow label="Manufacture Year:" value="2019" />
+                  <InfoRow label="Capacity:" value="2800cc" />
+                  <InfoRow label="Transmission:" value="Auto" />
+                  <InfoRow label="Fuel Type:" value="Petrol" />
+                  <InfoRow label="Price Range:" value="6,000,000 - 8,000,000" />
+                  <InfoRow label="Additional Note:" value="White color" />
                 </>
               ) : (
                 <>

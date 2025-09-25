@@ -1,14 +1,12 @@
 "use client";
 
+import { Role } from "@/types/role";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-type Role = "user" | "admin";
-
-
 const userTabs = [
-  { label: "Customer Calls", href: "/customer-calls" },
+  { label: "Customer Calls", href: "/dashboard" },
   { label: "Vehicle Sales", href: "/vehicle-sales" },
   { label: "Service Park", href: "/service-park" },
   { label: "Spare Parts", href: "/spare-parts" },
@@ -24,7 +22,7 @@ const adminTabs = [
 ];
 
 const Navbar = () => {
-  const [role, setRole] = useState<Role>("admin");
+  const [role, setRole] = useState<Role>(process.env.NEXT_PUBLIC_USER_ROLE as Role);
   const tabs = role === "admin" ? adminTabs : userTabs;
 
   const [activeTab, setActiveTab] = useState<string>(tabs[0].href);

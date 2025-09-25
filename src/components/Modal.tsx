@@ -10,7 +10,6 @@ interface ModalProps {
   children: ReactNode;
   onClose: () => void;
 
-  // Flexible action button
   actionButton?: {
     label: string;
     icon?: ReactNode;
