@@ -48,7 +48,7 @@ const SideMenu = () => {
             </g>
           </svg>
         </button>
-        {role === "user" ? (
+        {role !== "admin" ? (
           <>
             <button
                 onClick={() => setIsComplainModalOpen(true)}

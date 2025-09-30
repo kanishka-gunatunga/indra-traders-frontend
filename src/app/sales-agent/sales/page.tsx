@@ -7,8 +7,9 @@ import { TicketColumn } from "@/components/TicketColumn";
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import Image from "next/image";
 import React, { useState } from "react";
-import Select from "react-select";
+import Select, { components } from "react-select";
 import { Role } from "@/types/role";
+import { FiSearch } from "react-icons/fi";
 
 type OptionType = { value: string; label: string };
 
@@ -424,6 +425,7 @@ export default function SalesDashboard() {
                     paddingLeft: "10px",
                   }),
                 }}
+                components={{ Placeholder: CustomPlaceholder }}
               />
             </div>
 
@@ -448,6 +450,7 @@ export default function SalesDashboard() {
                     paddingLeft: "10px",
                   }),
                 }}
+                components={{ Placeholder: CustomPlaceholder }}
               />
             </div>
           </div>
@@ -469,3 +472,16 @@ export default function SalesDashboard() {
     </div>
   );
 }
+
+// Custom Placeholder
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const CustomPlaceholder = (props: any) => {
+  return (
+    <components.Placeholder {...props}>
+      <div className="flex items-center gap-2 text-gray-500">
+        <FiSearch className="text-gray-500" />
+        <span>{props.children}</span>
+      </div>
+    </components.Placeholder>
+  );
+};

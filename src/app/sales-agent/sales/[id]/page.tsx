@@ -49,7 +49,7 @@ export default function SalesDetailsPage() {
           {/* Header */}
           <div className="flex w-full justify-between items-center">
             <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
-              <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
+              <span className="font-semibold text-[22px] max-[1140px]:text-[18px] text-[#1D1D1D]">
                 ITPL122455874565
               </span>
               <span className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">

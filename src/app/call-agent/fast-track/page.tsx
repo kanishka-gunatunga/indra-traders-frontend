@@ -761,12 +761,12 @@ export default function FastTrackPage() {
           onClose={() => setIsVehicleDetailsModalOpen(false)}
           title="2025 Honda Civic Hatchback"
         >
-          <div className="w-full flex justify-center mt-8 gap-6">
+          <div className="w-full flex justify-center gap-2">
             {/* Left: Images */}
             <div className="flex-1 flex flex-col gap-4">
               {/* Main vehicle image */}
               <div
-                className="w-[600px] max-[1250px]:w-[500px] h-[331px] lg:h-[400px] border border-gray-200 bg-white/80 backdrop-blur-[50px] rounded-[30px] shadow-md flex items-center justify-center bg-cover bg-center"
+                className="w-[600px] max-[1250px]:w-[500px] h-[331px] lg:h-[380px] border border-gray-200 bg-white/80 backdrop-blur-[50px] rounded-[30px] shadow-md flex items-center justify-center bg-cover bg-center"
                 style={{ backgroundImage: `url("/images/main-vehicle.png")` }}
               />
 
