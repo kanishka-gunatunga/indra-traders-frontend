@@ -76,7 +76,7 @@ export default function SalesDetailsPage() {
           </div>
 
           {/* Assign + Sales Level */}
-          {role === "user" ? (
+          {role === "call-agent" || role === "sales-1" || role === "sales-2" ? (
             <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
               <button
                 onClick={handleAssignClick}

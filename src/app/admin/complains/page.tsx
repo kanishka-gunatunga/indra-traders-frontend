@@ -201,10 +201,10 @@ export default function Complains() {
                 return (
                   <div
                     key={type}
-                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
+                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl bg-[#ffffff] opacity-[1] cursor-pointer
                             ${
                               isSelected
-                                ? "bg-blue-500 text-white border-none"
+                                ? "bg-red-600 text-white border-none"
                                 : ""
                             }`}
                     onClick={() => {
@@ -235,10 +235,10 @@ export default function Complains() {
                 return (
                   <div
                     key={source}
-                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
+                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl bg-[#ffffff] opacity-[1] cursor-pointer
                             ${
                               isSelected
-                                ? "bg-blue-500 text-white border-none"
+                                ? "bg-red-600 text-white border-none"
                                 : ""
                             }`}
                     onClick={() => {

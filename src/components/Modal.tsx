@@ -155,10 +155,8 @@ export default function Modal({
             onClick={actionButton.onClick}
             className={`absolute top-6 right-8 flex items-center justify-center ${
               actionButton.icon
-                ? // Icon-only button
-                  "w-[50px] h-[50px] rounded-full bg-[#E7E7E7] shadow-md"
-                : // Text-only button
-                  "w-[121px] h-[41px] rounded-[30px] bg-[#DB2727] text-white px-[18px] hover:bg-red-700"
+                ? "w-[50px] h-[50px] rounded-full shadow-md"
+                : "w-[121px] h-[41px] rounded-[30px] text-white bg-[#DB2727] px-[18px] hover:bg-red-700"
             } ${actionButton.className || ""}`}
             type="button"
           >

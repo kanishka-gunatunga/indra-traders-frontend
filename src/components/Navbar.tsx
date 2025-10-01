@@ -22,7 +22,9 @@ const adminTabs = [
 ];
 
 const Navbar = () => {
-  const [role, setRole] = useState<Role>(process.env.NEXT_PUBLIC_USER_ROLE as Role);
+  const [role, setRole] = useState<Role>(
+    process.env.NEXT_PUBLIC_USER_ROLE as Role
+  );
   const tabs = role === "admin" ? adminTabs : userTabs;
 
   const [activeTab, setActiveTab] = useState<string>(tabs[0].href);
@@ -35,25 +37,27 @@ const Navbar = () => {
           <div className="w-20 h-20 bg-[url('/indra-logo.png')] bg-contain bg-no-repeat" />
 
           {/* Navigation Tabs */}
-          <div className="flex-1 flex justify-center">
-            <nav className="flex gap-4 overflow-x-auto no-scrollbar">
-              {tabs.map(({ label, href }) => {
-                const isActive = href === activeTab;
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setActiveTab(href)}
-                    className={`rounded-full px-5 py-3 text-[15px] font-medium whitespace-nowrap ${
-                      isActive ? "bg-[#DB2727] text-white" : "text-[#1D1D1D]"
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
+          {role === "admin" || role === "call-agent" ? (
+            <div className="flex-1 flex justify-center">
+              <nav className="flex gap-4 overflow-x-auto no-scrollbar">
+                {tabs.map(({ label, href }) => {
+                  const isActive = href === activeTab;
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setActiveTab(href)}
+                      className={`rounded-full px-5 py-3 text-[15px] font-medium whitespace-nowrap ${
+                        isActive ? "bg-[#DB2727] text-white" : "text-[#1D1D1D]"
+                      }`}
+                    >
+                      {label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          ) : null}
 
           {/* Right controls */}
           <div className="flex items-center gap-4">

@@ -673,19 +673,19 @@ export default function TeleMarketerPage() {
         >
           <div className="flex font-medium">
             <div className="w-1/4">Customer Name:</div>
-            <div className="w-3/4 text-[#1D1D1D]">{customer.name}</div>
+            <div className="w-3/4 text-[#575757]">{customer.name}</div>
           </div>
           <div className="flex font-medium">
             <div className="w-1/4">Contact No:</div>
-            <div className="w-3/4 text-[#1D1D1D]">{customer.contactNo}</div>
+            <div className="w-3/4 text-[#575757]">{customer.contactNo}</div>
           </div>
           <div className="flex font-medium">
             <div className="w-1/4">Email:</div>
-            <div className="w-3/4 text-[#1D1D1D]">{customer.email}</div>
+            <div className="w-3/4 text-[#575757]">{customer.email}</div>
           </div>
           <div className="flex font-medium">
             <div className="w-1/4">City:</div>
-            <div className="w-3/4 text-[#1D1D1D]">{customer.city}</div>
+            <div className="w-3/4 text-[#575757]">{customer.city}</div>
           </div>
         </DetailsModal>
       )}

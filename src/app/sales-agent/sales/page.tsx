@@ -315,7 +315,7 @@ export default function SalesDashboard() {
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF] border border-gray-300 mt-1 backdrop-blur-[50px] px-4"
                 placeholder="Customer Name"
               />
             </div>
@@ -325,7 +325,7 @@ export default function SalesDashboard() {
                 type="text"
                 value={contactNumber}
                 onChange={(e) => setContactNumber(e.target.value)}
-                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF] border border-gray-300 mt-1 backdrop-blur-[50px] px-4"
                 placeholder="Contact No"
               />
             </div>
@@ -335,7 +335,7 @@ export default function SalesDashboard() {
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF] border border-gray-300 mt-1 backdrop-blur-[50px] px-4"
                 placeholder="Email"
               />
             </div>
@@ -345,7 +345,7 @@ export default function SalesDashboard() {
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF] border border-gray-300 mt-1 backdrop-blur-[50px] px-4"
                 placeholder="City"
               />
             </div>
@@ -356,7 +356,7 @@ export default function SalesDashboard() {
             {/* Lead Source */}
             <div>
               <label className="block mb-2 font-medium">Lead Source</label>
-              <div className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+              <div className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF] border border-gray-300 mt-1 flex items-center px-4">
                 <select
                   value={leadSource}
                   onChange={(e) => setLeadSource(e.target.value)}
@@ -381,7 +381,7 @@ export default function SalesDashboard() {
             {/* Vehicle Type */}
             <div>
               <label className="block mb-2 font-medium">Vehicle Type</label>
-              <div className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+              <div className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF] border border-gray-300 mt-1 flex items-center px-4">
                 <select
                   value={vehicleType}
                   onChange={(e) => setVehicleType(e.target.value)}
@@ -421,7 +421,6 @@ export default function SalesDashboard() {
                     borderRadius: "30px",
                     backgroundColor: "rgba(255,255,255,0.5)",
                     backdropFilter: "blur(50px)",
-                    borderColor: "rgba(0,0,0,0.5)",
                     paddingLeft: "10px",
                   }),
                 }}
@@ -446,7 +445,6 @@ export default function SalesDashboard() {
                     borderRadius: "30px",
                     backgroundColor: "rgba(255,255,255,0.5)",
                     backdropFilter: "blur(50px)",
-                    borderColor: "rgba(0,0,0,0.5)",
                     paddingLeft: "10px",
                   }),
                 }}
@@ -462,7 +460,7 @@ export default function SalesDashboard() {
               <textarea
                 value={remark}
                 onChange={(e) => setRemark(e.target.value)}
-                className="w-full h-[120px] rounded-[20px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 py-2"
+                className="w-full h-[120px] rounded-[20px] bg-[#FFFFFF] border border-gray-300 mt-1  backdrop-blur-[50px] px-4 py-2"
                 placeholder="Enter remarks here..."
               />
             </div>

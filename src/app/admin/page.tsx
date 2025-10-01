@@ -144,6 +144,7 @@ export default function UserManagement() {
   const [isAddNewUserModalOpen, setIsAddNewUserModalOpen] = useState(false);
   const [isFilterUserModalOpen, setIsFilterUserModalOpen] = useState(false);
   const [isUserDetailsModalOpen, setIsUserDetailsModalOpen] = useState(false);
+  const [isActionSuccess, setIsActionSuccess] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [contactNumber, setContactNumber] = useState("");
@@ -454,8 +455,8 @@ export default function UserManagement() {
                 return (
                   <div
                     key={role}
-                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
+                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl bg-[#FFFFFF] opacity-[1] cursor-pointer
+                ${isSelected ? "bg-red-600 text-white border-none" : ""}`}
                     onClick={() => {
                       if (isSelected) {
                         setSelectedRoles(
@@ -484,8 +485,8 @@ export default function UserManagement() {
                 return (
                   <div
                     key={dept}
-                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
+                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl bg-[#FFFFFF] opacity-[1] cursor-pointer
+                ${isSelected ? "bg-red-600 text-white border-none" : ""}`}
                     onClick={() => {
                       if (isSelected) {
                         setSelectedDepartments(
@@ -514,8 +515,8 @@ export default function UserManagement() {
                 return (
                   <div
                     key={branch}
-                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
+                    className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl bg-[#FFFFFF] opacity-[1] cursor-pointer
+                ${isSelected ? "bg-red-600 text-white border-none" : ""}`}
                     onClick={() => {
                       if (isSelected) {
                         setSelectedBranches(
@@ -539,10 +540,21 @@ export default function UserManagement() {
       {isUserDetailsModalOpen && (
         <Modal
           title="User Details"
-          onClose={() => setIsUserDetailsModalOpen(false)}
+          onClose={() => {
+            setIsUserDetailsModalOpen(false);
+            setIsActionSuccess(false);
+          }
+          }
           actionButton={{
             label: "",
-            icon: (
+            icon: isActionSuccess ? (
+              <Image
+                src="/images/icons8-checkmark.svg"
+                alt="Success"
+                width={24}
+                height={24}
+              />
+            ) : (
               <Image
                 src="/images/mdi_edit-outline.svg"
                 alt="Edit"
@@ -550,8 +562,10 @@ export default function UserManagement() {
                 height={24}
               />
             ),
+            className: isActionSuccess ? "bg-[#DB2727]" : "bg-white",
             onClick: () => {
-              setIsUserDetailsModalOpen(false);
+              console.log("Action executed!");
+              setIsActionSuccess(true);
             },
           }}
         >

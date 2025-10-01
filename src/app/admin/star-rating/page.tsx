@@ -92,14 +92,6 @@ export default function StartRating() {
           <div className="w-full flex justify-between items-center">
             <span className="font-semibold text-[22px]">Star Ratings</span>
 
-            <button className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
-              <Image
-                src={"/images/admin/flowbite_filter-outline.svg"}
-                width={24}
-                height={24}
-                alt="Filter icon"
-              />
-            </button>
           </div>
           <div className="w-full mt-5 ">
             <div className="h-[400px] overflow-x-auto overflow-y-hidden ">
