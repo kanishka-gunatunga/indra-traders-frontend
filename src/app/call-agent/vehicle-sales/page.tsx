@@ -194,7 +194,7 @@ const VehicleSales = () => {
                     <div className="flex flex-col">
                         <div className="flex-1 space-y-6">
                             <div className="flex flex-row items-center justify-between">
-                                <h2 className="font-semibold text-[22px] mb-6">Assign to Sales</h2>
+                                <h2 className="font-semibold text-[22px] text-[#000000] mb-6">Assign to Sales</h2>
                                 <div>
                                     <button
                                         className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition">
