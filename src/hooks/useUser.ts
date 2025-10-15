@@ -1,0 +1,63 @@
+import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
+import {userService} from "@/services/userService";
+import {User} from "@/types/User";
+
+export const useUsers = (filters?: {
+    user_role?: string;
+    department?: string;
+    branch?: string;
+}) => {
+    return useQuery<User[]>({
+        queryKey: ["users", filters],
+        queryFn: () => userService.getUsers(filters),
+    });
+};
+
+export const useUser = (id: string) => {
+    return useQuery<User>({
+        queryKey: ["user", id],
+        queryFn: () => userService.getUserById(id),
+        enabled: !!id,
+    });
+};
+
+export const useCreateUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: userService.createUser,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["users"]});
+        },
+    });
+};
+
+export const useUpdateUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({id, data}: { id: string; data: Partial<User> }) =>
+            userService.updateUser(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["users"]});
+        },
+    });
+};
+
+export const useDeleteUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: userService.deleteUser,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["users"]});
+        },
+    });
+};
+
+export const useLogin = () => {
+    return useMutation({
+        mutationFn: async (credentials: { email: string; password: string }) => {
+            const res = await userService.login(credentials.email, credentials.password);
+            localStorage.setItem("accessToken", res.accessToken);
+            return res;
+        },
+    });
+};
