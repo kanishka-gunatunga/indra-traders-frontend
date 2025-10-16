@@ -6,12 +6,14 @@ import { useState } from "react";
 import { FiPlus } from "react-icons/fi";
 
 interface SalesDetailsTabProps {
+    complaintId: number;
   status: string;
   onOpenActivity: () => void;
   onOpenReminder: () => void;
 }
 
 export default function SalesDetailsTab({
+                                            complaintId,
   status,
   onOpenActivity,
   onOpenReminder,
@@ -81,6 +83,13 @@ export default function SalesDetailsTab({
       date: "12 March, 2025",
     },
   ];
+
+    const { data: followUpData = [], isLoading: loadingFollowUps } =
+    const { data: reminderData = [], isLoading: loadingReminders } =
+        useRemindersByComplaint(complaintId);
+
+    const { data: eventData = [], isLoading: loadingEvents } =
+        useEventsByCustomer(complaintId);
 
   const isAddDisabled =
     status === "New" && role !== "admin" && role !== "tele-marketer";

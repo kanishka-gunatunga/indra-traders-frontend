@@ -7,11 +7,25 @@ import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
 import React, { useState } from "react";
 import { Role } from "@/types/role";
+import {useComplaintById, useUpdateComplaint} from "@/hooks/useComplaint";
+import {useParams} from "next/navigation";
+import {useCreateFollowUp} from "@/hooks/useFollowUp";
+import {useCreateReminder} from "@/hooks/useReminder";
 
 export default function ComplainDetailsPage() {
   const [role, setRole] = useState<Role>(
     process.env.NEXT_PUBLIC_USER_ROLE as Role
   );
+
+    const params = useParams();
+    const id = Number(params?.id);
+
+    const { data: complaint, isLoading } = useComplaintById(id);
+
+    const updateComplaint = useUpdateComplaint();
+
+    const { mutate: createFollowUp } = useCreateFollowUp();
+    const { mutate: createReminder } = useCreateReminder();
 
   const [status, setStatus] = useState<ComplainStatus>("New");
 
@@ -22,6 +36,18 @@ export default function ComplainDetailsPage() {
   const [reminderTitle, setReminderTitle] = useState("");
   const [reminderDate, setReminderDate] = useState("");
   const [reminderNote, setReminderNote] = useState("");
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>Loading complaint details...</p>
+            </div>
+        );
+    }
+
+    if (!complaint) {
+        return <p className="text-center mt-10 text-gray-500">Complaint not found.</p>;
+    }
 
   return (
     <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
@@ -37,13 +63,16 @@ export default function ComplainDetailsPage() {
           <div className="flex w-full justify-between items-center">
             <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
               <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-                Ticket No. T25458756
+                 Ticket No. {complaint.ticket_no}
               </span>
             </div>
             <FlowBar<ComplainStatus>
               variant="complains"
-              status={status}
-              onStatusChange={setStatus}
+              status={complaint.status as ComplainStatus}
+              onStatusChange={(newStatus) => {
+                  setStatus(newStatus);
+                  updateComplaint.mutate({ id, data: { status: newStatus } });
+              }}
             />
           </div>
 
@@ -53,26 +82,27 @@ export default function ComplainDetailsPage() {
               <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                 Customer Details
               </div>
-              <InfoRow label="Customer Name:" value="Emily Charlotte" />
-              <InfoRow label="Contact No:" value="077 5898712" />
-              <InfoRow label="Email:" value="Info@indra.com" />
+              <InfoRow label="Customer Name:" value={complaint.customerId} />
+              <InfoRow label="Contact No:" value={complaint.contact_no} />
+              <InfoRow label="Email:" value={complaint.vehicle_no} />
 
               <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                 Ticket Details
               </div>
-              <InfoRow label="Category:" value="ITPL" />
-              <InfoRow label="Vehicle No." value="CAB - 1547" />
-              <InfoRow label="Title:" value="Billing Issue" />
+              <InfoRow label="Category:" value={complaint.category} />
+              <InfoRow label="Vehicle No." value={complaint.vehicle_no} />
+              <InfoRow label="Title:" value={complaint.title} />
               <InfoRow label="Transmission:" value="Auto" />
-              <InfoRow label="Preferred Solution:" value="Replacement" />
+              <InfoRow label="Preferred Solution:" value={complaint.preferred_solution} />
               <InfoRow
                 label="Description:"
-                value="Customer's vehicle service, scheduled for March 25, is delayed with no updates. Requests urgent status and completion time."
+                value={complaint.description}
               />
             </div>
 
             <div className="w-3/5 flex flex-col min-h-[400px]">
               <SalesDetailsTab
+                  complaintId={complaint.id}
                 status={status}
                 onOpenActivity={() => setActivityModalOpen(true)}
                 onOpenReminder={() => setReminderModalOpen(true)}
