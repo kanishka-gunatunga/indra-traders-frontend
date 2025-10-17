@@ -1,5 +1,4 @@
-import axios from "@/lib/axios";
-import { Event } from "@/types/event.types";
+import {Event} from "@/types/event.types";
 import axiosInstance from "@/utils/axiosinstance";
 
 export const EventService = {
@@ -13,7 +12,7 @@ export const EventService = {
         return res.data;
     },
 
-    getByCustomer: async (customerId: number): Promise<Event[]> => {
+    getByCustomer: async (customerId: string): Promise<Event[]> => {
         const res = await axiosInstance.get(`/events/customer/${customerId}`);
         return res.data;
     },
