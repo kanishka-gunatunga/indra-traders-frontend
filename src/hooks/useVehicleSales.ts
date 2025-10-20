@@ -1,49 +1,138 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
-import {vehicleSaleService} from "@/services/vehicleSaleService";
+import {VehicleSaleService} from "@/services/vehicleSaleService";
 
-export const useVehicleSales = (status?: string) => {
-    return useQuery({
-        queryKey: ["vehicle-sales", status],
-        queryFn: () => vehicleSaleService.getSales(status),
+export const useVehicleSales = (status?: string) =>
+    useQuery({
+        queryKey: ["vehicleSales", status],
+        queryFn: () => VehicleSaleService.getAll(status).then((res) => res.data),
     });
-};
 
 export const useCreateVehicleSale = () => {
     const queryClient = useQueryClient();
+
     return useMutation({
-        mutationFn: vehicleSaleService.createSale,
+        mutationFn: VehicleSaleService.create,
         onSuccess: () => {
-            console.log("Vehicle sale created successfully");
-            queryClient.invalidateQueries({queryKey: ["vehicle-sales"]});
+            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
         },
-        onError: () => console.error("Failed to create vehicle sale"),
     });
 };
 
+export const useVehicleSaleByTicket = (ticketNumber?: string) =>
+    useQuery({
+        queryKey: ["vehicleSale", "ticket", ticketNumber],
+        queryFn: () =>
+            VehicleSaleService.getByTicket(ticketNumber!).then((res) => res.data),
+        enabled: !!ticketNumber,
+    });
 
 export const useAssignVehicleSale = () => {
     const queryClient = useQueryClient();
+
     return useMutation({
-        mutationFn: ({id, salesUserId}: { id: string; salesUserId: string }) =>
-            vehicleSaleService.assignSale(id, salesUserId),
+        mutationFn: ({id, salesUserId}: { id: number; salesUserId: number }) =>
+            VehicleSaleService.assign(id, salesUserId),
         onSuccess: () => {
-            console.log("Sale assigned successfully");
-            queryClient.invalidateQueries({queryKey: ["vehicle-sales"]});
+            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
         },
-        onError: () => console.error("Failed to assign sale"),
+    });
+};
+
+export const useUpdateSaleStatus = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({id, status}: { id: number; status: string }) =>
+            VehicleSaleService.updateStatus(id, status),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
+        },
+    });
+};
+
+export const useDeleteVehicleSale = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => VehicleSaleService.delete(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
+        },
     });
 };
 
 
-export const useUpdateSaleStatus = () => {
+export const useFollowupsBySaleId = (vehicleSaleId?: number) =>
+    useQuery({
+        queryKey: ["followups", vehicleSaleId],
+        queryFn: () => VehicleSaleService.followUpGetBySaleId(vehicleSaleId!).then((res) => res.data),
+        enabled: !!vehicleSaleId,
+    });
+
+export const useFollowupsByTicket = (ticketNumber?: string) =>
+    useQuery({
+        queryKey: ["followups", "ticket", ticketNumber],
+        queryFn: () => VehicleSaleService.followUpGetByTicket(ticketNumber!).then((res) => res.data),
+        enabled: !!ticketNumber,
+    });
+
+export const useCreateFollowup = () => {
     const queryClient = useQueryClient();
+
     return useMutation({
-        mutationFn: ({id, status}: { id: string; status: string }) =>
-            vehicleSaleService.updateSaleStatus(id, status),
-        onSuccess: () => {
-            console.log("Sale status updated");
-            queryClient.invalidateQueries({queryKey: ["vehicle-sales"]});
+        mutationFn: VehicleSaleService.followUpCreate,
+        onSuccess: (_, variables) => {
+            if (variables.vehicleSaleId)
+                queryClient.invalidateQueries({queryKey: ["followups", variables.vehicleSaleId]});
         },
-        onError: () => console.error("Failed to update sale status"),
+    });
+};
+
+export const useDeleteFollowup = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => VehicleSaleService.followUpDelete(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["followups"]});
+        },
+    });
+};
+
+
+export const useRemindersBySaleId = (vehicleSaleId?: number) =>
+    useQuery({
+        queryKey: ["reminders", vehicleSaleId],
+        queryFn: () => VehicleSaleService.reminderGetBySaleId(vehicleSaleId!).then((res) => res.data),
+        enabled: !!vehicleSaleId,
+    });
+
+export const useRemindersByTicket = (ticketNumber?: string) =>
+    useQuery({
+        queryKey: ["reminders", "ticket", ticketNumber],
+        queryFn: () => VehicleSaleService.reminderGetByTicket(ticketNumber!).then((res) => res.data),
+        enabled: !!ticketNumber,
+    });
+
+export const useCreateReminder = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: VehicleSaleService.reminderCreate,
+        onSuccess: (_, variables) => {
+            if (variables.vehicleSaleId)
+                queryClient.invalidateQueries({queryKey: ["reminders", variables.vehicleSaleId]});
+        },
+    });
+};
+
+export const useDeleteReminder = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => VehicleSaleService.reminderDelete(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["reminders"]});
+        },
     });
 };

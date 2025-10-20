@@ -167,6 +167,7 @@ export default function SalesDetailsPage() {
 
             <div className="w-3/5 flex flex-col min-h-[400px]">
               <SalesDetailsTab
+                  customerId=""
                 status={status}
                 onOpenActivity={() => setActivityModalOpen(true)}
                 onOpenReminder={() => setReminderModalOpen(true)}

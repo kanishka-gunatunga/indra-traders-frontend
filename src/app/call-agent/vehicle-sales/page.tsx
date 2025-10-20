@@ -2,8 +2,85 @@
 import Image from "next/image";
 import React, {useState} from "react";
 import Modal from "@/components/Modal";
+import {z} from "zod";
+import {useCreateVehicleSale} from "@/hooks/useVehicleSales";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useForm} from "react-hook-form";
+import FormField from "@/components/FormField";
+
+
+export const vehicleSaleSchema = z.object({
+    date: z.string().min(1, "Date is required"),
+    customer_id: z.string().min(1, "Customer ID is required"),
+    call_agent_id: z.number().int().positive("Call Agent ID is required"),
+    vehicle_make: z.string().min(1, "Vehicle make is required"),
+    vehicle_model: z.string().min(1, "Vehicle model is required"),
+    manufacture_year: z.string().min(1, "Manufacture year is required"),
+    transmission: z.string().min(1, "Transmission is required"),
+    fuel_type: z.string().min(1, "Fuel type is required"),
+    down_payment: z.string().optional(),
+    price_from: z.string().optional(),
+    price_to: z.string().optional(),
+    additional_note: z.string().optional(),
+    contact_number: z.string().min(1, "Contact number is required"),
+    customer_name: z.string().min(1, "Customer name is required"),
+});
+
+export type VehicleSaleFormData = z.infer<typeof vehicleSaleSchema>;
+
 
 const VehicleSales = () => {
+
+    const {mutate: createSale, isPending} = useCreateVehicleSale();
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+
+    const {
+        register,
+        handleSubmit,
+        formState: {errors},
+        reset,
+    } = useForm<VehicleSaleFormData>({
+        resolver: zodResolver(vehicleSaleSchema),
+        defaultValues: {
+            date: new Date().toISOString().split("T")[0], // Default to today
+            call_agent_id: 1,
+            customer_id: "CUS1760610559671",
+            vehicle_make: "",
+            vehicle_model: "",
+            manufacture_year: "",
+            transmission: "",
+            fuel_type: "",
+            down_payment: "",
+            price_from: "",
+            price_to: "",
+            additional_note: "",
+            contact_number: "0771234567",
+            customer_name: "Amal",
+        },
+    });
+
+    const onSubmit = (data: VehicleSaleFormData) => {
+        const submissionData = {
+            ...data,
+            ticket_number: `ITPL${Date.now()}`,
+            manufacture_year: parseInt(data.manufacture_year, 10),
+            down_payment: data.down_payment ? parseFloat(data.down_payment) : 0,
+            price_from: data.price_from ? parseFloat(data.price_from) : 0,
+            price_to: data.price_to ? parseFloat(data.price_to) : 0,
+        };
+
+        createSale(submissionData, {
+            onSuccess: () => {
+                setSubmitSuccess(true);
+                reset();
+                setTimeout(() => setSubmitSuccess(false), 3000);
+            },
+            onError: (error) => {
+                console.error("Error creating vehicle sale:", error);
+            },
+        });
+    };
+
 
     const [showStockAvailability, setShowStockAvailability] = useState(false);
     const [isVehicleAvailabilityModalOpen, setIsVehicleAvailabilityModalOpen] = useState(false);
@@ -64,6 +141,36 @@ const VehicleSales = () => {
         {make: 'Subaru', model: 'WRX STI', year: 2020, transmission: 'Manual', price: 'Rs 45,000,000'},
         {make: 'Honda', model: 'NSX', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000'},
     ];
+
+
+    const vehicleMakeOptions = vehicleData.map((vehicle) => ({
+        value: vehicle.make,
+        label: vehicle.make,
+    }));
+
+    const vehicleModelOptions = vehicleData.map((vehicle) => ({
+        value: vehicle.model,
+        label: vehicle.model,
+    }));
+
+
+    const manufactureYearOptions = [2020, 2021, 2022, 2023, 2024, 2025].map((year) => ({
+        value: year.toString(),
+        label: year.toString(),
+    }));
+
+    const transmissionOptions = [
+        {value: "AUTO", label: "Automatic"},
+        {value: "MANUAL", label: "Manual"},
+    ];
+
+    const fuelTypeOptions = [
+        {value: "PETROL", label: "Petrol"},
+        {value: "DIESEL", label: "Diesel"},
+        {value: "HYBRID", label: "Hybrid"},
+        {value: "ELECTRIC", label: "Electric"},
+    ];
+
 
     return (
         <div
@@ -191,14 +298,16 @@ const VehicleSales = () => {
 
                 <section
                     className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                    <div className="flex flex-col">
+                    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
                         <div className="flex-1 space-y-6">
                             <div className="flex flex-row items-center justify-between">
                                 <h2 className="font-semibold text-[22px] text-[#000000] mb-6">Assign to Sales</h2>
                                 <div>
                                     <button
-                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition">
-                                        Send
+                                        type="submit"
+                                        disabled={isPending}
+                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition disabled:bg-gray-400">
+                                        {isPending ? "Submitting..." : "Send"}
                                     </button>
                                 </div>
                             </div>
@@ -211,8 +320,10 @@ const VehicleSales = () => {
                                         <div className="relative">
                                             <input
                                                 type="text"
-                                                placeholder="ITPL122455874565"
-                                                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                                value={`ITPL${Date.now()}`}
+                                                disabled
+                                                // placeholder="ITPL122455874565"
+                                                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 disabled:bg-gray-200`}
                                             />
                                         </div>
                                     </label>
@@ -223,39 +334,60 @@ const VehicleSales = () => {
                                         className="text-[#1D1D1D] font-medium text-[17px] montserrat">Date</span>
                                         <div className="relative">
                                             <input
-                                                type="text"
+                                                type="date"
+                                                {...register("date")}
                                                 placeholder="12 Mar, 2025"
                                                 className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                                             />
+                                            {errors.date &&
+                                                <span className="text-red-600 text-sm">{errors.date.message}</span>}
                                         </div>
                                     </label>
                                 </div>
-                                <div>
-                                    <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Customer Name</span>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                placeholder="Emily Charlotte"
-                                                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                            />
-                                        </div>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Contact Number</span>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                placeholder="077 5647256"
-                                                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                            />
-                                        </div>
-                                    </label>
-                                </div>
+                                {/*<div>*/}
+                                {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                {/*    <span*/}
+                                {/*        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Customer Name</span>*/}
+                                {/*        <div className="relative">*/}
+                                {/*            <input*/}
+                                {/*                type="text"*/}
+                                {/*                placeholder="Emily Charlotte"*/}
+                                {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                {/*            />*/}
+                                {/*            /!*{errors.customer_name && <span className="text-red-600 text-sm">{errors.customer_name.message}</span>}*!/*/}
+                                {/*        </div>*/}
+                                {/*    </label>*/}
+                                {/*</div>*/}
+
+                                <FormField
+                                    label="Customer Name"
+                                    placeholder="Emily Charlotte"
+                                    type="text"
+                                    register={register("customer_name")}
+                                    error={errors.customer_name}
+                                />
+
+                                {/*<div>*/}
+                                {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                {/*    <span*/}
+                                {/*        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Contact Number</span>*/}
+                                {/*        <div className="relative">*/}
+                                {/*            <input*/}
+                                {/*                type="text"*/}
+                                {/*                placeholder="077 5647256"*/}
+                                {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                {/*            />*/}
+                                {/*        </div>*/}
+                                {/*    </label>*/}
+                                {/*</div>*/}
+
+                                <FormField
+                                    label="Contact Number"
+                                    placeholder="077 5647256"
+                                    type="text"
+                                    register={register("contact_number")}
+                                    error={errors.contact_number}
+                                />
                             </div>
                         </div>
 
@@ -266,62 +398,134 @@ const VehicleSales = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make"
-                                                      isIcon={true}/>
-                                <VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"
-                                                      isIcon={true}/>
-                                <VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"
-                                                      isIcon={true}/>
-                                <VerificationDropdown label="Transmission" placeholder="Select Transmission"
-                                                      isIcon={false}/>
-                                <VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type" isIcon={false}/>
-                                <VerificationDropdown label="Down Payment" placeholder="Enter Down Payment"
-                                                      isIcon={false}/>
+                                {/*<VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make"*/}
+                                {/*                      isIcon={true}/>*/}
+                                <FormField
+                                    label="Vehicle Make"
+                                    type="select"
+                                    isIcon={true}
+                                    options={vehicleMakeOptions}
+                                    register={register("vehicle_make")}
+                                    error={errors.vehicle_make}
+                                />
+                                {/*<VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"*/}
+                                {/*                      isIcon={true}/>*/}
+                                <FormField
+                                    label="Vehicle Model"
+                                    type="select"
+                                    isIcon={true}
+                                    options={vehicleModelOptions}
+                                    register={register("vehicle_model")}
+                                    error={errors.vehicle_model}
+                                />
+                                {/*<VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"*/}
+                                {/*                      isIcon={true}/>*/}
+                                <FormField
+                                    label="Manufacture Year"
+                                    type="select"
+                                    isIcon={true}
+                                    options={manufactureYearOptions}
+                                    register={register("manufacture_year")}
+                                    error={errors.manufacture_year}
+                                />
+                                {/*<VerificationDropdown label="Transmission" placeholder="Select Transmission"*/}
+                                {/*                      isIcon={false}/>*/}
+                                <FormField
+                                    label="Transmission"
+                                    type="select"
+                                    options={transmissionOptions}
+                                    register={register("transmission")}
+                                    error={errors.transmission}
+                                />
+                                {/*<VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type" isIcon={false}/>*/}
+                                <FormField
+                                    label="Fuel Type"
+                                    type="select"
+                                    options={fuelTypeOptions}
+                                    register={register("fuel_type")}
+                                    error={errors.fuel_type}
+                                />
+                                {/*<VerificationDropdown label="Down Payment" placeholder="Enter Down Payment"*/}
+                                {/*                      isIcon={false}/>*/}
+
+                                <FormField
+                                    label="Down Payment"
+                                    type="number"
+                                    placeholder="Enter Down Payment"
+                                    register={register("down_payment")}
+                                    error={errors.down_payment}
+                                />
+
                                 <div>
                                     <label className="flex flex-col space-y-2 font-medium text-gray-900">
                                     <span
                                         className="text-[#1D1D1D] font-medium text-[17px] montserrat">Price Range</span>
                                         <div className="flex flex-row gap-4">
                                             <div className="relative">
-                                                <input
-                                                    type="text"
+                                                {/*<input*/}
+                                                {/*    type="text"*/}
+                                                {/*    placeholder="Price From"*/}
+                                                {/*    {...register("date")}*/}
+                                                {/*    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                                {/*/>*/}
+                                                {/*<svg*/}
+                                                {/*    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"*/}
+                                                {/*    width="10" height="6"*/}
+                                                {/*    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">*/}
+                                                {/*    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"*/}
+                                                {/*          fill="#575757"/>*/}
+                                                {/*</svg>*/}
+                                                <FormField
+                                                    label=""
+                                                    type="number"
                                                     placeholder="Price From"
-                                                    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                                    register={register("price_from")}
+                                                    error={errors.price_from}
                                                 />
-                                                <svg
-                                                    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"
-                                                    width="10" height="6"
-                                                    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                          fill="#575757"/>
-                                                </svg>
                                             </div>
                                             <div className="relative">
-                                                <input
-                                                    type="text"
+                                                {/*<input*/}
+                                                {/*    type="text"*/}
+                                                {/*    placeholder="Price To"*/}
+                                                {/*    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                                {/*/>*/}
+                                                {/*<svg*/}
+                                                {/*    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"*/}
+                                                {/*    width="10" height="6"*/}
+                                                {/*    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">*/}
+                                                {/*    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"*/}
+                                                {/*          fill="#575757"/>*/}
+                                                {/*</svg>*/}
+                                                <FormField
+                                                    label=""
+                                                    type="number"
                                                     placeholder="Price To"
-                                                    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                                    register={register("price_to")}
+                                                    error={errors.price_to}
                                                 />
-                                                <svg
-                                                    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"
-                                                    width="10" height="6"
-                                                    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                          fill="#575757"/>
-                                                </svg>
                                             </div>
                                         </div>
                                     </label>
                                 </div>
                             </div>
-                            <div className="flex flex-col space-y-2 font-medium text-gray-900">
-                                <span
-                                    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Additional Note</span>
-                                <textarea placeholder="Enter Your Note" rows={5}
-                                          className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>
-                            </div>
+                            {/*<div className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                            {/*    <span*/}
+                            {/*        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Additional Note</span>*/}
+                            {/*    <textarea placeholder="Enter Your Note" rows={5}*/}
+                            {/*              className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>*/}
+                            {/*</div>*/}
+                            <FormField
+                                label="Additional Note"
+                                type="textarea"
+                                placeholder="Enter Your Note"
+                                register={register("additional_note")}
+                                error={errors.additional_note}
+                            />
                         </div>
-                    </div>
+                        {submitSuccess && (
+                            <div className="text-green-600 text-sm mt-4">Vehicle sale created successfully!</div>
+                        )}
+                    </form>
                 </section>
 
                 <section

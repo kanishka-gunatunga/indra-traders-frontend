@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FollowUpService } from "@/services/followup.service";
+import { ComplaintFollowupService } from "@/services/complaintFollowup.service";
 import { FollowUp } from "@/types/followup.types";
 
 export const useFollowUpsByComplaint = (complaintId: number) => {
     return useQuery<FollowUp[]>({
         queryKey: ["followups", complaintId],
-        queryFn: () => FollowUpService.getByComplaint(complaintId),
+        queryFn: () => ComplaintFollowupService.getByComplaint(complaintId),
         enabled: !!complaintId,
     });
 };
@@ -13,7 +13,7 @@ export const useFollowUpsByComplaint = (complaintId: number) => {
 export const useCreateFollowUp = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: FollowUpService.create,
+        mutationFn: ComplaintFollowupService.create,
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ["followups", variables.complaintId] });
         },

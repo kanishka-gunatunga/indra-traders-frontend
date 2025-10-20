@@ -9,7 +9,7 @@ import {useEventsByCustomer} from "@/hooks/useEvent";
 import {useFollowUpsByComplaint} from "@/hooks/useFollowUp";
 
 interface SalesDetailsTabProps {
-    complaintId: number;
+    complaintId?: number;
     customerId: string;
     status: string;
     onOpenActivity: () => void;
