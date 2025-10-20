@@ -23,9 +23,8 @@ export default function ComplainDetailsPage() {
     const {data: complaint, isLoading} = useComplaintById(id);
 
     const updateComplaint = useUpdateComplaint();
-
-    // const { mutate: createFollowUp } = useCreateFollowUp();
-    // const { mutate: createReminder } = useCreateReminder();
+    const createFollowUpMutation = useCreateFollowUp();
+    const createReminderMutation = useCreateReminder();
 
     const [status, setStatus] = useState<ComplainStatus>("New");
 
@@ -36,6 +35,41 @@ export default function ComplainDetailsPage() {
     const [reminderTitle, setReminderTitle] = useState("");
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
+
+    const handleActivitySave = async () => {
+        if (!activityText.trim()) return;
+        try {
+            await createFollowUpMutation.mutateAsync({
+                activity: activityText,
+                activity_date: new Date().toISOString().split('T')[0],
+                complaintId: id,
+            });
+            setActivityText("");
+            setActivityModalOpen(false);
+        } catch (error: any) {
+            console.error("Error creating follow-up:", error);
+            alert(`Failed to save activity: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    const handleReminderSave = async () => {
+        if (!reminderTitle.trim() || !reminderDate) return;
+        try {
+            await createReminderMutation.mutateAsync({
+                task_title: reminderTitle,
+                task_date: reminderDate,
+                note: reminderNote,
+                complaintId: id,
+            });
+            setReminderTitle("");
+            setReminderDate("");
+            setReminderNote("");
+            setReminderModalOpen(false);
+        } catch (error: any) {
+            console.error("Error creating reminder:", error);
+            alert(`Failed to save reminder: ${error.response?.data?.message || error.message}`);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -84,21 +118,21 @@ export default function ComplainDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value={complaint.customerId}/>
-                            <InfoRow label="Contact No:" value={complaint.contact_no}/>
-                            <InfoRow label="Email:" value={complaint.vehicle_no}/>
+                            <InfoRow label="Customer Name:" value={complaint.customerId || 'N/A'}/>
+                            <InfoRow label="Contact No:" value={complaint.contact_no || 'N/A'}/>
+                            <InfoRow label="Email:" value={complaint.customer?.email || 'N/A'}/>
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Ticket Details
                             </div>
-                            <InfoRow label="Category:" value={complaint.category}/>
-                            <InfoRow label="Vehicle No." value={complaint.vehicle_no}/>
-                            <InfoRow label="Title:" value={complaint.title}/>
+                            <InfoRow label="Category:" value={complaint.category || 'N/A'}/>
+                            <InfoRow label="Vehicle No." value={complaint.vehicle_no || 'N/A'}/>
+                            <InfoRow label="Title:" value={complaint.title || 'N/A'}/>
                             <InfoRow label="Transmission:" value="Auto"/>
-                            <InfoRow label="Preferred Solution:" value={complaint.preferred_solution}/>
+                            <InfoRow label="Preferred Solution:" value={complaint.preferred_solution || 'N/A'}/>
                             <InfoRow
                                 label="Description:"
-                                value={complaint.description}
+                                value={complaint.description || 'N/A'}
                             />
                         </div>
 
@@ -130,11 +164,8 @@ export default function ComplainDetailsPage() {
                     onClose={() => setActivityModalOpen(false)}
                     actionButton={{
                         label: "Save",
-                        onClick: () => {
-                            console.log("Activity saved:", activityText);
-                            setActivityText("");
-                            setActivityModalOpen(false);
-                        },
+                        onClick: handleActivitySave,
+                        // disabled: createFollowUpMutation.isPending,
                     }}
                 >
                     <div className="w-full">
@@ -156,17 +187,8 @@ export default function ComplainDetailsPage() {
                     onClose={() => setReminderModalOpen(false)}
                     actionButton={{
                         label: "Save",
-                        onClick: () => {
-                            console.log("Reminder saved:", {
-                                reminderTitle,
-                                reminderDate,
-                                reminderNote,
-                            });
-                            setReminderTitle("");
-                            setReminderDate("");
-                            setReminderNote("");
-                            setReminderModalOpen(false);
-                        },
+                        onClick: handleReminderSave,
+                        // disabled: createReminderMutation.isPending,
                     }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">

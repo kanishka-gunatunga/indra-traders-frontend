@@ -44,7 +44,7 @@ const VehicleSales = () => {
         defaultValues: {
             date: new Date().toISOString().split("T")[0], // Default to today
             call_agent_id: 1,
-            customer_id: "CUS1760610559671",
+            customer_id: "CUS1760976040167",
             vehicle_make: "",
             vehicle_model: "",
             manufacture_year: "",

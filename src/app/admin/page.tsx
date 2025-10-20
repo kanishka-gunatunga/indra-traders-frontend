@@ -7,129 +7,6 @@ import React, {useState} from "react";
 import {FaEye, FaEyeSlash} from "react-icons/fa";
 import {useCreateUser, useUpdateUser, useUsers} from "@/hooks/useUser";
 
-const userData = [
-    {
-        fullName: "Guy Hawkins",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Devon Lane",
-        contact: "077 5844125",
-        email: "Devon@indra.com",
-        role: "Call Agent",
-        department: "",
-        branch: "Bambalapitiya",
-    },
-    {
-        fullName: "Arlene McCoy",
-        contact: "077 3575412",
-        email: "Devon@indra.com",
-        role: "Call Agent",
-        department: "",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Eleanor Pena",
-        contact: "077 5844125",
-        email: "Devon@indra.com",
-        role: "Sales lv 2",
-        department: "IMS",
-        branch: "Ratnapura",
-    },
-    {
-        fullName: "Esther Howard",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Annette Black",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Robert Fox",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Esther Howard",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Annette Black",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Robert Fox",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Annette Black",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Robert Fox",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Esther Howard",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Annette Black",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-    {
-        fullName: "Robert Fox",
-        contact: "071 5425433",
-        email: "Devon@indra.com",
-        role: "Sales lv 1",
-        department: "IPTL",
-        branch: "Kandy",
-    },
-];
-
 const userRoles = [
     "Admin",
     "Sales Lv 1",
@@ -318,8 +195,9 @@ export default function UserManagement() {
                                 setUserRole("");
                                 setPassword("");
                                 setConfirmPassword("");
-                            } catch (error) {
+                            } catch (error: any) {
                                 console.error("Error creating user:", error);
+                                alert(`Failed to create user: ${error.response?.data?.message || error.message}`);
                             }
                         },
                     }}
@@ -423,11 +301,12 @@ export default function UserManagement() {
                                     onChange={(e) => setBranch(e.target.value)}
                                     className="w-full bg-transparent outline-none appearance-none"
                                 >
-                                    <option value="">Select Branch</option>
-                                    <option value="Colombo">Colombo</option>
-                                    <option value="Nugegoda">Nugegoda</option>
-                                    <option value="Ratnapura">Hatchback</option>
-                                    <option value="Kandy">Kandy</option>
+                                    <option disabled value="">Select Branch</option>
+                                    <option value="BAMBALAPITIYA">Bambalapitiya</option>
+                                    <option value="KANDY">Kandy</option>
+                                    <option value="JAFFNA">Jaffna</option>
+                                    <option value="GALLE">Galle</option>
+                                    <option value="NEGOMBO">Negombo</option>
                                 </select>
                                 <span className="absolute right-4 pointer-events-none">
                   <Image
@@ -703,7 +582,7 @@ export default function UserManagement() {
                                 type="text"
                                 value={selectedUser.full_name}
                                 onChange={(e) =>
-                                    setSelectedUser({ ...selectedUser, full_name: e.target.value })
+                                    setSelectedUser({...selectedUser, full_name: e.target.value})
                                 }
                                 className="text-lg text-[#575757] bg-transparent border-b border-gray-400 focus:outline-none"
                             />
@@ -711,7 +590,7 @@ export default function UserManagement() {
                             <select
                                 value={selectedUser.user_role}
                                 onChange={(e) =>
-                                    setSelectedUser({ ...selectedUser, user_role: e.target.value })
+                                    setSelectedUser({...selectedUser, user_role: e.target.value})
                                 }
                                 className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
                             >
@@ -729,7 +608,7 @@ export default function UserManagement() {
                                 type="text"
                                 value={selectedUser.contact_no}
                                 onChange={(e) =>
-                                    setSelectedUser({ ...selectedUser, contact_no: e.target.value })
+                                    setSelectedUser({...selectedUser, contact_no: e.target.value})
                                 }
                                 className="text-lg text-[#575757] bg-transparent border-b border-gray-400 focus:outline-none"
                             />
@@ -737,7 +616,7 @@ export default function UserManagement() {
                             <select
                                 value={selectedUser.department}
                                 onChange={(e) =>
-                                    setSelectedUser({ ...selectedUser, department: e.target.value })
+                                    setSelectedUser({...selectedUser, department: e.target.value})
                                 }
                                 className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
                             >
@@ -754,7 +633,7 @@ export default function UserManagement() {
                                 type="text"
                                 value={selectedUser.email}
                                 onChange={(e) =>
-                                    setSelectedUser({ ...selectedUser, email: e.target.value })
+                                    setSelectedUser({...selectedUser, email: e.target.value})
                                 }
                                 className="text-lg text-[#575757] bg-transparent border-b border-gray-400 focus:outline-none"
                             />
@@ -762,7 +641,7 @@ export default function UserManagement() {
                             <select
                                 value={selectedUser.branch}
                                 onChange={(e) =>
-                                    setSelectedUser({ ...selectedUser, branch: e.target.value })
+                                    setSelectedUser({...selectedUser, branch: e.target.value})
                                 }
                                 className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
                             >

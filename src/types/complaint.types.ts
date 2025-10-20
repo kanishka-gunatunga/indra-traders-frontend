@@ -31,6 +31,10 @@ export interface CreateComplaintInput {
     vehicle_no?: string | null;
     comment?: string | null;
     customerId?: string;
+    customer_name?:string;
+    phone_number?:string;
+    email?:string;
+    vehicle_number?:string;
 }
 
 export interface UpdateComplaintInput extends Partial<CreateComplaintInput> {

@@ -8,6 +8,9 @@ export const VehicleSaleService = {
             params: status ? {status} : {},
         }),
 
+    getByStatus: (status: string) =>
+        axiosInstance.get(`/vehicle-sales/status/${status}`),
+
     getByTicket: (ticketNumber: string) =>
         axiosInstance.get(`/vehicle-sales/ticket/${ticketNumber}`),
 

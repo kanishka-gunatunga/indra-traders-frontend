@@ -6,11 +6,14 @@ import Image from "next/image";
 import React, {useMemo, useState} from "react";
 import {useComplaints} from "@/hooks/useComplaint";
 import {Complaint} from "@/types/complaint.types";
+import {useRouter} from "next/navigation";
 
 const category = ["ITPL", "ISP", "IMS", "IFT"];
 const status = ["New", "In Review", "Processing", "Approval", "Completed"];
 
 export default function Complains() {
+
+    const router = useRouter();
 
     const {data: complaints, isLoading, isError} = useComplaints();
 
@@ -32,6 +35,10 @@ export default function Complains() {
             return categoryMatch && statusMatch;
         });
     }, [complaints, selectedCategories, selectedStatuses]);
+
+    const handleRowClick = (id: number) => {
+        router.push(`/admin/complains/${id}`);
+    };
 
     return (
         <div
@@ -91,7 +98,8 @@ export default function Complains() {
                                             filteredComplaints.map((item: Complaint) => (
                                                 <div
                                                     key={item.id}
-                                                    className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
+                                                    className="flex text-lg mt-1 text-black hover:bg-gray-50 transition cursor-pointer"
+                                                    onClick={() => handleRowClick(item.id)}
                                                 >
                                                     <div className="w-1/7 px-3 py-2">{item.category}</div>
                                                     <div className="w-1/7 px-3 py-2">{item.ticket_no}</div>

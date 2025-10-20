@@ -26,6 +26,13 @@ export const useVehicleSaleByTicket = (ticketNumber?: string) =>
         enabled: !!ticketNumber,
     });
 
+export const useVehicleSalesByStatus = (status: string) =>
+    useQuery({
+        queryKey: ["vehicleSalesByStatus", status],
+        queryFn: () => VehicleSaleService.getByStatus(status).then((res) => res.data),
+        enabled: !!status,
+    });
+
 export const useAssignVehicleSale = () => {
     const queryClient = useQueryClient();
 
