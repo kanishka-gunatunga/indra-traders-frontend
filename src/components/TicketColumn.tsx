@@ -3,9 +3,10 @@ import { Droppable } from "@hello-pangea/dnd";
 interface TicketColumnProps {
   title: string;
   tickets: TicketCardProps[];
+  route?: string;
 }
 
-export const TicketColumn = ({ title, tickets }: TicketColumnProps) => {
+export const TicketColumn = ({ title, tickets, route }: TicketColumnProps) => {
   return (
     <div className="flex flex-col bg-white rounded-3xl p-5 flex-1 min-w-[250px]">
       {/* Title + underline */}
@@ -23,7 +24,7 @@ export const TicketColumn = ({ title, tickets }: TicketColumnProps) => {
             className="flex flex-col overflow-y-auto overflow-x-hidden max-h-[400px] min-h-[100px] no-scrollbar"
           >
             {tickets.map((ticket, index) => (
-              <TicketCard key={ticket.id} {...ticket} index={index} />
+              <TicketCard key={ticket.id} {...ticket} index={index} route={route} />
             ))}
             {provided.placeholder}
           </div>
