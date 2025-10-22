@@ -44,7 +44,7 @@ const mapStatus = (apiStatus: string): MappedTicket["status"] => {
             return "New";
         case "ONGOING":
             return "Ongoing";
-        case "WIN":
+        case "WON":
             return "Won";
         case "LOST":
             return "Lost";

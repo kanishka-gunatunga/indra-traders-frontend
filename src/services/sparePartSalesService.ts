@@ -15,6 +15,9 @@ export const SparePartSalesService = {
     assignToMe: (id: number, data: { userId: number }) =>
         axiosInstance.put(`/spare-part-sales/${id}/claim`, data),
 
+    updateStatus: (id: number, data: { status: "WON" | "LOST" }) =>
+        axiosInstance.put(`/spare-part-sales/${id}/status`, data),
+
     createFollowup: (data: any) =>
         axiosInstance.post("/spare-part-sales/followups", data),
 

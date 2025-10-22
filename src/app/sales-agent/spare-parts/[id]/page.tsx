@@ -5,13 +5,43 @@ import SalesDetailsTab from "@/components/SalesDetailsTab";
 import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Role} from "@/types/role";
+import {useParams} from "next/navigation";
+import {useAssignToMe, useCreateFollowup, useSpareSaleByTicket, useCreateReminder, useUpdateSaleStatus} from "@/hooks/useSparePartSales";
+import {message} from "antd";
+
+
+const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
+    switch (apiStatus) {
+        case "NEW":
+            return "New";
+        case "ONGOING":
+            return "Ongoing";
+        case "WON":
+            return "Won";
+        case "LOST":
+            return "Lost";
+        default:
+            return "New";
+    }
+};
+
 
 export default function SalesDetailsPage() {
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
+
+    const params = useParams();
+    const ticketNumber = params?.id as string;
+    const userId = 1;
+
+    const {data: sale, isLoading, error} = useSpareSaleByTicket(ticketNumber);
+    const assignToMeMutation = useAssignToMe();
+    const createFollowupMutation = useCreateFollowup();
+    const createReminderMutation = useCreateReminder();
+    const updateSaleStatusMutation = useUpdateSaleStatus();
 
     const [status, setStatus] = useState<SalesStatus>("New");
 
@@ -23,12 +53,104 @@ export default function SalesDetailsPage() {
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
 
+    // const handleAssignClick = () => {
+    //     if (status === "New") setStatus("Ongoing");
+    // };
+
+    useEffect(() => {
+        if (sale) {
+            setStatus(mapApiStatusToSalesStatus(sale.status));
+        }
+    }, [sale]);
+
     const handleAssignClick = () => {
-        if (status === "New") setStatus("Ongoing");
+        if (sale && sale.id && status === "New") {
+            assignToMeMutation.mutate(
+                {
+                    id: sale.id, userId
+                },
+                {
+                    onSuccess: () => {
+                        setStatus("Ongoing");
+                        message.success("Sale assigned to you");
+                    },
+                    onError: (err) => {
+                        console.error("Assign spare sale error: ", err);
+                        message.error("Failed to assign sale.");
+                    }
+                }
+            )
+        }
+    }
+
+    const handleSaveActivity = () => {
+        if (sale && sale.id && activityText) {
+            createFollowupMutation.mutate(
+                {
+                    activity: activityText,
+                    activity_date: new Date().toISOString(),
+                    spare_part_sale_id: sale.id,
+                },
+                {
+                    onSuccess: () => {
+                        message.success("Activity Saved!");
+                        setActivityText("");
+                        setActivityModalOpen(false);
+                    },
+                    onError: (err) => {
+                        console.error("Failed to save spare sale followup error: ", err);
+                        message.error("Failed to save follow up.")
+                    }
+                }
+            )
+        } else {
+            message.error("Please fill all required fields.");
+        }
     };
 
+    const handleSaveReminder = () => {
+        if (sale && sale.id && reminderTitle && reminderDate) {
+            console.log(reminderTitle, "", reminderDate, "", sale.id, "", reminderNote);
+            createReminderMutation.mutate(
+                {
+                    task_title: reminderTitle,
+                    task_date: new Date(reminderDate).toISOString(),
+                    note: reminderNote || null,
+                    spare_part_sale_id: sale.id,
+                },
+                {
+                    onSuccess: () => {
+                        message.success("Reminder Saved!");
+                        setReminderTitle("");
+                        setReminderNote("");
+                        setReminderDate("");
+                        setReminderModalOpen(false);
+                    },
+                    onError: (err) => {
+                        console.error("Reminder error: ", err);
+                        message.error("Failed to save reminder.");
+                    },
+                }
+            );
+        } else {
+            message.error("Please fill all required fields.");
+        }
+    }
+
     const buttonText =
-        status === "New" ? "Assign to me" : "Sales person: Robert Fox";
+        status === "New" ? "Assign to me" : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
+
+    if (isLoading) {
+        return <div className="text-center mt-10">Loading...</div>;
+    }
+
+    if (error || !sale) {
+        return (
+            <div className="text-center mt-10 text-red-600">
+                Error: {error?.message || "Sale not found!"}
+            </div>
+        )
+    }
 
     return (
         <div
@@ -46,11 +168,11 @@ export default function SalesDetailsPage() {
                     <div className="flex w-full justify-between items-center">
                         <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
               <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-                ITPL122455874565
+                {sale.ticket_number}
               </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                ITPL
+                IMS
               </span>
                             <div
                                 className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
@@ -69,7 +191,25 @@ export default function SalesDetailsPage() {
                         <FlowBar<SalesStatus>
                             variant="sales"
                             status={status}
-                            onStatusChange={setStatus}
+                            onStatusChange={(newStatus) => {
+                                setStatus(newStatus);
+
+                                if (sale?.id && (newStatus.toUpperCase() === "WON" || newStatus.toUpperCase() === "LOST")) {
+
+                                    updateSaleStatusMutation.mutate(
+                                        {id: sale.id, status: newStatus.toUpperCase()},
+                                        {
+                                            onSuccess: () => {
+                                                message.success(`Status updated to ${newStatus}`);
+                                            },
+                                            onError: (err) => {
+                                                console.error("Failed to update status:", err);
+                                                message.error("Failed to update status.");
+                                            },
+                                        }
+                                    );
+                                }
+                            }}
                         />
                     </div>
 
@@ -83,9 +223,9 @@ export default function SalesDetailsPage() {
                                         ? "bg-[#DB2727] text-white"
                                         : "bg-[#EBD4FF] text-[#1D1D1D]"
                                 }`}
-                                disabled={status !== "New"}
+                                disabled={status !== "New" || assignToMeMutation.isPending}
                             >
-                                {buttonText}
+                                {assignToMeMutation.isPending ? "Assigning..." : buttonText}
                             </button>
                             {status !== "New" && (
                                 <div
@@ -110,11 +250,12 @@ export default function SalesDetailsPage() {
                                 <select
                                     className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
                                     style={{textAlignLast: "center"}}
+                                    onChange={(e) => {
+                                        console.log("Assign to sales user:", e.target.value);
+                                    }}
                                 >
                                     <option value="S0">Sales Level 1</option>
                                     <option value="S1">Sales Level 2</option>
-                                    <option value="S2">Sales Level 3</option>
-                                    <option value="S3">Sales Level 4</option>
                                 </select>
                             </div>
                         </div>
@@ -126,28 +267,35 @@ export default function SalesDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value="Emily Charlotte"/>
-                            <InfoRow label="Contact No:" value="077 5898712"/>
-                            <InfoRow label="Email:" value="Info@indra.com"/>
+                            <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "N/A"}/>
+                            <InfoRow label="Contact No:"
+                                     value={sale.customer?.phone_number || sale.customer?.whatsapp_number || "N/A"}/>
+                            <InfoRow label="Email:" value={sale.customer?.email || "N/A"}/>
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
-                               Spare Part Details
+                                Spare Part Details
                             </div>
-                            <InfoRow label="Vehicle Made:" value="Honda"/>
-                            <InfoRow label="Vehicle Model:" value="Civic"/>
-                            <InfoRow label="Part No:" value="BF-DOT4"/>
-                            <InfoRow label="YOM:" value="2024"/>
+                            <InfoRow label="Vehicle Make:" value={sale.vehicle_make || "N/A"}/>
+                            <InfoRow label="Vehicle Model:" value={sale.vehicle_model || "N/A"}/>
+                            <InfoRow label="Part No:" value={sale.part_no || "N/A"}/>
+                            <InfoRow
+                                label="YOM:"
+                                value={sale.year_of_manufacture?.toString() || "N/A"}
+                            />
                             <InfoRow
                                 label="Additional Note:"
-                                value="hydraulic brake systems"
+                                value={sale.additional_note || "N/A"}
                             />
                         </div>
 
                         <div className="w-3/5 flex flex-col min-h-[400px]">
                             <SalesDetailsTab
+                                customerId={sale.customer_id}
                                 status={status}
                                 onOpenActivity={() => setActivityModalOpen(true)}
                                 onOpenReminder={() => setReminderModalOpen(true)}
+                                followups={sale.followups || []}
+                                reminders={sale.reminders || []}
                             />
                             {role === "admin" ? null : (
                                 <div className="mt-6 flex w-full justify-end">
@@ -166,14 +314,15 @@ export default function SalesDetailsPage() {
             {isActivityModalOpen && (
                 <Modal
                     title="Add New Activity"
-                    onClose={() => setActivityModalOpen(false)}
+                    onClose={() => {
+                        setActivityText("");
+                        setActivityDate("");
+                        setActivityModalOpen(false);
+                    }}
                     actionButton={{
                         label: "Save",
-                        onClick: () => {
-                            console.log("Activity saved:", activityText);
-                            setActivityText("");
-                            setActivityModalOpen(false);
-                        },
+                        onClick: handleSaveActivity,
+                        disabled: createFollowupMutation.isPending,
                     }}
                 >
                     <div className="w-full">
@@ -182,6 +331,7 @@ export default function SalesDetailsPage() {
                             type="text"
                             value={activityText}
                             onChange={(e) => setActivityText(e.target.value)}
+                            placeholder="Enter activity description"
                             className="w-[600px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 mt-2"
                         />
                     </div>
@@ -192,20 +342,16 @@ export default function SalesDetailsPage() {
             {isReminderModalOpen && (
                 <Modal
                     title="Add New Reminder"
-                    onClose={() => setReminderModalOpen(false)}
+                    onClose={() => {
+                        setReminderTitle("");
+                        setReminderDate("");
+                        setReminderNote("");
+                        setReminderModalOpen(false);
+                    }}
                     actionButton={{
                         label: "Save",
-                        onClick: () => {
-                            console.log("Reminder saved:", {
-                                reminderTitle,
-                                reminderDate,
-                                reminderNote,
-                            });
-                            setReminderTitle("");
-                            setReminderDate("");
-                            setReminderNote("");
-                            setReminderModalOpen(false);
-                        },
+                        onClick: handleSaveReminder,
+                        disabled: createReminderMutation.isPending,
                     }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
@@ -213,6 +359,7 @@ export default function SalesDetailsPage() {
                             <label className="block mb-2 font-medium">Task Title</label>
                             <input
                                 type="text"
+                                placeholder="Enter task title"
                                 value={reminderTitle}
                                 onChange={(e) => setReminderTitle(e.target.value)}
                                 className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
@@ -231,6 +378,7 @@ export default function SalesDetailsPage() {
                             <label className="block mb-2 font-medium">Note</label>
                             <input
                                 type="text"
+                                placeholder="Enter note (optional)"
                                 value={reminderNote}
                                 onChange={(e) => setReminderNote(e.target.value)}
                                 className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"

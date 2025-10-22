@@ -4,21 +4,39 @@ import {Role} from "@/types/role";
 import Image from "next/image";
 import {useState} from "react";
 import {FiPlus} from "react-icons/fi";
-import {useRemindersByComplaint} from "@/hooks/useReminder";
 import {useEventsByCustomer} from "@/hooks/useEvent";
-import {useFollowUpsByComplaint} from "@/hooks/useFollowUp";
+
+interface Followup {
+    id: number;
+    activity: string;
+    spare_part_sale_id: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface Reminder {
+    id: number;
+    task_title: string;
+    task_date: string;
+    note: string | null;
+    spare_part_sale_id: number;
+    createdAt: string;
+    updatedAt: string;
+}
 
 interface SalesDetailsTabProps {
-    complaintId?: number;
     customerId: string;
     status: string;
     onOpenActivity: () => void;
     onOpenReminder: () => void;
+    followups: Followup[];
+    reminders: Reminder[];
 }
 
 export default function SalesDetailsTab({
-                                            complaintId,
                                             customerId,
+                                            followups,
+                                            reminders,
                                             status,
                                             onOpenActivity,
                                             onOpenReminder,
@@ -30,16 +48,21 @@ export default function SalesDetailsTab({
     const tabs = ["Follow up", "Reminders", "Events"];
     const [activeTab, setActiveTab] = useState(0);
 
-    const {data: followUpData = [], isLoading: loadingFollowUps} = useFollowUpsByComplaint(complaintId);
+    const {data: eventData = [], isLoading: loadingEvents} = useEventsByCustomer(customerId);
 
-    const {data: reminderData = [], isLoading: loadingReminders} =
-        useRemindersByComplaint(complaintId);
-
-    const {data: eventData = [], isLoading: loadingEvents} =
-        useEventsByCustomer(customerId);
-
+    // const isAddDisabled =
+    //     status === "New" && role !== "admin" && role !== "tele-marketer";
     const isAddDisabled =
         status === "New" && role !== "admin" && role !== "tele-marketer";
+
+    const formatDate = (isoDate: string) => {
+        if (!isoDate) return "N/A";
+        return new Date(isoDate).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+    };
 
     return (
         <div className="w-full relative">
@@ -79,17 +102,21 @@ export default function SalesDetailsTab({
 
                                 <div className="h-[100] overflow-y-auto no-scrollbar">
                                     {/* Table rows */}
-                                    {followUpData.map((item, idx) => (
-                                        <div
-                                            key={idx}
-                                            className={`flex ${
-                                                idx > 0 ? "mt-3" : ""
-                                            } font-medium text-black min-w-[400px]`}
-                                        >
-                                            <div className="w-1/2 px-2">{item.activity}</div>
-                                            <div className="w-1/2 px-2">{item.activity_date}</div>
-                                        </div>
-                                    ))}
+                                    {followups.length === 0 ? (
+                                        <div>No followups available.</div>
+                                    ) : (
+                                        followups.map((item, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`flex ${
+                                                    idx > 0 ? "mt-3" : ""
+                                                } font-medium text-black min-w-[400px]`}
+                                            >
+                                                <div className="w-1/2 px-2">{item.activity}</div>
+                                                <div className="w-1/2 px-2">{formatDate(item.activity_date)}</div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
 
@@ -123,18 +150,22 @@ export default function SalesDetailsTab({
 
                             <div className="h-[100] overflow-y-auto no-scrollbar">
                                 {/* Table rows */}
-                                {reminderData.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`flex ${
-                                            idx > 0 ? "mt-3" : ""
-                                        } font-medium text-black min-w-[400px]`}
-                                    >
-                                        <div className="w-1/3 px-2">{item.task_title}</div>
-                                        <div className="w-1/3 px-2">{item.task_date}</div>
-                                        <div className="w-1/3 px-2">{item.note}</div>
-                                    </div>
-                                ))}
+                                {reminders.length === 0 ? (
+                                    <div>No reminders available.</div>
+                                ) : (
+                                    reminders.map((item, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`flex ${
+                                                idx > 0 ? "mt-3" : ""
+                                            } font-medium text-black min-w-[400px]`}
+                                        >
+                                            <div className="w-1/3 px-2">{item.task_title}</div>
+                                            <div className="w-1/3 px-2">{formatDate(item.task_date)}</div>
+                                            <div className="w-1/3 px-2">{item.note}</div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
 

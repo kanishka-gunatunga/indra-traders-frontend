@@ -23,6 +23,7 @@ export const useSpareSaleByTicket = (ticket: string) =>
         queryKey: ["spareSale", ticket],
         queryFn: () => SparePartSalesService.getSaleByTicket(ticket).then((res) => res.data),
         enabled: !!ticket,
+        refetchInterval: 3000,
     });
 
 export const useAssignToSpareSales = () => {
@@ -46,6 +47,20 @@ export const useAssignToMe = () => {
         },
     });
 };
+
+export const useUpdateSaleStatus = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({id, status}: { id: number; status: "WON" | "LOST" }) =>
+            SparePartSalesService.updateStatus(id, {status}),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({queryKey: ["spareSales"]});
+            queryClient.invalidateQueries({queryKey: ["spareSale", variables.id]});
+        },
+    });
+};
+
 
 export const useCreateFollowup = () => {
     const queryClient = useQueryClient();
