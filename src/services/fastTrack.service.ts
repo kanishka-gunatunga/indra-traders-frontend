@@ -5,6 +5,12 @@ export const fastTrackService = {
     createDirectRequest: (data: any) =>
         axiosInstance.post("/fast-track/direct-requests", data),
 
+    listSales: () =>
+        axiosInstance.get("/fast-track/sales"),
+
+    updateSaleStatus: (saleId: string, status: string) =>
+        axiosInstance.put(`/fast-track/sales/${saleId}/status`, { status }),
+
     listDirectRequests: () =>
         axiosInstance.get("/fast-track/direct-requests"),
 

@@ -2,13 +2,12 @@
 
 import DetailsModal from "@/components/DetailsModal";
 import FastTrackTable, {FastTrack} from "@/components/FastTrackTable";
-import VehicleGallery from "@/components/VehicleGallery";
 import React, {useState} from "react";
 import {useForm} from "react-hook-form";
 import {IoMdSend} from "react-icons/io";
 import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {useCreateDirectRequest, useDirectRequests} from "@/hooks/useFastTrack";
+import {useCreateDirectRequest} from "@/hooks/useFastTrack";
 import FormField from "@/components/FormField";
 
 
@@ -190,8 +189,6 @@ const vehicleDetails = [
     {label: 'Grade:', value: 'GR S'},
 ];
 
-export type FastTrackFilterForm = z.infer<typeof fastTrackFilterSchema>;
-
 export default function FastTrackPage() {
 
     const {mutate: createDirectRequest, isPending} = useCreateDirectRequest();
@@ -220,9 +217,27 @@ export default function FastTrackPage() {
     });
 
 
+    const transformToBackendFormat = (data: FastTrackFilterSchema) => {
+        return {
+            vehicle_type: data.vehicleType,
+            vehicle_make: data.vehicleMake,
+            vehicle_model: data.vehicleModel,
+            grade: data.grade || null,
+            manufacture_year: data.manufactureYear ? Number(data.manufactureYear) : null,
+            mileage_min: data.mileage ? Number(data.mileage) : null,
+            mileage_max: data.mileage ? Number(data.mileage) : null,
+            no_of_owners: data.owners ? Number(data.owners) : null,
+            price_from: data.priceFrom ? Number(data.priceFrom) : null,
+            price_to: data.priceTo ? Number(data.priceTo) : null,
+            customer_id: "CUS1760976040167",
+        };
+    };
+
+
     const onSubmit = (data: FastTrackFilterSchema) => {
         console.log("Filter Data Sent to Telemarketer:", data);
-        createDirectRequest(data, {
+        const backendPayload = transformToBackendFormat(data);
+        createDirectRequest(backendPayload, {
             onSuccess: () => {
                 alert("Direct request sent successfully!");
                 reset();

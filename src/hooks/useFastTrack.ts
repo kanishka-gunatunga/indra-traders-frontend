@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {fastTrackService} from "@/services/fastTrack.service";
 
 export const useDirectRequests = () =>
@@ -12,7 +12,25 @@ export const useCreateDirectRequest = () => {
     return useMutation({
         mutationFn: (data: any) => fastTrackService.createDirectRequest(data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["directRequests"] });
+            queryClient.invalidateQueries({queryKey: ["directRequests"]});
+        },
+    });
+};
+
+export const useFastTrackSales = () =>
+    useQuery({
+        queryKey: ["sales"],
+        queryFn: () => fastTrackService.listSales().then(res => res.data),
+    });
+
+
+export const useUpdateSaleStatus = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ saleId, status }: { saleId: string; status: string }) =>
+            fastTrackService.updateSaleStatus(saleId, status),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["sales"] });
         },
     });
 };
@@ -37,7 +55,7 @@ export const useCreateReminder = () => {
     return useMutation({
         mutationFn: (data: any) => fastTrackService.createReminder(data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["reminders"] });
+            queryClient.invalidateQueries({queryKey: ["reminders"]});
         },
     });
 };
@@ -62,8 +80,8 @@ export const useAssignSale = () => {
         mutationFn: (params: { directRequestId: string; vehicleId: string; data: any }) =>
             fastTrackService.assignSale(params.directRequestId, params.vehicleId, params.data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["directRequests"] });
-            queryClient.invalidateQueries({ queryKey: ["sales"] });
+            queryClient.invalidateQueries({queryKey: ["directRequests"]});
+            queryClient.invalidateQueries({queryKey: ["sales"]});
         },
     });
 };
@@ -73,7 +91,7 @@ export const useAssignToMe = () => {
     return useMutation({
         mutationFn: (saleId: string) => fastTrackService.assignToMe(saleId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["sales"] });
+            queryClient.invalidateQueries({queryKey: ["sales"]});
         },
     });
 };
@@ -91,7 +109,7 @@ export const useCreateFollowup = () => {
     return useMutation({
         mutationFn: (data: any) => fastTrackService.createFollowup(data),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ["followups", variables.saleId] });
+            queryClient.invalidateQueries({queryKey: ["followups", variables.saleId]});
         },
     });
 };
