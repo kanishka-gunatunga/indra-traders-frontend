@@ -5,30 +5,139 @@ import SalesDetailsTab from "@/components/SalesDetailsTab";
 import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Role} from "@/types/role";
+import {message} from "antd";
+import {useAssignToMe, useCreateFollowup, useSaleByTicket, useUpdateSaleStatus} from "@/hooks/useFastTrack";
+import {useCreateReminder} from "@/hooks/useReminder";
+import {useParams} from "next/navigation";
+
+const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
+    switch (apiStatus) {
+        case "NEW":
+            return "New";
+        case "ONGOING":
+            return "Ongoing";
+        case "WON":
+            return "Won";
+        case "LOST":
+            return "Lost";
+        default:
+            return "New";
+    }
+};
 
 export default function SalesDetailsPage() {
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
 
-    const [status, setStatus] = useState<SalesStatus>("New");
+    const params = useParams();
+    const ticketNumber = params?.id as string;
+    const userId = 1; // Replace with actual user ID from auth context
 
+    const { data: sale, isLoading, error } = useSaleByTicket(ticketNumber);
+    const assignToMeMutation = useAssignToMe();
+    const createFollowupMutation = useCreateFollowup();
+    const createReminderMutation = useCreateReminder();
+    const updateSaleStatusMutation = useUpdateSaleStatus();
+
+    const [status, setStatus] = useState<SalesStatus>("New");
     const [isActivityModalOpen, setActivityModalOpen] = useState(false);
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
-
     const [activityText, setActivityText] = useState("");
     const [reminderTitle, setReminderTitle] = useState("");
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
 
+    useEffect(() => {
+        if (sale) {
+            setStatus(mapApiStatusToSalesStatus(sale.status));
+        }
+    }, [sale]);
+
     const handleAssignClick = () => {
-        if (status === "New") setStatus("Ongoing");
+        if (sale && sale.id && status === "New") {
+            assignToMeMutation.mutate(sale.id, {
+                onSuccess: () => {
+                    setStatus("Ongoing");
+                    message.success("Sale assigned to you");
+                },
+                onError: (err) => {
+                    console.error("Assign sale error:", err);
+                    message.error("Failed to assign sale.");
+                },
+            });
+        }
+    };
+
+    const handleSaveActivity = () => {
+        if (sale && sale.id && activityText) {
+            createFollowupMutation.mutate(
+                {
+                    sale_id: sale.id,
+                    activity: activityText,
+                    activity_date: new Date().toISOString(),
+                },
+                {
+                    onSuccess: () => {
+                        message.success("Activity Saved!");
+                        setActivityText("");
+                        setActivityModalOpen(false);
+                    },
+                    onError: (err) => {
+                        console.error("Failed to save followup:", err);
+                        message.error("Failed to save follow-up.");
+                    },
+                }
+            );
+        } else {
+            message.error("Please fill all required fields.");
+        }
+    };
+
+    const handleSaveReminder = () => {
+        if (sale && sale.id && reminderTitle && reminderDate) {
+            createReminderMutation.mutate(
+                {
+                    task_title: reminderTitle,
+                    task_date: new Date(reminderDate).toISOString(),
+                    note: reminderNote || null,
+                    sale_id: sale.id,
+                },
+                {
+                    onSuccess: () => {
+                        message.success("Reminder Saved!");
+                        setReminderTitle("");
+                        setReminderDate("");
+                        setReminderNote("");
+                        setReminderModalOpen(false);
+                    },
+                    onError: (err) => {
+                        console.error("Reminder error:", err);
+                        message.error("Failed to save reminder.");
+                    },
+                }
+            );
+        } else {
+            message.error("Please fill all required fields.");
+        }
     };
 
     const buttonText =
-        status === "New" ? "Assign to me" : "Sales person: Robert Fox";
+        status === "New" ? "Assign to me" : `Sales person: ${sale?.salesUser?.full_name || "Unknown"}`;
+
+    if (isLoading) {
+        return <div className="text-center mt-10">Loading...</div>;
+    }
+
+    if (error || !sale) {
+        return (
+            <div className="text-center mt-10 text-red-600">
+                Error: {error?.message || "Sale not found!"}
+            </div>
+        );
+    }
 
     return (
         <div
@@ -37,13 +146,7 @@ export default function SalesDetailsPage() {
                 <Header
                     name="Sophie Eleanor"
                     location="Bambalapitiya"
-                    title={
-                        role === "admin"
-                            ? "All Leads"
-                            : role === "tele-marketer"
-                                ? "Indra Fast Track Sales Dashboard"
-                                : "Indra Traders Sales Dashboard"
-                    }
+                    title= "Indra Fast Track Sales Dashboard"
                 />
 
                 <section
@@ -52,7 +155,7 @@ export default function SalesDetailsPage() {
                     <div className="flex w-full justify-between items-center">
                         <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
               <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-                ITPL122455874565
+               {sale.ticket_number}
               </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
@@ -75,7 +178,23 @@ export default function SalesDetailsPage() {
                         <FlowBar<SalesStatus>
                             variant="sales"
                             status={status}
-                            onStatusChange={setStatus}
+                            onStatusChange={(newStatus) => {
+                                setStatus(newStatus);
+                                if (sale?.id && (newStatus.toUpperCase() === "WON" || newStatus.toUpperCase() === "LOST")) {
+                                    updateSaleStatusMutation.mutate(
+                                        { saleId: sale.id, status: newStatus.toUpperCase() },
+                                        {
+                                            onSuccess: () => {
+                                                message.success(`Status updated to ${newStatus}`);
+                                            },
+                                            onError: (err) => {
+                                                console.error("Failed to update status:", err);
+                                                message.error("Failed to update status.");
+                                            },
+                                        }
+                                    );
+                                }
+                            }}
                         />
                     </div>
 

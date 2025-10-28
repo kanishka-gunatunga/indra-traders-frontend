@@ -6,12 +6,54 @@ import {TicketCardProps} from "@/components/TicketCard";
 import {TicketColumn} from "@/components/TicketColumn";
 import {DragDropContext, DropResult} from "@hello-pangea/dnd";
 import Image from "next/image";
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import Select from "react-select";
 import {Role} from "@/types/role";
-import {useCreateDirectRequest, useFastTrackSales, useUpdateSaleStatus} from "@/hooks/useFastTrack";
 
 type OptionType = { value: string; label: string };
+
+const dummyTickets: TicketCardProps[] = [
+    {
+        id: "ITPL122455874561",
+        priority: 0,
+        user: "Sophie",
+        phone: "0771234567",
+        date: "12 Mar, 2025",
+        status: "New",
+    },
+    {
+        id: "ITPL122455874562",
+        priority: 1,
+        user: "Alex",
+        phone: "0777654321",
+        date: "13 Mar, 2025",
+        status: "Ongoing",
+    },
+    {
+        id: "ITPL122455874563",
+        priority: 2,
+        user: "Sophie",
+        phone: "0771234567",
+        date: "12 Mar, 2025",
+        status: "New",
+    },
+    {
+        id: "ITPL122455874564",
+        priority: 3,
+        user: "Alex",
+        phone: "0777654321",
+        date: "13 Mar, 2025",
+        status: "Lost",
+    },
+    {
+        id: "ITPL122455874565",
+        priority: 4,
+        user: "Sophie",
+        phone: "0771234567",
+        date: "12 Mar, 2025",
+        status: "Won",
+    },
+];
 
 const vehicleMakes = [
     {value: "Toyota", label: "Toyota"},
@@ -25,78 +67,26 @@ const vehicleModels = [
     {value: "Navara", label: "Navara"},
 ];
 
-type MappedTicket = {
-    id: string;
-    priority: number;
-    user: string;
-    phone: string;
-    date: string;
-    status: "New" | "Ongoing" | "Won" | "Lost";
-};
-
-const mapStatus = (apiStatus: string): MappedTicket["status"] => {
-    switch (apiStatus) {
-        case "NEW":
-            return "New";
-        case "ONGOING":
-            return "Ongoing";
-        case "WON":
-            return "Won";
-        case "LOST":
-            return "Lost";
-        default:
-            return "New";
-    }
-};
-
-const mapApiToTicket = (apiSale: any): MappedTicket => ({
-    id: apiSale.ticket_number,
-    priority: apiSale.priority || 0, // Assuming priority is optional in API response
-    user: apiSale.customer?.name || "Unknown",
-    phone: apiSale.customer?.contact_no || "",
-    date: new Date(apiSale.createdAt).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    }),
-    status: mapStatus(apiSale.status),
-});
-
 export default function SalesDashboard() {
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
 
-    const [tickets, setTickets] = useState<MappedTicket[]>([]);
+    const [tickets, setTickets] = useState<TicketCardProps[]>(dummyTickets);
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
 
-    // Form state for creating a direct request
-    const [customerId, setCustomerId] = useState("");
+    const [customerName, setCustomerName] = useState("");
     const [contactNumber, setContactNumber] = useState("");
     const [email, setEmail] = useState("");
     const [city, setCity] = useState("");
     const [leadSource, setLeadSource] = useState("");
     const [remark, setRemark] = useState("");
+    const [priority, setPriority] = useState("P0");
     const [vehicleType, setVehicleType] = useState("");
     const [selectedMake, setSelectedMake] = useState<OptionType | null>(null);
-    const [selectedModel, setSelectedModel] = useState<OptionType | null>(null);
-    const [grade, setGrade] = useState("");
-    const [manufactureYear, setManufactureYear] = useState("");
-    const [mileageMin, setMileageMin] = useState("");
-    const [mileageMax, setMileageMax] = useState("");
-    const [noOfOwners, setNoOfOwners] = useState("");
-    const [priceFrom, setPriceFrom] = useState("");
-    const [priceTo, setPriceTo] = useState("");
+    const [selectedModel, setSelectedModal] = useState<OptionType | null>(null);
 
-    const {data: apiSales, isLoading} = useFastTrackSales();
-    const createDirectRequestMutation = useCreateDirectRequest();
-    const updateSaleStatusMutation = useUpdateSaleStatus();
-
-    useEffect(() => {
-        if (apiSales) {
-            setTickets(apiSales.map(mapApiToTicket));
-        }
-    }, [apiSales]);
+    const {data, isError} = use
 
     const allowedTransitions: Record<
         TicketCardProps["status"],
@@ -117,99 +107,25 @@ export default function SalesDashboard() {
         )
             return;
 
-        const ticket = tickets.find((t) => t.id === draggableId);
-        if (!ticket) return;
-
-        const currentStatus = ticket.status;
-        const newStatus = destination.droppableId as TicketCardProps["status"];
-        if (allowedTransitions[currentStatus].includes(newStatus)) {
-            // Update local state
-            setTickets((prev) =>
-                prev.map((t) =>
-                    t.id === draggableId ? {...t, status: newStatus} : t
-                )
-            );
-
-            // Update sale status via API
-            updateSaleStatusMutation.mutate(
-                {saleId: draggableId, status: newStatus.toUpperCase()},
-                {
-                    onError: (err) => {
-                        console.error("Error updating sale status:", err);
-                        // Revert local state on failure
-                        setTickets((prev) =>
-                            prev.map((t) =>
-                                t.id === draggableId ? {...t, status: currentStatus} : t
-                            )
-                        );
-                        alert("Failed to update sale status.");
-                    },
+        setTickets((prev) =>
+            prev.map((t) => {
+                if (t.id !== draggableId) return t;
+                const currentStatus = t.status;
+                const newStatus = destination.droppableId as TicketCardProps["status"];
+                if (allowedTransitions[currentStatus].includes(newStatus)) {
+                    return {...t, status: newStatus};
                 }
-            );
-        }
+                return t;
+            })
+        );
     };
 
     const columns: TicketCardProps["status"][] = [
         "New",
         "Ongoing",
         "Won",
-        "Lost"
+        "Lost",
     ];
-
-    const handleCreateDirectRequest = () => {
-        if (
-            !customerId ||
-            !vehicleType ||
-            !selectedMake ||
-            !selectedModel ||
-            !manufactureYear
-        ) {
-            alert("Please fill all required fields.");
-            return;
-        }
-
-        const payload = {
-            customer_id: parseInt(customerId),
-            vehicle_type: vehicleType,
-            vehicle_make: selectedMake.value,
-            vehicle_model: selectedModel.value,
-            grade: grade || null,
-            manufacture_year: parseInt(manufactureYear),
-            mileage_min: mileageMin ? parseInt(mileageMin) : null,
-            mileage_max: mileageMax ? parseInt(mileageMax) : null,
-            no_of_owners: noOfOwners ? parseInt(noOfOwners) : null,
-            price_from: priceFrom ? parseInt(priceFrom) : null,
-            price_to: priceTo ? parseInt(priceTo) : null,
-        };
-
-        createDirectRequestMutation.mutate(payload, {
-            onSuccess: () => {
-                alert("Direct request created successfully!");
-                // Reset form
-                setCustomerId("");
-                setContactNumber("");
-                setEmail("");
-                setCity("");
-                setLeadSource("");
-                setRemark("");
-                setVehicleType("");
-                setSelectedMake(null);
-                setSelectedModel(null);
-                setGrade("");
-                setManufactureYear("");
-                setMileageMin("");
-                setMileageMax("");
-                setNoOfOwners("");
-                setPriceFrom("");
-                setPriceTo("");
-                setIsAddLeadModalOpen(false);
-            },
-            onError: (err: any) => {
-                console.error("Error creating direct request:", err);
-                alert("Failed to create direct request.");
-            },
-        });
-    };
 
     const nextActionData = [
         {
@@ -257,10 +173,6 @@ export default function SalesDashboard() {
         },
     ];
 
-    if (isLoading) {
-        return <div>Loading...</div>;
-    }
-
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
@@ -268,7 +180,7 @@ export default function SalesDashboard() {
                 <Header
                     name="Sophie Eleanor"
                     location="Bambalapitiya"
-                    title="Indra Fast Track Sales Dashboard"
+                    title="Indra Service Park Sales Dashboard"
                 />
 
                 {/* Leads Section */}
@@ -372,19 +284,38 @@ export default function SalesDashboard() {
                     onClose={() => setIsAddLeadModalOpen(false)}
                     actionButton={{
                         label: "Add",
-                        onClick: handleCreateDirectRequest,
+                        onClick: () => {
+                            console.log("Saved lead data:", {
+                                customerName,
+                                contactNumber,
+                                email,
+                                city,
+                                leadSource,
+                                remark,
+                                priority,
+                            });
+                            // Reset form
+                            setCustomerName("");
+                            setContactNumber("");
+                            setEmail("");
+                            setCity("");
+                            setLeadSource("");
+                            setRemark("");
+                            setPriority("P0");
+                            setIsAddLeadModalOpen(false);
+                        },
                     }}
                     isPriorityAvailable={true}
-                    // priority={priority}
-                    // onPriorityChange={setPriority}
+                    priority={priority}
+                    onPriorityChange={setPriority}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
                         <div>
                             <label className="block mb-2 font-medium">Customer Name</label>
                             <input
                                 type="text"
-                                value={customerId}
-                                onChange={(e) => setCustomerId(e.target.value)}
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
                                 className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
                                 placeholder="Customer Name"
                             />
@@ -508,7 +439,7 @@ export default function SalesDashboard() {
                                 placeholder="Select Vehicle Model"
                                 isSearchable
                                 value={selectedModel}
-                                onChange={(option) => setSelectedModel(option)}
+                                onChange={(option) => setSelectedModal(option)}
                                 className="w-full mt-3"
                                 styles={{
                                     control: (base) => ({

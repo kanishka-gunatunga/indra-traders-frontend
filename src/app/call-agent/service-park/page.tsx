@@ -1,6 +1,68 @@
 "use client"
 import Image from "next/image";
-import {Key, useState} from "react";
+import React, {useState} from "react";
+import FormField from "@/components/FormField";
+import z from "zod";
+import {useForm} from "react-hook-form";
+import {useAssignToSale, useServiceIntake} from "@/hooks/useServicePark";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {message} from "antd";
+
+
+// export const serviceParkSchema = z.object({
+//     vehicle_no: z.string().min(2, "Vehicle number is required"),
+//     odometer: z.string().min(1, "Odometer reading is required"),
+//     owner_name: z.string().min(2, "Owner name is required"),
+//     contact_no: z.string().regex(/^0\d{9}$/, "Invalid Sri Lankan phone number"),
+//     email: z.string().email("Invalid email address").optional(),
+//     address: z.string().optional(),
+//     mileage: z.string().optional(),
+//     oil_type: z.string().optional(),
+//     service_center: z.string().optional(),
+//     service_advisor: z.string().optional(),
+//
+//
+//     date: z.string().min(1, "Date is required"),
+//     customer_name: z.string().min(2, "Customer name is required"),
+//     contact_number: z.string().regex(/^0\d{9}$/, "Invalid phone number"),
+//     vehicle_make: z.string().min(1, "Select vehicle make"),
+//     vehicle_model: z.string().min(1, "Select vehicle model"),
+//     manufacture_year: z.string().min(1, "Select manufacture year"),
+//     service_category: z.string().min(1, "Select service category"),
+//     additional_note: z.string().optional(),
+// });
+
+export const vehicleHistorySchema = z.object({
+    vehicle_no: z.string().min(2, "Vehicle number is required"),
+    odometer: z.string().min(1, "Odometer reading is required"),
+    owner_name: z.string().min(2, "Owner name is required"),
+    contact_no: z.string().regex(/^0\d{9}$/, "Invalid Sri Lankan phone number"),
+    email: z.string().email("Invalid email address").optional(),
+    address: z.string().optional(),
+    mileage: z.string().optional(),
+    oil_type: z.string().optional(),
+    service_center: z.string().optional(),
+    service_advisor: z.string().optional(),
+    // customer_name: z.string().min(2, "Customer name is required"),
+    // phone_number: z.string().regex(/^0\d{9}$/, "Invalid phone number"),
+});
+
+export const assignToSaleSchema = z.object({
+    // vehicle_no: z.string().min(2, "Vehicle number is required"),
+    date: z.string().min(1, "Date is required"),
+    customer_name: z.string().min(2, "Customer name is required"),
+    contact_number: z.string().regex(/^0\d{9}$/, "Invalid phone number"),
+    vehicle_make: z.string().min(1, "Select vehicle make"),
+    vehicle_model: z.string().min(1, "Select vehicle model"),
+    manufacture_year: z.string().min(1, "Select manufacture year"),
+    service_category: z.string().min(1, "Select service category"),
+    additional_note: z.string().optional(),
+});
+
+
+export type ServiceParkHistoryFormData = z.infer<typeof vehicleHistorySchema>;
+export type ServiceParkSaleFormData = z.infer<typeof assignToSaleSchema>;
+
 
 const ServicePark = () => {
 
@@ -21,46 +83,10 @@ const ServicePark = () => {
             estimatePrice: 'LKR 20,000',
             action: false,
         },
-        {
-            name: 'Package 2',
-            description: 'Fluid  replacements and system checks',
-            estimatePrice: 'LKR 20,000',
-            action: false,
-        },
-        {
-            name: 'Package 3',
-            description: 'Brake Inspection and Pad Replacement',
-            estimatePrice: 'LKR 20,000',
-            action: false,
-        },
-        {
-            name: 'Package 4',
-            description: 'Battery Check and Terminal Cleaning',
-            estimatePrice: 'LKR 20,000',
-            action: false,
-        },
     ];
 
 
     const initialMaintenanceData = [
-        {
-            serviceName: 'Engine Oil',
-            serviceType: 'Repair',
-            estimatePrice: 'LKR 40,000',
-            action: false,
-        },
-        {
-            serviceName: 'Engine Oil',
-            serviceType: 'Repair',
-            estimatePrice: 'LKR 40,000',
-            action: false,
-        },
-        {
-            serviceName: 'Engine Oil',
-            serviceType: 'Repair',
-            estimatePrice: 'LKR 40,000',
-            action: false,
-        },
         {
             serviceName: 'Engine Oil',
             serviceType: 'Repair',
@@ -77,40 +103,10 @@ const ServicePark = () => {
             estimatePrice: 'LKR 40,000',
             action: false,
         },
-        {
-            serviceName: 'Engine Oil',
-            serviceType: 'Repair',
-            estimatePrice: 'LKR 40,000',
-            action: false,
-        },
-        {
-            serviceName: 'Engine Oil',
-            serviceType: 'Repair',
-            estimatePrice: 'LKR 40,000',
-            action: false,
-        },
-        {
-            serviceName: 'Engine Oil',
-            serviceType: 'Repair',
-            estimatePrice: 'LKR 40,000',
-            action: false,
-        },
     ];
 
 
     const repairsData = [
-        {
-            repairName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
-        {
-            repairName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
-        {
-            repairName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
         {
             repairName: 'Engine Oil',
             estimatePrice: 'LKR 40,000',
@@ -123,34 +119,10 @@ const ServicePark = () => {
             paintName: 'Engine Oil',
             estimatePrice: 'LKR 40,000',
         },
-        {
-            paintName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
-        {
-            paintName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
-        {
-            paintName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
     ];
 
 
     const addOnData = [
-        {
-            addOnName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
-        {
-            addOnName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
-        {
-            addOnName: 'Engine Oil',
-            estimatePrice: 'LKR 40,000',
-        },
         {
             addOnName: 'Engine Oil',
             estimatePrice: 'LKR 40,000',
@@ -163,22 +135,33 @@ const ServicePark = () => {
             points: '500',
             promoCode: 'NEWBUY500'
         },
-        {
-            category: 'Indra Traders (ITPL)',
-            points: '500',
-            promoCode: 'NEWBUY500'
-        },
-        {
-            category: 'Indra Traders (ITPL)',
-            points: '500',
-            promoCode: 'NEWBUY500'
-        },
-        {
-            category: 'Indra Traders (ITPL)',
-            points: '500',
-            promoCode: 'NEWBUY500'
-        },
     ];
+
+    const vehicleMakeOptions = [
+        {value: "Nissan", label: "Nissan"},
+        {value: "Toyota", label: "Toyota"},
+        {value: "Honda", label: "Honda"},
+    ];
+    const vehicleModelOptions = [
+        {value: "GT-R", label: "GT-R"},
+        {value: "Civic", label: "Civic"},
+    ];
+    const manufactureYearOptions = Array.from({length: 15}, (_, i) => {
+        const year = (2025 - i).toString();
+        return {value: year, label: year};
+    });
+    const serviceCategoryOptions = [
+        {value: "Repair", label: "Repair"},
+        {value: "Maintenance", label: "Maintenance"},
+        {value: "Inspection", label: "Inspection"},
+    ];
+
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [vehicleCustomerData, setVehicleCustomerData] = useState<{
+        customer_id: string;
+        vehicle_id: string;
+        customer_no: string;
+    } | null>(null);
 
 
     const [packageData, setPackageData] = useState(initialPackageData);
@@ -188,6 +171,127 @@ const ServicePark = () => {
     const [value, setValue] = useState("Services");
 
     const [copiedIndex, setCopiedIndex] = useState<null | number>(null);
+
+
+    // const {
+    //     register,
+    //     handleSubmit,
+    //     reset,
+    //     formState: {errors},
+    // } = useForm<ServiceParkFormData>({
+    //     resolver: zodResolver(serviceParkSchema),
+    // });
+
+    const {
+        register: registerVehicle,
+        handleSubmit: handleVehicleSubmit,
+        reset: resetVehicle,
+        formState: {errors: vehicleErrors},
+    } = useForm<z.infer<typeof vehicleHistorySchema>>({
+        resolver: zodResolver(vehicleHistorySchema),
+        defaultValues: {
+            vehicle_no: "",
+            odometer: "",
+            owner_name: "",
+            contact_no: "",
+            email: "",
+            address: "",
+            mileage: "",
+            oil_type: "",
+            service_center: "",
+            service_advisor: "",
+        },
+    });
+
+    console.log("-------- err:", vehicleErrors);
+
+
+    const {
+        register: registerSale,
+        handleSubmit: handleSaleSubmit,
+        reset: resetSale,
+        formState: {errors: saleErrors},
+    } = useForm<z.infer<typeof assignToSaleSchema>>({
+        resolver: zodResolver(assignToSaleSchema),
+        defaultValues: {
+            date: new Date().toISOString().split("T")[0],
+            customer_name: "",
+            contact_number: "",
+            vehicle_make: "",
+            vehicle_model: "",
+            manufacture_year: "",
+            service_category: "",
+            additional_note: "",
+        },
+    });
+
+
+    const serviceIntake = useServiceIntake();
+    const assignToSale = useAssignToSale();
+
+    const handleVehicleHistory = async (data: ServiceParkHistoryFormData) => {
+        try {
+            const response = await serviceIntake.mutateAsync({
+                vehicle_no: data.vehicle_no,
+                odometer: data.odometer,
+                owner_name: data.owner_name,
+                contact_no: data.contact_no,
+                email: data.email,
+                address: data.address,
+                mileage: data.mileage,
+                oil_type: data.oil_type,
+                service_center: data.service_center,
+                service_advisor: data.service_advisor,
+                created_by: 1,
+                customer_name: data.owner_name,
+                phone_number: data.contact_no,
+            });
+
+            setVehicleCustomerData({
+                customer_id: response.customer.id,
+                vehicle_id: response.vehicle.id,
+                customer_no: response.contact_no,
+            });
+
+            resetVehicle();
+            message.success("Vehicle and customer details saved successfully!");
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to save vehicle history.");
+        }
+    };
+
+    const handleAssignToSales = async (data: ServiceParkSaleFormData) => {
+        try {
+            if (!vehicleCustomerData) {
+                message.warning("Please apply vehicle history first.");
+                return;
+            }
+
+            await assignToSale.mutateAsync({
+                customer_id: vehicleCustomerData.customer_id,
+                vehicle_id: vehicleCustomerData.vehicle_id,
+                vehicle_make: data.vehicle_make,
+                vehicle_model: data.vehicle_model,
+                year_of_manufacture: data.manufacture_year,
+                service_category: data.service_category,
+                additional_note: data.additional_note,
+                lead_source: "Call Agent",
+                priority: 1,
+            });
+
+            setSubmitSuccess(true);
+            resetSale();
+            message.success("Sale created successfully!");
+        } catch (error) {
+            console.error(error);
+            setSubmitSuccess(false);
+            message.error("Failed to create sale.");
+        }
+    };
+
+    console.log("-----------sale err: ", saleErrors);
+
 
     const handleSelectPackage = (index: number) => {
         setPackageData(prevData => {
@@ -247,27 +351,41 @@ const ServicePark = () => {
                                 <div>
                                     <button
                                         id="applyBtn"
+                                        onClick={handleVehicleSubmit(handleVehicleHistory)}
+                                        disabled={assignToSale.isPending}
                                         className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition">
-                                        Apply
+                                        {assignToSale.isPending ? "Applying..." : "Apply"}
                                     </button>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <VerificationDropdown label="Vehicle No" placeholder="Select Vehicle No" isIcon={true}/>
-                                <div>
-                                    <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Odometer</span>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                placeholder="245,000km"
-                                                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                            />
-                                        </div>
-                                    </label>
-                                </div>
+                                {/*<VerificationDropdown label="Vehicle No" placeholder="Select Vehicle No" isIcon={true}/>*/}
+                                <FormField
+                                    label="Vehicle No"
+                                    placeholder="ABC-1234"
+                                    register={registerVehicle("vehicle_no")}
+                                    error={vehicleErrors.vehicle_no}
+                                />
+                                <FormField
+                                    label="Odometer"
+                                    placeholder="245,000 km"
+                                    register={registerVehicle("odometer")}
+                                    error={vehicleErrors.odometer}
+                                />
+                                {/*<div>*/}
+                                {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                {/*    <span*/}
+                                {/*        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Odometer</span>*/}
+                                {/*        <div className="relative">*/}
+                                {/*            <input*/}
+                                {/*                type="text"*/}
+                                {/*                placeholder="245,000km"*/}
+                                {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                {/*            />*/}
+                                {/*        </div>*/}
+                                {/*    </label>*/}
+                                {/*</div>*/}
                             </div>
 
                             <div className="flex-1 space-y-6 mt-10">
@@ -276,48 +394,72 @@ const ServicePark = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    <div>
-                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Owner Name</span>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Jenny Wilson"
-                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                            </div>
-                                        </label>
-                                    </div>
-                                    <VerificationDropdown label="Contact No" placeholder="077 5848725"
-                                                          isIcon={false}/>
-                                    <div>
-                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Email Address</span>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Jenny@info.com"
-                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                            </div>
-                                        </label>
-                                    </div>
+                                    {/*<div>*/}
+                                    {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                    {/*<span*/}
+                                    {/*    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Owner Name</span>*/}
+                                    {/*        <div className="relative">*/}
+                                    {/*            <input*/}
+                                    {/*                type="text"*/}
+                                    {/*                placeholder="Jenny Wilson"*/}
+                                    {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                    {/*            />*/}
+                                    {/*        </div>*/}
+                                    {/*    </label>*/}
+                                    {/*</div>*/}
+                                    <FormField
+                                        label="Owner Name"
+                                        placeholder="Jenny Wilson"
+                                        register={registerVehicle("owner_name")}
+                                        error={vehicleErrors.owner_name}
+                                    />
+                                    {/*<VerificationDropdown label="Contact No" placeholder="077 5848725"*/}
+                                    {/*                      isIcon={false}/>*/}
+                                    <FormField
+                                        label="Contact No"
+                                        placeholder="0771234567"
+                                        register={registerVehicle("contact_no")}
+                                        error={vehicleErrors.contact_no}
+                                    />
+                                    {/*<div>*/}
+                                    {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                    {/*    <span*/}
+                                    {/*        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Email Address</span>*/}
+                                    {/*        <div className="relative">*/}
+                                    {/*            <input*/}
+                                    {/*                type="text"*/}
+                                    {/*                placeholder="Jenny@info.com"*/}
+                                    {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                    {/*            />*/}
+                                    {/*        </div>*/}
+                                    {/*    </label>*/}
+                                    {/*</div>*/}
+                                    <FormField
+                                        label="Email Address"
+                                        placeholder="jenny@email.com"
+                                        register={registerVehicle("email")}
+                                        error={vehicleErrors.email}
+                                    />
+                                    <FormField
+                                        label="Address"
+                                        placeholder="No.45, Malabe Rd"
+                                        register={registerVehicle("address")}
+                                        error={vehicleErrors.address}
+                                    />
 
-                                    <div>
-                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Address</span>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="No.45, Malabe Rd, Malabe"
-                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                            </div>
-                                        </label>
-                                    </div>
+                                    {/*<div>*/}
+                                    {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                    {/*<span*/}
+                                    {/*    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Address</span>*/}
+                                    {/*        <div className="relative">*/}
+                                    {/*            <input*/}
+                                    {/*                type="text"*/}
+                                    {/*                placeholder="No.45, Malabe Rd, Malabe"*/}
+                                    {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                    {/*            />*/}
+                                    {/*        </div>*/}
+                                    {/*    </label>*/}
+                                    {/*</div>*/}
                                 </div>
                             </div>
 
@@ -327,61 +469,86 @@ const ServicePark = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    <div>
-                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Mileage</span>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="200,000km"
-                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                            </div>
-                                        </label>
-                                    </div>
+                                    {/*<div>*/}
+                                    {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                    {/*<span*/}
+                                    {/*    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Mileage</span>*/}
+                                    {/*        <div className="relative">*/}
+                                    {/*            <input*/}
+                                    {/*                type="text"*/}
+                                    {/*                placeholder="200,000km"*/}
+                                    {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                    {/*            />*/}
+                                    {/*        </div>*/}
+                                    {/*    </label>*/}
+                                    {/*</div>*/}
 
-                                    <div>
-                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Oil Type</span>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="5W-30 Synthetic"
-                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                            </div>
-                                        </label>
-                                    </div>
+                                    <FormField
+                                        label="Mileage"
+                                        placeholder="200,000 km"
+                                        register={registerVehicle("mileage")}
+                                        error={vehicleErrors.mileage}
+                                    />
+                                    <FormField
+                                        label="Oil Type"
+                                        placeholder="5W-30 Synthetic"
+                                        register={registerVehicle("oil_type")}
+                                        error={vehicleErrors.oil_type}
+                                    />
+                                    <FormField
+                                        label="Service Center"
+                                        placeholder="Service Center"
+                                        register={registerVehicle("service_center")}
+                                        error={vehicleErrors.service_center}
+                                    />
+                                    <FormField
+                                        label="Service Advisor"
+                                        placeholder="Service Advisor"
+                                        register={registerVehicle("service_advisor")}
+                                        error={vehicleErrors.service_advisor}
+                                    />
 
-                                    <div>
-                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Service Center</span>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Bambalapitiya"
-                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                            </div>
-                                        </label>
-                                    </div>
+                                    {/*<div>*/}
+                                    {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                    {/*<span*/}
+                                    {/*    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Oil Type</span>*/}
+                                    {/*        <div className="relative">*/}
+                                    {/*            <input*/}
+                                    {/*                type="text"*/}
+                                    {/*                placeholder="5W-30 Synthetic"*/}
+                                    {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                    {/*            />*/}
+                                    {/*        </div>*/}
+                                    {/*    </label>*/}
+                                    {/*</div>*/}
 
-                                    <div>
-                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Service Advisor</span>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="John Doe"
-                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                            </div>
-                                        </label>
-                                    </div>
+                                    {/*<div>*/}
+                                    {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                    {/*<span*/}
+                                    {/*    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Service Center</span>*/}
+                                    {/*        <div className="relative">*/}
+                                    {/*            <input*/}
+                                    {/*                type="text"*/}
+                                    {/*                placeholder="Bambalapitiya"*/}
+                                    {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                    {/*            />*/}
+                                    {/*        </div>*/}
+                                    {/*    </label>*/}
+                                    {/*</div>*/}
+
+                                    {/*<div>*/}
+                                    {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                    {/*<span*/}
+                                    {/*    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Service Advisor</span>*/}
+                                    {/*        <div className="relative">*/}
+                                    {/*            <input*/}
+                                    {/*                type="text"*/}
+                                    {/*                placeholder="John Doe"*/}
+                                    {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                                    {/*            />*/}
+                                    {/*        </div>*/}
+                                    {/*    </label>*/}
+                                    {/*</div>*/}
                                 </div>
                             </div>
                         </div>
@@ -911,6 +1078,129 @@ const ServicePark = () => {
                                 </table>
                             </div>
                         </div>
+                    </section>
+
+
+                    <section
+                        className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
+                        <form className="flex flex-col">
+                            <div className="flex-1 space-y-6">
+                                <div className="flex flex-row items-center justify-between">
+                                    <h2 className="font-semibold text-[22px] text-[#000000] mb-6">Assign to Sales</h2>
+                                    <div>
+                                        <button
+                                            onClick={handleSaleSubmit(handleAssignToSales)}
+                                            disabled={assignToSale.isPending}
+                                            className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition disabled:bg-gray-400">
+                                            {assignToSale.isPending ? "Submitting..." : "Send"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <div>
+                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span
+                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Ticket Number</span>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={`IPS${Date.now()}`}
+                                                    disabled
+                                                    // placeholder="ITPL122455874565"
+                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 disabled:bg-gray-200`}
+                                                />
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span
+                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Date</span>
+                                            <div className="relative">
+                                                <input
+                                                    type="date"
+                                                    {...registerSale("date")}
+                                                    placeholder="12 Mar, 2025"
+                                                    className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
+                                                />
+                                                {saleErrors.date &&
+                                                    <span
+                                                        className="text-red-600 text-sm">{saleErrors.date.message}</span>}
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <FormField
+                                        label="Customer Name"
+                                        placeholder="Emily Charlotte"
+                                        type="text"
+                                        register={registerSale("customer_name")}
+                                        error={saleErrors.customer_name}
+                                    />
+
+                                    <FormField
+                                        label="Contact Number"
+                                        placeholder="077 5647256"
+                                        type="text"
+                                        register={registerSale("contact_number")}
+                                        error={saleErrors.contact_number}
+                                    />
+                                </div>
+                            </div>
+
+
+                            <div className="flex-1 space-y-6 mt-10">
+                                <div className="flex flex-row items-center justify-between">
+                                    <h2 className="font-semibold text-[19px] mb-6">Vehicle Details</h2>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <FormField
+                                        label="Vehicle Make"
+                                        type="select"
+                                        isIcon={true}
+                                        options={vehicleMakeOptions}
+                                        register={registerSale("vehicle_make")}
+                                        error={saleErrors.vehicle_make}
+                                    />
+                                    <FormField
+                                        label="Vehicle Model"
+                                        type="select"
+                                        isIcon={true}
+                                        options={vehicleModelOptions}
+                                        register={registerSale("vehicle_model")}
+                                        error={saleErrors.vehicle_model}
+                                    />
+                                    <FormField
+                                        label="Service Category"
+                                        type="select"
+                                        isIcon={true}
+                                        options={serviceCategoryOptions}
+                                        register={registerSale("service_category")}
+                                        error={saleErrors.service_category}
+                                    />
+                                    <FormField
+                                        label="Manufacture Year"
+                                        type="select"
+                                        isIcon={true}
+                                        options={manufactureYearOptions}
+                                        register={registerSale("manufacture_year")}
+                                        error={saleErrors.manufacture_year}
+                                    />
+                                </div>
+                                <FormField
+                                    label="Additional Note"
+                                    type="textarea"
+                                    placeholder="Enter Your Note"
+                                    register={registerSale("additional_note")}
+                                    error={saleErrors.additional_note}
+                                />
+                            </div>
+                            {submitSuccess && (
+                                <div className="text-green-600 text-sm mt-4">Vehicle sale created successfully!</div>
+                            )}
+                        </form>
                     </section>
 
 
