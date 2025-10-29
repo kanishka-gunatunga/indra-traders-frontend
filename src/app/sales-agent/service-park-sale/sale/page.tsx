@@ -6,54 +6,12 @@ import {TicketCardProps} from "@/components/TicketCard";
 import {TicketColumn} from "@/components/TicketColumn";
 import {DragDropContext, DropResult} from "@hello-pangea/dnd";
 import Image from "next/image";
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import Select from "react-select";
 import {Role} from "@/types/role";
+import {useNearestReminders, useVehicleSales} from "@/hooks/useServicePark";
 
 type OptionType = { value: string; label: string };
-
-const dummyTickets: TicketCardProps[] = [
-    {
-        id: "ITPL122455874561",
-        priority: 0,
-        user: "Sophie",
-        phone: "0771234567",
-        date: "12 Mar, 2025",
-        status: "New",
-    },
-    {
-        id: "ITPL122455874562",
-        priority: 1,
-        user: "Alex",
-        phone: "0777654321",
-        date: "13 Mar, 2025",
-        status: "Ongoing",
-    },
-    {
-        id: "ITPL122455874563",
-        priority: 2,
-        user: "Sophie",
-        phone: "0771234567",
-        date: "12 Mar, 2025",
-        status: "New",
-    },
-    {
-        id: "ITPL122455874564",
-        priority: 3,
-        user: "Alex",
-        phone: "0777654321",
-        date: "13 Mar, 2025",
-        status: "Lost",
-    },
-    {
-        id: "ITPL122455874565",
-        priority: 4,
-        user: "Sophie",
-        phone: "0771234567",
-        date: "12 Mar, 2025",
-        status: "Won",
-    },
-];
 
 const vehicleMakes = [
     {value: "Toyota", label: "Toyota"},
@@ -67,12 +25,46 @@ const vehicleModels = [
     {value: "Navara", label: "Navara"},
 ];
 
+type MappedTicket = {
+    id: string;
+    priority: number;
+    user: string;
+    phone: string;
+    date: string;
+    status: "New" | "Ongoing" | "Won" | "Lost";
+};
+
+const mapStatus = (apiStatus: string): MappedTicket["status"] => {
+    switch (apiStatus) {
+        case "NEW":
+            return "New";
+        case "ONGOING":
+            return "Ongoing";
+        case "WON":
+            return "Won";
+        case "LOST":
+            return "Lost";
+        default:
+            return "New";
+    }
+};
+
+const mapApiToTicket = (apiSale: any): MappedTicket => ({
+    id: apiSale.ticket_number,
+    priority: apiSale.priority,
+    user: apiSale.customer?.customer_name || "Unknown",
+    phone: apiSale.customer?.phone_number || "",
+    date: new Date(apiSale.date).toLocaleDateString("en-GB", {day: "2-digit", month: "short", year: "numeric"}),
+    status: mapStatus(apiSale.status),
+});
+
+
 export default function SalesDashboard() {
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
 
-    const [tickets, setTickets] = useState<TicketCardProps[]>(dummyTickets);
+    const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
 
     const [customerName, setCustomerName] = useState("");
@@ -86,7 +78,19 @@ export default function SalesDashboard() {
     const [selectedMake, setSelectedMake] = useState<OptionType | null>(null);
     const [selectedModel, setSelectedModal] = useState<OptionType | null>(null);
 
-    const {data, isError} = use
+    const {data: apiSales, isLoading, isError} = useVehicleSales();
+    console.log("----- sale details: ", apiSales);
+
+    const userId = 1;
+    const {data: reminderData, isLoading: reminderLoading, error: reminderError} = useNearestReminders(userId);
+
+    console.log("-------- reminders : ", reminderData);
+
+    useEffect(() => {
+        if (apiSales) {
+            setTickets(apiSales.map(mapApiToTicket));
+        }
+    }, [apiSales]);
 
     const allowedTransitions: Record<
         TicketCardProps["status"],
@@ -127,29 +131,6 @@ export default function SalesDashboard() {
         "Lost",
     ];
 
-    const nextActionData = [
-        {
-            ticketNo: "ITPL122455874564",
-            name: "Emily Charlotte",
-            contactNo: "0773839322",
-        },
-        {
-            ticketNo: "ITPL122455874595",
-            name: "Emily Charlotte",
-            contactNo: "0773839322",
-        },
-        {
-            ticketNo: "ITPL122455874165",
-            name: "Emily Charlotte",
-            contactNo: "0773839322",
-        },
-        {
-            ticketNo: "ITPL122455874505",
-            name: "Emily Charlotte",
-            contactNo: "0773839322",
-        },
-    ];
-
     const upcomingEventsData = [
         {
             customerName: "Emily Charlotte",
@@ -172,6 +153,10 @@ export default function SalesDashboard() {
             eventType: "BirthDay",
         },
     ];
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div
@@ -207,6 +192,7 @@ export default function SalesDashboard() {
                                 <TicketColumn
                                     key={col}
                                     title={col}
+                                    route={"/sales-agent/service-park-sale/sale"}
                                     tickets={tickets.filter((t) => t.status === col)}
                                 />
                             ))}
@@ -230,16 +216,16 @@ export default function SalesDashboard() {
 
                             <div className="h-[100] overflow-y-auto no-scrollbar">
                                 {/* Table rows */}
-                                {nextActionData.map((item, idx) => (
+                                {reminderData.map((item:any, idx: number) => (
                                     <div
                                         key={idx}
                                         className={`flex ${
                                             idx > 0 ? "mt-3" : ""
                                         } font-medium text-black min-w-[400px]`}
                                     >
-                                        <div className="w-1/3 px-2">{item.ticketNo}</div>
-                                        <div className="w-1/3 px-2">{item.name}</div>
-                                        <div className="w-1/3 px-2">{item.contactNo}</div>
+                                        <div className="w-1/3 px-2">{item.ticket_number}</div>
+                                        <div className="w-1/3 px-2">{item.customer_name}</div>
+                                        <div className="w-1/3 px-2">{item.contact_number}</div>
                                     </div>
                                 ))}
                             </div>
@@ -370,13 +356,13 @@ export default function SalesDashboard() {
                                     <option value="Referral">Referral</option>
                                 </select>
                                 <span className="absolute right-4 pointer-events-none">
-                  <Image
-                      src={"/images/sales/icon-park-solid_down-one.svg"}
-                      width={19}
-                      height={19}
-                      alt="Arrow"
-                  />
-                </span>
+                                  <Image
+                                      src={"/images/sales/icon-park-solid_down-one.svg"}
+                                      width={19}
+                                      height={19}
+                                      alt="Arrow"
+                                  />
+                                </span>
                             </div>
                         </div>
 
@@ -397,13 +383,13 @@ export default function SalesDashboard() {
                                     <option value="Truck">Truck</option>
                                 </select>
                                 <span className="absolute right-4 pointer-events-none">
-                  <Image
-                      src={"/images/sales/icon-park-solid_down-one.svg"}
-                      width={19}
-                      height={19}
-                      alt="Arrow"
-                  />
-                </span>
+                                  <Image
+                                      src={"/images/sales/icon-park-solid_down-one.svg"}
+                                      width={19}
+                                      height={19}
+                                      alt="Arrow"
+                                  />
+                                </span>
                             </div>
                         </div>
 

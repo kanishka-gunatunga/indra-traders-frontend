@@ -1,5 +1,6 @@
 import { Role } from "@/types/role";
 import Image from "next/image";
+import {useEffect, useState} from "react";
 
 interface HeaderProps {
   name: string;
@@ -14,6 +15,44 @@ export default function Header({
   title,
   reminders,
 }: HeaderProps) {
+
+    const [time, setTime] = useState<string>("");
+    const [date, setDate] = useState<string>("");
+    const [day, setDay] = useState<string>("");
+
+    useEffect(() => {
+        const updateTime = () => {
+            const now = new Date();
+
+            // Format time as HH:MM:SS AM/PM
+            const formattedTime = now.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
+            });
+
+            // Custom date format: "12 March, 2025"
+            const dayOfMonth = now.getDate();
+            const monthName = now.toLocaleString("en-US", { month: "long" });
+            const year = now.getFullYear();
+            const formattedDate = `${dayOfMonth} ${monthName}, ${year}`;
+
+            // Day name: "Wednesday"
+            const formattedDay = now.toLocaleString("en-US", { weekday: "long" });
+
+            setTime(formattedTime);
+            setDate(formattedDate);
+            setDay(formattedDay);
+        };
+
+        updateTime(); // initial render
+        const timer = setInterval(updateTime, 1000); // update every second
+
+        return () => clearInterval(timer);
+    }, []);
+
+
   return (
     <>
       <h1 className="font-bold text-[25px] leading-[100%] tracking-normal text-[#1D1D1D] ml-8 max-[1140px]:text-[23px]">
@@ -52,14 +91,14 @@ export default function Header({
         <div className="flex items-center space-x-20">
           <div className="flex flex-col space-y-1">
             <span className="font-normal text-[30px] max-[1140px]:text-[25px] max-[1140px]:text-center leading-[100%] uppercase text-[#1D1D1D]">
-              WEDNESDAY
+              {day}
             </span>
             <span className="font-normal text-[15px] max-[1140px]:text-[10px] max-[1140px]:text-center leading-[100%] tracking-[0.39em] uppercase text-black">
-              12 March, 2025
+              {date}
             </span>
           </div>
           <span className="font-medium text-[20px] max-[1140px]:text-[13px] leading-[100%] tracking-[0.34em] uppercase">
-            01:06:03 PM
+            {time}
           </span>
         </div>
       </section>
