@@ -43,4 +43,7 @@ export const fastTrackService = {
 
     getFollowupsBySale: (saleId: string) =>
         axiosInstance.get(`/fast-track/sales/${saleId}/followups`),
+
+    getNearestReminders :(userId: number) =>
+        axiosInstance.get(`/service-park/sales-user/${userId}/reminders/nearest`),
 };

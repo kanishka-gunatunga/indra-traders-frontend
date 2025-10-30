@@ -29,4 +29,7 @@ export const SparePartSalesService = {
 
     getRemindersByTicket: (ticket: string) =>
         axiosInstance.get(`/spare-part-sales/${ticket}/reminders`),
+
+    getNearestReminders :(userId: number) =>
+        axiosInstance.get(`/service-park/sales-user/${userId}/reminders/nearest`),
 };

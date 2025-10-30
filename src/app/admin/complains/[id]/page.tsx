@@ -118,9 +118,9 @@ export default function ComplainDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value={complaint.customerId || 'N/A'}/>
+                            <InfoRow label="Customer Name:" value={complaint?.customer.customer_name || 'N/A'}/>
                             <InfoRow label="Contact No:" value={complaint.contact_no || 'N/A'}/>
-                            <InfoRow label="Email:" value={complaint.customer?.email || 'N/A'}/>
+                            <InfoRow label="Email:" value={complaint?.customer?.email || 'N/A'}/>
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Ticket Details
@@ -138,11 +138,13 @@ export default function ComplainDetailsPage() {
 
                         <div className="w-3/5 flex flex-col min-h-[400px]">
                             <SalesDetailsTab
-                                complaintId={complaint.id}
+                                // complaintId={complaint.id}
                                 customerId={complaint.customerId}
                                 status={status}
                                 onOpenActivity={() => setActivityModalOpen(true)}
                                 onOpenReminder={() => setReminderModalOpen(true)}
+                                followups={complaint?.followups || []}
+                                reminders={complaint?.reminders || []}
                             />
                             {role === "admin" ? null : (
                                 <div className="mt-6 flex w-full justify-end">

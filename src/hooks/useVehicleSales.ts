@@ -143,3 +143,13 @@ export const useDeleteReminder = () => {
         },
     });
 };
+
+export const useNearestReminders = (userId: number) =>
+    useQuery({
+        queryKey: ["vehicleSales", "reminders", userId],
+        queryFn: async () => {
+            const res = await VehicleSaleService.getNearestReminders(userId);
+            return res.data ?? {};
+        },
+        enabled: !!userId,
+    });

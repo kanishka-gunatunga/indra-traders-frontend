@@ -43,4 +43,7 @@ export const VehicleSaleService = {
         axiosInstance.get(`/vehicle-sales-reminders/ticket/${ticketNumber}`),
 
     reminderDelete: (id: number) => axiosInstance.delete(`/vehicle-sales-reminders/${id}`),
+
+    getNearestReminders :(userId: number) =>
+        axiosInstance.get(`/service-park/sales-user/${userId}/reminders/nearest`),
 };

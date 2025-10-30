@@ -1,5 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {fastTrackService} from "@/services/fastTrack.service";
+import {SparePartSalesService} from "@/services/sparePartSalesService";
 
 export const useDirectRequests = () =>
     useQuery({
@@ -119,4 +120,15 @@ export const useFollowupsBySale = (saleId: string) =>
         queryKey: ["followups", saleId],
         queryFn: () => fastTrackService.getFollowupsBySale(saleId).then(res => res.data),
         enabled: !!saleId,
+    });
+
+
+export const useNearestReminders = (userId: number) =>
+    useQuery({
+        queryKey: ["sales", "reminders", userId],
+        queryFn: async () => {
+            const res = await fastTrackService.getNearestReminders(userId);
+            return res.data ?? {};
+        },
+        enabled: !!userId,
     });

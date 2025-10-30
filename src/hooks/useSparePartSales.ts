@@ -95,3 +95,13 @@ export const useRemindersByTicket = (ticket: string) =>
         queryFn: () => SparePartSalesService.getRemindersByTicket(ticket).then((res) => res.data),
         enabled: !!ticket,
     });
+
+export const useNearestReminders = (userId: number) =>
+    useQuery({
+        queryKey: ["spareSales", "reminders", userId],
+        queryFn: async () => {
+            const res = await SparePartSalesService.getNearestReminders(userId);
+            return res.data ?? {};
+        },
+        enabled: !!userId,
+    });

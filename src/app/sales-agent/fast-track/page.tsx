@@ -10,6 +10,7 @@ import React, {useEffect, useState} from "react";
 import Select from "react-select";
 import {Role} from "@/types/role";
 import {useCreateDirectRequest, useFastTrackSales, useUpdateSaleStatus} from "@/hooks/useFastTrack";
+import {useNearestReminders} from "@/hooks/useSparePartSales";
 
 type OptionType = { value: string; label: string };
 
@@ -91,6 +92,9 @@ export default function SalesDashboard() {
     const {data: apiSales, isLoading} = useFastTrackSales();
     const createDirectRequestMutation = useCreateDirectRequest();
     const updateSaleStatusMutation = useUpdateSaleStatus();
+
+    const userId = 1;
+    const {data: reminderData, isLoading: reminderLoading, error: reminderError} = useNearestReminders(userId);
 
     useEffect(() => {
         if (apiSales) {
@@ -318,16 +322,29 @@ export default function SalesDashboard() {
 
                             <div className="h-[100] overflow-y-auto no-scrollbar">
                                 {/* Table rows */}
-                                {nextActionData.map((item, idx) => (
+                                {/*{nextActionData.map((item, idx) => (*/}
+                                {/*    <div*/}
+                                {/*        key={idx}*/}
+                                {/*        className={`flex ${*/}
+                                {/*            idx > 0 ? "mt-3" : ""*/}
+                                {/*        } font-medium text-black min-w-[400px]`}*/}
+                                {/*    >*/}
+                                {/*        <div className="w-1/3 px-2">{item.ticketNo}</div>*/}
+                                {/*        <div className="w-1/3 px-2">{item.name}</div>*/}
+                                {/*        <div className="w-1/3 px-2">{item.contactNo}</div>*/}
+                                {/*    </div>*/}
+                                {/*))}*/}
+
+                                {reminderData?.data.map((item: any, idx: number) => (
                                     <div
                                         key={idx}
                                         className={`flex ${
                                             idx > 0 ? "mt-3" : ""
                                         } font-medium text-black min-w-[400px]`}
                                     >
-                                        <div className="w-1/3 px-2">{item.ticketNo}</div>
-                                        <div className="w-1/3 px-2">{item.name}</div>
-                                        <div className="w-1/3 px-2">{item.contactNo}</div>
+                                        <div className="w-1/3 px-2">{item.ticket_number}</div>
+                                        <div className="w-1/3 px-2">{item.customer_name}</div>
+                                        <div className="w-1/3 px-2">{item.contact_number}</div>
                                     </div>
                                 ))}
                             </div>
