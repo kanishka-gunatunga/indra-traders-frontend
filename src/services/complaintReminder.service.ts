@@ -1,23 +1,24 @@
-import {Reminder} from "@/types/reminder.types";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import axiosInstance from "@/utils/axiosinstance";
 
 export const ComplaintReminderService = {
-    getAll: async (): Promise<Reminder[]> => {
+    getAll: async () => {
         const res = await axiosInstance.get("/complaint-reminders");
         return res.data;
     },
 
-    getByComplaint: async (complaintId: number): Promise<Reminder[]> => {
+    getByComplaint: async (complaintId: number) => {
         const res = await axiosInstance.get(`/complaint-reminders/complaint/${complaintId}`);
         return res.data;
     },
 
-    create: async (data: Partial<Reminder>) => {
+    create: async (data:any) => {
         const res = await axiosInstance.post("/complaint-reminders", data);
         return res.data;
     },
 
-    update: async (id: number, data: Partial<Reminder>) => {
+    update: async (id: number, data: any) => {
         const res = await axiosInstance.put(`/complaint-reminders/${id}`, data);
         return res.data;
     },

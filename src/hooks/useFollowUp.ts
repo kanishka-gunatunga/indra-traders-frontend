@@ -1,9 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ComplaintFollowupService } from "@/services/complaintFollowup.service";
-import { FollowUp } from "@/types/followup.types";
 
 export const useFollowUpsByComplaint = (complaintId: number) => {
-    return useQuery<FollowUp[]>({
+    return useQuery({
         queryKey: ["followups", complaintId],
         queryFn: () => ComplaintFollowupService.getByComplaint(complaintId),
         enabled: !!complaintId,

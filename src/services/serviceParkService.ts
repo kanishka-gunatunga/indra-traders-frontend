@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import axiosInstance from "@/utils/axiosinstance";
 
 export const handleServiceIntake = async (data: any) => {

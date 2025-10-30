@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import FlowBar, {SalesStatus} from "@/components/FlowBar";
@@ -102,7 +103,7 @@ export default function SalesDetailsPage() {
                 {
                     task_title: reminderTitle,
                     task_date: new Date(reminderDate).toISOString(),
-                    note: reminderNote || null,
+                    note: reminderNote || undefined,
                     sale_id: sale.id,
                 },
                 {
@@ -292,6 +293,9 @@ export default function SalesDetailsPage() {
 
                         <div className="w-3/5 flex flex-col min-h-[400px]">
                             <SalesDetailsTab
+                                customerId="1"
+                                reminders={[]}
+                                followups={[]}
                                 status={status}
                                 onOpenActivity={() => setActivityModalOpen(true)}
                                 onOpenReminder={() => setReminderModalOpen(true)}

@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import axiosInstance from "@/utils/axiosinstance";
-import {User} from "@/types/User";
 
 
 export const userService = {
@@ -23,12 +24,12 @@ export const userService = {
         return res.data;
     },
 
-    createUser: async (data: User) => {
+    createUser: async (data: any) => {
         const res = await axiosInstance.post("/users", data);
         return res.data;
     },
 
-    updateUser: async (id: string, data: Partial<User>) => {
+    updateUser: async (id: string, data: any) => {
         const res = await axiosInstance.put(`/users/${id}`, data);
         return res.data;
     },

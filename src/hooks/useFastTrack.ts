@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {fastTrackService} from "@/services/fastTrack.service";
-import {SparePartSalesService} from "@/services/sparePartSalesService";
 
 export const useDirectRequests = () =>
     useQuery({

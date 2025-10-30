@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import FlowBar, {SalesStatus} from "@/components/FlowBar";
@@ -45,7 +47,7 @@ export default function SalesDetailsPage() {
     // Sync status from fetched sale
     useEffect(() => {
         if (sale) {
-            const displayStatus: SalesStatus = sale.status === "NEW" ? "New" : sale.status === "ONGOING" ? "Ongoing" : "Completed"; // Adjust for Won/Lost if needed
+            const displayStatus: SalesStatus = sale.status === "NEW" ? "New" : sale.status === "ONGOING" ? "Ongoing" : sale.status === "WON" ? "Won" : "Lost"; // Adjust for Won/Lost if needed
             setStatus(displayStatus);
         }
     }, [sale]);

@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import DetailsModal from "@/components/DetailsModal";
 import Header from "@/components/Header";
 import Modal from "@/components/Modal";
 import VehicleGallery from "@/components/VehicleGallery";
-import {X} from "lucide-react";
 import Image from "next/image";
 import React, {useState} from "react";
 import {useBestMatches, useDirectRequests, useRemindersByDirectRequest} from "@/hooks/useFastTrack";

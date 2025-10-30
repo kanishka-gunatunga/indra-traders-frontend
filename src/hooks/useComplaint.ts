@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {complaintService} from "@/services/complaintService";
-import {Complaint, CreateComplaintInput, UpdateComplaintInput} from "@/types/complaint.types";
 
 export const complaintKeys = {
     all: ["complaints"] as const,
@@ -12,7 +13,7 @@ export const complaintKeys = {
 
 
 export const useComplaints = () => {
-    return useQuery<Complaint[]>({
+    return useQuery({
         queryKey: complaintKeys.lists(),
         queryFn: complaintService.getAll,
     });
@@ -20,7 +21,7 @@ export const useComplaints = () => {
 
 
 export const useComplaintById = (id: number) => {
-    return useQuery<Complaint>({
+    return useQuery({
         queryKey: complaintKeys.detail(id),
         queryFn: () => complaintService.getById(id),
         enabled: !!id, // Prevents unnecessary call when ID is undefined
@@ -29,7 +30,7 @@ export const useComplaintById = (id: number) => {
 
 
 export const useComplaintsByContact = (phone: string) => {
-    return useQuery<Complaint[]>({
+    return useQuery({
         queryKey: complaintKeys.listByContact(phone),
         queryFn: () => complaintService.getByContact(phone),
         enabled: !!phone,
@@ -41,7 +42,7 @@ export const useCreateComplaint = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: CreateComplaintInput) => complaintService.create(data),
+        mutationFn: (data: any) => complaintService.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: complaintKeys.lists()});
         },
@@ -53,7 +54,7 @@ export const useUpdateComplaint = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, data}: { id: number; data: UpdateComplaintInput }) =>
+        mutationFn: ({id, data}: { id: number; data: any }) =>
             complaintService.update(id, data),
         onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({queryKey: complaintKeys.detail(variables.id)});

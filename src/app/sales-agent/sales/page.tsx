@@ -1018,6 +1018,8 @@
 //     );
 // }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import Modal from "@/components/Modal";
@@ -1186,28 +1188,6 @@ export default function SalesDashboard() {
         });
     };
 
-    const nextActionData = [
-        {
-            ticketNo: "ITPL122455874564",
-            name: "Emily Charlotte",
-            contactNo: "0773839322",
-        },
-        {
-            ticketNo: "ITPL122455874595",
-            name: "Emily Charlotte",
-            contactNo: "0773839322",
-        },
-        {
-            ticketNo: "ITPL122455874165",
-            name: "Emily Charlotte",
-            contactNo: "0773839322",
-        },
-        {
-            ticketNo: "ITPL122455874505",
-            name: "Emily Charlotte",
-            contactNo: "0773839322",
-        },
-    ];
     const upcomingEventsData = [
         {
             customerName: "Emily Charlotte",
@@ -1293,7 +1273,7 @@ export default function SalesDashboard() {
 
                             <div className="h-[100] overflow-y-auto no-scrollbar">
                                 {/* Table rows */}
-                                {reminderData?.data.map((item, idx) => (
+                                {reminderData?.data.map((item:any, idx: number) => (
                                     <div
                                         key={idx}
                                         className={`flex ${

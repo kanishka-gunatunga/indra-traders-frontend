@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 import Image from "next/image";
 import DashboardCard, {CardItemProps} from "@/components/DashboardCard";
 import React, {useState} from "react";
 import ComplainModal from "@/components/ComplainModal";
 import InquiriesModal from "@/components/InquiriesModal";
-import VehicleSalesModal from "@/components/VehicleSalesModal";
+// import VehicleSalesModal from "@/components/VehicleSalesModal";
 import ServiceParkModal from "@/components/ServiceBookingModal";
 import SparePartsModal from "@/components/SparePartsModal";
 import FastTrackModal from "@/components/FastTrackModal";

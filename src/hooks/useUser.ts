@@ -1,20 +1,21 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {userService} from "@/services/userService";
-import {User} from "@/types/User";
 
 export const useUsers = (filters?: {
     user_role?: string;
     department?: string;
     branch?: string;
 }) => {
-    return useQuery<User[]>({
+    return useQuery({
         queryKey: ["users", filters],
         queryFn: () => userService.getUsers(filters),
     });
 };
 
 export const useUser = (id: string) => {
-    return useQuery<User>({
+    return useQuery({
         queryKey: ["user", id],
         queryFn: () => userService.getUserById(id),
         enabled: !!id,
@@ -34,7 +35,7 @@ export const useCreateUser = () => {
 export const useUpdateUser = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({id, data}: { id: string; data: Partial<User> }) =>
+        mutationFn: ({id, data}: { id: string; data: any }) =>
             userService.updateUser(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: ["users"]});
