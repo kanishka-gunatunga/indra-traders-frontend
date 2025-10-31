@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import {Role} from "@/types/role";
@@ -9,6 +10,7 @@ import {useEventsByCustomer} from "@/hooks/useEvent";
 interface Followup {
     id: number;
     activity: string;
+    activity_date: string;
     spare_part_sale_id: number;
     createdAt: string;
     updatedAt: string;
@@ -113,7 +115,7 @@ export default function SalesDetailsTab({
                                                 } font-medium text-black min-w-[400px]`}
                                             >
                                                 <div className="w-1/2 px-2">{item.activity}</div>
-                                                <div className="w-1/2 px-2">{formatDate(item.activity_date)}</div>
+                                                <div className="w-1/2 px-2">{formatDate(item?.activity_date)}</div>
                                             </div>
                                         ))
                                     )}

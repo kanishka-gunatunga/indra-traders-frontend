@@ -1,6 +1,5 @@
 import React from 'react';
 import {CardItemProps} from "@/components/DashboardCard";
-import Image from "next/image";
 import DetailsModal from "@/components/DetailsModal";
 
 interface InquiriesModalProps {

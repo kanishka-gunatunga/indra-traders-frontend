@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 "use client";
 
@@ -564,12 +563,20 @@ export default function UserManagement() {
                             try {
                                 await updateUserMutation.mutateAsync({
                                     id: selectedUser.id,
-                                    full_name: selectedUser.full_name,
-                                    contact_no: selectedUser.contact_no,
-                                    email: selectedUser.email,
-                                    user_role: selectedUser.user_role,
-                                    department: selectedUser.department,
-                                    branch: selectedUser.branch,
+                                    // full_name: selectedUser.full_name,
+                                    // contact_no: selectedUser.contact_no,
+                                    // email: selectedUser.email,
+                                    // user_role: selectedUser.user_role,
+                                    // department: selectedUser.department,
+                                    // branch: selectedUser.branch,
+                                    data: {
+                                        full_name: selectedUser.full_name,
+                                        contact_no: selectedUser.contact_no,
+                                        email: selectedUser.email,
+                                        user_role: selectedUser.user_role,
+                                        department: selectedUser.department,
+                                        branch: selectedUser.branch,
+                                    },
                                 });
                                 setIsUserDetailsModalOpen(false);
                             } catch (error) {

@@ -1,5 +1,3 @@
-import Image from "next/image";
-import Modal from "@/components/Modal";
 import React from "react";
 import DetailsModal from "@/components/DetailsModal";
 
