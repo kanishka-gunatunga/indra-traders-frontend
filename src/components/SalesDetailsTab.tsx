@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import {Role} from "@/types/role";
@@ -113,7 +114,7 @@ export default function SalesDetailsTab({
                                                 } font-medium text-black min-w-[400px]`}
                                             >
                                                 <div className="w-1/2 px-2">{item.activity}</div>
-                                                <div className="w-1/2 px-2">{formatDate(item.activity_date)}</div>
+                                                <div className="w-1/2 px-2">{formatDate(item?.activity_date)}</div>
                                             </div>
                                         ))
                                     )}

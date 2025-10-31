@@ -90,8 +90,6 @@
 // export default SparePartsModal;
 
 "use client";
-import {useState} from "react";
-import Image from "next/image";
 import DetailsModal from "@/components/DetailsModal";
 
 interface SparePartsModalProps {
