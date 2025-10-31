@@ -1222,7 +1222,7 @@ export default function SalesDashboard() {
                 <Header
                     name="Sophie Eleanor"
                     location="Bambalapitiya"
-                    title="Indra Motor Spare Sales Dashboard"
+                    title="Indra Traders Sales Dashboard"
                 />
 
                 {/* Leads Section */}
@@ -1249,7 +1249,7 @@ export default function SalesDashboard() {
                                 <TicketColumn
                                     key={col}
                                     title={col}
-                                    route={"/sales-agent/spare-parts"}
+                                    route={"/sales-agent/sales"}
                                     tickets={tickets.filter((t) => t.status === col)}
                                 />
                             ))}
