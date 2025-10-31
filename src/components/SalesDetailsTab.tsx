@@ -10,6 +10,7 @@ import {useEventsByCustomer} from "@/hooks/useEvent";
 interface Followup {
     id: number;
     activity: string;
+    activity_date: string;
     spare_part_sale_id: number;
     createdAt: string;
     updatedAt: string;
