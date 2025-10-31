@@ -1,171 +1,232 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 "use client";
 
-import FlowBar, { ComplainStatus } from "@/components/FlowBar";
+import FlowBar, {ComplainStatus} from "@/components/FlowBar";
 import SalesDetailsTab from "@/components/SalesDetailsTab";
 import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
-import React, { useState } from "react";
-import { Role } from "@/types/role";
+import React, {useState} from "react";
+import {Role} from "@/types/role";
+import {useComplaintById, useUpdateComplaint} from "@/hooks/useComplaint";
+import {useParams} from "next/navigation";
+import {useCreateFollowUp} from "@/hooks/useFollowUp";
+import {useCreateReminder} from "@/hooks/useReminder";
 
 export default function ComplainDetailsPage() {
-  const [role, setRole] = useState<Role>(
-    process.env.NEXT_PUBLIC_USER_ROLE as Role
-  );
+    const [role, setRole] = useState<Role>(
+        process.env.NEXT_PUBLIC_USER_ROLE as Role
+    );
 
-  const [status, setStatus] = useState<ComplainStatus>("New");
+    const params = useParams();
+    const id = Number(params?.id);
 
-  const [isActivityModalOpen, setActivityModalOpen] = useState(false);
-  const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+    const {data: complaint, isLoading} = useComplaintById(id);
 
-  const [activityText, setActivityText] = useState("");
-  const [reminderTitle, setReminderTitle] = useState("");
-  const [reminderDate, setReminderDate] = useState("");
-  const [reminderNote, setReminderNote] = useState("");
+    const updateComplaint = useUpdateComplaint();
+    const createFollowUpMutation = useCreateFollowUp();
+    const createReminderMutation = useCreateReminder();
 
-  return (
-    <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
-      <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-        <Header
-          name="Sophie Eleanor"
-          location="Bambalapitiya"
-          title="All Complains"
-        />
+    const [status, setStatus] = useState<ComplainStatus>("New");
 
-        <section className="relative bg-[#FFFFFF4D] mb-5 bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-9 py-10 flex flex-col justify-center items-center">
-          {/* Header */}
-          <div className="flex w-full justify-between items-center">
-            <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
+    const [isActivityModalOpen, setActivityModalOpen] = useState(false);
+    const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+
+    const [activityText, setActivityText] = useState("");
+    const [reminderTitle, setReminderTitle] = useState("");
+    const [reminderDate, setReminderDate] = useState("");
+    const [reminderNote, setReminderNote] = useState("");
+
+    const handleActivitySave = async () => {
+        if (!activityText.trim()) return;
+        try {
+            await createFollowUpMutation.mutateAsync({
+                activity: activityText,
+                activity_date: new Date().toISOString().split('T')[0],
+                complaintId: id,
+            });
+            setActivityText("");
+            setActivityModalOpen(false);
+        } catch (error: any) {
+            console.error("Error creating follow-up:", error);
+            alert(`Failed to save activity: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    const handleReminderSave = async () => {
+        if (!reminderTitle.trim() || !reminderDate) return;
+        try {
+            await createReminderMutation.mutateAsync({
+                task_title: reminderTitle,
+                task_date: reminderDate,
+                note: reminderNote,
+                complaintId: id,
+            });
+            setReminderTitle("");
+            setReminderDate("");
+            setReminderNote("");
+            setReminderModalOpen(false);
+        } catch (error: any) {
+            console.error("Error creating reminder:", error);
+            alert(`Failed to save reminder: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <p>Loading complaint details...</p>
+            </div>
+        );
+    }
+
+    if (!complaint) {
+        return <p className="text-center mt-10 text-gray-500">Complaint not found.</p>;
+    }
+
+    return (
+        <div
+            className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
+            <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
+                <Header
+                    name="Sophie Eleanor"
+                    location="Bambalapitiya"
+                    title="All Complains"
+                />
+
+                <section
+                    className="relative bg-[#FFFFFF4D] mb-5 bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-9 py-10 flex flex-col justify-center items-center">
+                    {/* Header */}
+                    <div className="flex w-full justify-between items-center">
+                        <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
               <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-                Ticket No. T25458756
+                 Ticket No. {complaint.ticket_no}
               </span>
-            </div>
-            <FlowBar<ComplainStatus>
-              variant="complains"
-              status={status}
-              onStatusChange={setStatus}
-            />
-          </div>
+                        </div>
+                        <FlowBar<ComplainStatus>
+                            variant="complains"
+                            status={complaint.status as ComplainStatus}
+                            onStatusChange={(newStatus) => {
+                                setStatus(newStatus);
+                                updateComplaint.mutate({id, data: {status: newStatus}});
+                            }}
+                        />
+                    </div>
 
-          {/* Tabs */}
-          <div className="w-full flex mt-10">
-            <div className="w-2/5">
-              <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
-                Customer Details
-              </div>
-              <InfoRow label="Customer Name:" value="Emily Charlotte" />
-              <InfoRow label="Contact No:" value="077 5898712" />
-              <InfoRow label="Email:" value="Info@indra.com" />
+                    {/* Tabs */}
+                    <div className="w-full flex mt-10">
+                        <div className="w-2/5">
+                            <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
+                                Customer Details
+                            </div>
+                            <InfoRow label="Customer Name:" value={complaint?.customer.customer_name || 'N/A'}/>
+                            <InfoRow label="Contact No:" value={complaint.contact_no || 'N/A'}/>
+                            <InfoRow label="Email:" value={complaint?.customer?.email || 'N/A'}/>
 
-              <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
-                Ticket Details
-              </div>
-              <InfoRow label="Category:" value="ITPL" />
-              <InfoRow label="Vehicle No." value="CAB - 1547" />
-              <InfoRow label="Title:" value="Billing Issue" />
-              <InfoRow label="Transmission:" value="Auto" />
-              <InfoRow label="Preferred Solution:" value="Replacement" />
-              <InfoRow
-                label="Description:"
-                value="Customer's vehicle service, scheduled for March 25, is delayed with no updates. Requests urgent status and completion time."
-              />
-            </div>
+                            <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
+                                Ticket Details
+                            </div>
+                            <InfoRow label="Category:" value={complaint.category || 'N/A'}/>
+                            <InfoRow label="Vehicle No." value={complaint.vehicle_no || 'N/A'}/>
+                            <InfoRow label="Title:" value={complaint.title || 'N/A'}/>
+                            <InfoRow label="Transmission:" value="Auto"/>
+                            <InfoRow label="Preferred Solution:" value={complaint.preferred_solution || 'N/A'}/>
+                            <InfoRow
+                                label="Description:"
+                                value={complaint.description || 'N/A'}
+                            />
+                        </div>
 
-            <div className="w-3/5 flex flex-col min-h-[400px]">
-              <SalesDetailsTab
-                status={status}
-                onOpenActivity={() => setActivityModalOpen(true)}
-                onOpenReminder={() => setReminderModalOpen(true)}
-              />
-              {role === "admin" ? null : (
-                <div className="mt-6 flex w-full justify-end">
-                  <button className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
-                    Save
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      </main>
+                        <div className="w-3/5 flex flex-col min-h-[400px]">
+                            <SalesDetailsTab
+                                // complaintId={complaint.id}
+                                customerId={complaint.customerId}
+                                status={status}
+                                onOpenActivity={() => setActivityModalOpen(true)}
+                                onOpenReminder={() => setReminderModalOpen(true)}
+                                followups={complaint?.followups || []}
+                                reminders={complaint?.reminders || []}
+                            />
+                            {role === "admin" ? null : (
+                                <div className="mt-6 flex w-full justify-end">
+                                    <button
+                                        className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
+                                        Save
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </section>
+            </main>
 
-      {/* Activity Modal */}
-      {isActivityModalOpen && (
-        <Modal
-          title="Add New Activity"
-          onClose={() => setActivityModalOpen(false)}
-          actionButton={{
-            label: "Save",
-            onClick: () => {
-              console.log("Activity saved:", activityText);
-              setActivityText("");
-              setActivityModalOpen(false);
-            },
-          }}
-        >
-          <div className="w-full">
-            <label className="block mb-2 font-semibold">Activity</label>
-            <input
-              type="text"
-              value={activityText}
-              onChange={(e) => setActivityText(e.target.value)}
-              className="w-[600px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 mt-2"
-            />
-          </div>
-        </Modal>
-      )}
+            {/* Activity Modal */}
+            {isActivityModalOpen && (
+                <Modal
+                    title="Add New Activity"
+                    onClose={() => setActivityModalOpen(false)}
+                    actionButton={{
+                        label: "Save",
+                        onClick: handleActivitySave,
+                        // disabled: createFollowUpMutation.isPending,
+                    }}
+                >
+                    <div className="w-full">
+                        <label className="block mb-2 font-semibold">Activity</label>
+                        <input
+                            type="text"
+                            value={activityText}
+                            onChange={(e) => setActivityText(e.target.value)}
+                            className="w-[600px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 mt-2"
+                        />
+                    </div>
+                </Modal>
+            )}
 
-      {/* Reminder Modal */}
-      {isReminderModalOpen && (
-        <Modal
-          title="Add New Reminder"
-          onClose={() => setReminderModalOpen(false)}
-          actionButton={{
-            label: "Save",
-            onClick: () => {
-              console.log("Reminder saved:", {
-                reminderTitle,
-                reminderDate,
-                reminderNote,
-              });
-              setReminderTitle("");
-              setReminderDate("");
-              setReminderNote("");
-              setReminderModalOpen(false);
-            },
-          }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-            <div>
-              <label className="block mb-2 font-medium">Task Title</label>
-              <input
-                type="text"
-                value={reminderTitle}
-                onChange={(e) => setReminderTitle(e.target.value)}
-                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 font-medium">Task Date</label>
-              <input
-                type="date"
-                value={reminderDate}
-                onChange={(e) => setReminderDate(e.target.value)}
-                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 font-medium">Note</label>
-              <input
-                type="text"
-                value={reminderNote}
-                onChange={(e) => setReminderNote(e.target.value)}
-                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-              />
-            </div>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
+            {/* Reminder Modal */}
+            {isReminderModalOpen && (
+                <Modal
+                    title="Add New Reminder"
+                    onClose={() => setReminderModalOpen(false)}
+                    actionButton={{
+                        label: "Save",
+                        onClick: handleReminderSave,
+                        // disabled: createReminderMutation.isPending,
+                    }}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                        <div>
+                            <label className="block mb-2 font-medium">Task Title</label>
+                            <input
+                                type="text"
+                                value={reminderTitle}
+                                onChange={(e) => setReminderTitle(e.target.value)}
+                                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-2 font-medium">Task Date</label>
+                            <input
+                                type="date"
+                                value={reminderDate}
+                                onChange={(e) => setReminderDate(e.target.value)}
+                                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-2 font-medium">Note</label>
+                            <input
+                                type="text"
+                                value={reminderNote}
+                                onChange={(e) => setReminderNote(e.target.value)}
+                                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
+        </div>
+    );
 }

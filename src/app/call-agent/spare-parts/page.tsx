@@ -1,9 +1,70 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 import Image from "next/image";
-import React, {Key, useState} from "react";
+import React, {useState} from "react";
 import Modal from "@/components/Modal";
+import {z} from "zod";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {useSpareCreateSale} from "@/hooks/useSparePartSales";
+import FormField from "@/components/FormField";
+
+
+export const spareSaleSchema = z.object({
+    date: z.string().min(1, "Date is required"),
+    // customer_id: z.string().min(1, "Customer ID is required"),
+    vehicle_make: z.string().min(1, "Vehicle make is required"),
+    vehicle_model: z.string().min(1, "Vehicle model is required"),
+    part_no: z.string().min(1, "Part number is required"),
+    year_of_manufacture: z.string().min(1, "Manufacture year is required"),
+    additional_note: z.string().optional(),
+    customer_name: z.string().min(1, "Customer name is required"),
+    contact_number: z.string().min(1, "Contact number is required"),
+    // call_agent_id: z.number().int().positive("Call Agent ID is required"),
+});
+
+export type SpareSaleFormValues = z.infer<typeof spareSaleSchema>;
 
 const SpareParts = () => {
+
+    const {
+        register,
+        handleSubmit,
+        formState: {errors},
+        reset
+    } = useForm<SpareSaleFormValues>({
+        resolver: zodResolver(spareSaleSchema),
+    });
+
+    console.log("Form errors:", errors);
+
+    const createSaleMutation = useSpareCreateSale();
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+
+    const onSubmit = (data: SpareSaleFormValues) => {
+        const payload = {
+            ...data,
+            date: new Date().toISOString().split("T")[0],
+            customer_id: "CUS1760981191036",
+            call_agent_id: 1,
+        };
+
+        console.log("----------payload: ", payload);
+
+        createSaleMutation.mutate(payload, {
+            onSuccess: () => {
+                setSubmitSuccess(true);
+                reset();
+                setTimeout(() => setSubmitSuccess(false), 3000);
+            },
+            onError: (err: any) => {
+                console.error("Error:", err);
+                alert("Failed to assign sale");
+            },
+        });
+    };
+
 
     const [showStockAvailability, setShowStockAvailability] = useState(false);
     const [isSpareAvailabilityModalOpen, setIsSpareAvailabilityModalOpen] = useState(false);
@@ -92,6 +153,42 @@ const SpareParts = () => {
     const handleStockItemClick = () => {
         setShowLoyaltyAndPromotions(true);
     };
+
+
+    const mockData = [
+        {make: 'Nissan', model: 'GT-R (R35)', year: 2020, transmission: 'Automatic', price: 'Rs 75,300,000'},
+        {make: 'Toyota', model: 'Supra (A90)', year: 2021, transmission: 'Automatic', price: 'Rs 54,500,000'},
+        {make: 'Ford', model: 'Mustang', year: 2020, transmission: 'Manual', price: 'Rs 40,000,000'},
+        {make: 'Chevrolet', model: 'Corvette (C8)', year: 2021, transmission: 'Automatic', price: 'Rs 75,000,000'},
+        {make: 'Porsche', model: '911 Carrera', year: 2020, transmission: 'Automatic', price: 'Rs 55,000,000'},
+        {make: 'Mazda', model: 'MX-5 Miata', year: 2021, transmission: 'Manual', price: 'Rs 35,000,000'},
+        {make: 'BMW', model: 'M4', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000'},
+        {make: 'Subaru', model: 'WRX STI', year: 2020, transmission: 'Manual', price: 'Rs 45,000,000'},
+        {make: 'Honda', model: 'NSX', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000'},
+    ];
+
+
+    const vehicleMakeOptions = mockData.map((vehicle) => ({
+        value: vehicle.make,
+        label: vehicle.make,
+    }));
+
+    const vehicleModelOptions = mockData.map((vehicle) => ({
+        value: vehicle.model,
+        label: vehicle.model,
+    }));
+
+
+    const manufactureYearOptions = [2020, 2021, 2022, 2023, 2024, 2025].map((year) => ({
+        value: year.toString(),
+        label: year.toString(),
+    }));
+
+    const partNo = [
+        {value: "BRK1234", label: "BRK1234"},
+        {value: "EC-005", label: "EC-005"},
+        {value: "BP-002", label: "BP-002"},
+    ];
 
     return (
         <div
@@ -278,14 +375,16 @@ const SpareParts = () => {
                 <section
                     id="assign-to-sale-section"
                     className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                    <div className="flex flex-col">
+                    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
                         <div className="space-y-6">
                             <div className="flex flex-row items-center justify-between">
                                 <h2 className="font-semibold text-[22px] mb-6">Assign to Sales</h2>
                                 <div>
                                     <button
+                                        type="submit"
+                                        disabled={createSaleMutation.isPending}
                                         className="bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition">
-                                        Send
+                                        {createSaleMutation.isPending ? "Submitting..." : "Send"}
                                     </button>
                                 </div>
                             </div>
@@ -298,7 +397,8 @@ const SpareParts = () => {
                                         <div className="relative">
                                             <input
                                                 type="text"
-                                                placeholder="ITPL122455874565"
+                                                value={`ITPL${Date.now()}`}
+                                                disabled
                                                 className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                                             />
                                         </div>
@@ -310,39 +410,30 @@ const SpareParts = () => {
                                         className="text-[#1D1D1D] font-medium text-[17px] montserrat">Date</span>
                                         <div className="relative">
                                             <input
-                                                type="text"
+                                                type="date"
+                                                {...register("date")}
                                                 placeholder="12 Mar, 2025"
                                                 className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                                             />
+                                            {errors.date &&
+                                                <span className="text-red-600 text-sm">{errors.date.message}</span>}
                                         </div>
                                     </label>
                                 </div>
-                                <div>
-                                    <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Customer Name</span>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                placeholder="Emily Charlotte"
-                                                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                            />
-                                        </div>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Contact Number</span>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                placeholder="077 5647256"
-                                                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                            />
-                                        </div>
-                                    </label>
-                                </div>
+                                <FormField
+                                    label="Customer Name"
+                                    placeholder="Emily Charlotte"
+                                    type="text"
+                                    register={register("customer_name")}
+                                    error={errors.customer_name}
+                                />
+                                <FormField
+                                    label="Contact Number"
+                                    placeholder="077 5647256"
+                                    type="text"
+                                    register={register("contact_number")}
+                                    error={errors.contact_number}
+                                />
                             </div>
                         </div>
 
@@ -353,23 +444,60 @@ const SpareParts = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make"
-                                                      isIcon={true}/>
-                                <VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"
-                                                      isIcon={true}/>
-                                <VerificationDropdown label="Part No." placeholder="Select Part No."
-                                                      isIcon={true}/>
-                                <VerificationDropdown label="Year of Manufacture" placeholder="Manufacture Year"
-                                                      isIcon={true}/>
+                                <FormField
+                                    label="Vehicle Make"
+                                    type="select"
+                                    isIcon={true}
+                                    options={vehicleMakeOptions}
+                                    register={register("vehicle_make")}
+                                    error={errors.vehicle_make}
+                                />
+                                <FormField
+                                    label="Vehicle Model"
+                                    type="select"
+                                    isIcon={true}
+                                    options={vehicleModelOptions}
+                                    register={register("vehicle_model")}
+                                    error={errors.vehicle_model}
+                                />
+                                <FormField
+                                    label="Part No."
+                                    placeholder="Enter Part No."
+                                    type="select"
+                                    isIcon={true}
+                                    options={partNo}
+                                    register={register("part_no")}
+                                    error={errors.part_no}
+                                />
+                                <FormField
+                                    label="Manufacture Year"
+                                    type="select"
+                                    isIcon={true}
+                                    options={manufactureYearOptions}
+                                    register={register("year_of_manufacture")}
+                                    error={errors.year_of_manufacture}
+                                />
                             </div>
-                            <div className="flex flex-col space-y-2 font-medium text-gray-900">
-                                <span
-                                    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Additional Note</span>
-                                <textarea placeholder="Enter Your Note" rows={5}
-                                          className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>
-                            </div>
+                            {/*<div className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                            {/*    <span*/}
+                            {/*        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Additional Note</span>*/}
+                            {/*    <textarea placeholder="Enter Your Note" rows={5}*/}
+                            {/*              className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>*/}
+                            {/*</div>*/}
+
+                            <FormField
+                                label="Additional Note"
+                                type="textarea"
+                                placeholder="Enter Your Note"
+                                register={register("additional_note")}
+                                error={errors.additional_note}
+                            />
+
                         </div>
-                    </div>
+                        {submitSuccess && (
+                            <div className="text-green-600 text-sm mt-4">Vehicle sale created successfully!</div>
+                        )}
+                    </form>
                 </section>
 
                 <section

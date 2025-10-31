@@ -6,6 +6,8 @@ import Link from "next/link";
 import React, { useState } from "react";
 import Modal from "@/components/Modal";
 import VerificationDropdown from "@/components/VerificationDropdown";
+import {CreateComplaintInput} from "@/types/complaint.types";
+import {useCreateComplaint} from "@/hooks/useComplaint";
 
 const SideMenu = () => {
   const [role, setRole] = useState<Role>(
@@ -13,6 +15,59 @@ const SideMenu = () => {
   );
 
   const [isComplainModalOpen, setIsComplainModalOpen] = useState(false);
+
+    const [formData, setFormData] = useState({
+        category: "",
+        customer_name: "",
+        phone_number: "",
+        email: "",
+        vehicle_number: "",
+        title: "",
+        preferred_solution: "",
+        description: "",
+    });
+
+    const createComplaintMutation = useCreateComplaint();
+
+    const handleSubmit = async () => {
+        try {
+            await createComplaintMutation.mutateAsync(formData as CreateComplaintInput);
+            setIsComplainModalOpen(false);
+            // Reset form
+            setFormData({
+                category: "",
+                customer_name: "",
+                phone_number: "",
+                email: "",
+                vehicle_number: "",
+                title: "",
+                preferred_solution: "",
+                description: "",
+            });
+            // Optional: Show success toast
+            console.log("Complaint submitted successfully");
+        } catch (error: any) {
+            console.error("Error creating complaint:", error);
+            alert(`Failed to submit complaint: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    const handleInputChange = (field: keyof CreateComplaintInput, value: string) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+
+    const complainCategories = [
+        { value: "service_issue", label: "Service Issue" },
+        { value: "product_quality", label: "Product Quality" },
+        { value: "billing_error", label: "Billing Error" },
+    ];
+
+    const preferredSolutions = [
+        { value: "refund", label: "Refund" },
+        { value: "replacement", label: "Replacement" },
+        { value: "repair", label: "Repair" },
+    ];
 
   return (
     <div>
@@ -183,9 +238,8 @@ const SideMenu = () => {
                 onClose={() => setIsComplainModalOpen(false)}
                 actionButton={{
                     label: "Submit",
-                    onClick: () => {
-                        console.log("filtered data");
-                    },
+                    onClick: handleSubmit,
+                    // disabled: createComplaintMutation.isPending,
                 }}
                 isPriorityAvailable={false}
             >
@@ -193,7 +247,14 @@ const SideMenu = () => {
                     <div className="flex-1 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div>
-                                <VerificationDropdown label="Complain Category" placeholder="Indra Service Park" isIcon={false}/>
+                                <VerificationDropdown
+                                    label="Complain Category"
+                                    placeholder="Select Category"
+                                    value={formData.category || ""}
+                                    onChange={(value: string) => handleInputChange("category", value)}
+                                    options={complainCategories}
+                                    isIcon={false}
+                                />
                             </div>
                         </div>
                     </div>
@@ -212,6 +273,8 @@ const SideMenu = () => {
                                     <input
                                         type="text"
                                         placeholder="Customer Name"
+                                        value={formData.customer_name || ""}
+                                        onChange={(e) => handleInputChange("customer_name", e.target.value)}
                                         className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                                     />
                                 </div>
@@ -223,6 +286,8 @@ const SideMenu = () => {
                                     <input
                                         type="text"
                                         placeholder="Phone Number"
+                                        value={formData.phone_number || ""}
+                                        onChange={(e) => handleInputChange("phone_number", e.target.value)}
                                         className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                                     />
                                 </div>
@@ -234,6 +299,8 @@ const SideMenu = () => {
                                     <input
                                         type="text"
                                         placeholder="Email Address"
+                                        value={formData.email || ""}
+                                        onChange={(e) => handleInputChange("email", e.target.value)}
                                         className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                                     />
                                 </div>
@@ -245,6 +312,8 @@ const SideMenu = () => {
                                     <input
                                         type="text"
                                         placeholder="Vehicle Number"
+                                        value={formData.vehicle_number || ""}
+                                        onChange={(e) => handleInputChange("vehicle_number", e.target.value)}
                                         className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                                     />
                                 </div>
@@ -265,17 +334,26 @@ const SideMenu = () => {
                                     <input
                                         type="text"
                                         placeholder="Complain Title"
+                                        value={formData.title || ""}
+                                        onChange={(e) => handleInputChange("title", e.target.value)}
                                         className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                                     />
                                 </div>
                             </label>
-                            <VerificationDropdown label="Preferred Solution" placeholder="Preferred Solution" isIcon={false}/>
+                            <VerificationDropdown label="Preferred Solution"
+                                                  placeholder="Select Preferred Solution"
+                                                  value={formData.preferred_solution || ""}
+                                                  onChange={(value: string) => handleInputChange("preferred_solution", value)}
+                                                  options={preferredSolutions}
+                                                  isIcon={false}/>
                         </div>
 
                         <div className="flex flex-col space-y-2 font-medium text-gray-900">
                                 <span
                                     className="text-[#1D1D1D] font-medium text-[17px] montserrat">Complaint Description</span>
                             <textarea placeholder="Complaint Description" rows={5}
+                                      value={formData.description || ""}
+                                      onChange={(e) => handleInputChange("description", e.target.value)}
                                       className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>
                         </div>
                     </div>

@@ -1,41 +1,44 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type {Metadata} from "next";
+import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import SideMenu from "@/components/SideMenu";
 import AppWrapper from "@/components/AppWrapper";
+import Providers from "@/utils/providers";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+    variable: "--font-geist-sans",
+    subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+    variable: "--font-geist-mono",
+    subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Indra Traders",
-  description: "Indra Traders (pvt) limited system",
+    title: "Indra Traders",
+    description: "Indra Traders (pvt) limited system",
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
+                                       children,
+                                   }: Readonly<{
+    children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased `}
-      >
-        <AppWrapper>
-          <Navbar />
-          <SideMenu />
-          {children}
-        </AppWrapper>
-      </body>
-    </html>
-  );
+    return (
+        <html lang="en">
+        <body
+            className={`${geistSans.variable} ${geistMono.variable} antialiased `}
+        >
+        <Providers>
+            <AppWrapper>
+                <Navbar/>
+                <SideMenu/>
+                {children}
+            </AppWrapper>
+        </Providers>
+        </body>
+        </html>
+    );
 }
