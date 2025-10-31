@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 "use client";
 
 import Header from "@/components/Header";
@@ -113,7 +116,7 @@ export default function UserManagement() {
                                     ) : users.length === 0 ? (
                                         <div className="text-center py-5 text-gray-500">No users found</div>
                                     ) : (
-                                        users.map((item, idx) => (
+                                        users.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"

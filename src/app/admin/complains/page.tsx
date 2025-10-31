@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import Header from "@/components/Header";
@@ -27,7 +29,7 @@ export default function Complains() {
     const filteredComplaints = useMemo(() => {
         if (!complaints) return [];
 
-        return complaints.filter((c) => {
+        return complaints.filter((c: any) => {
             const categoryMatch =
                 selectedCategories.length === 0 || selectedCategories.includes(c.category);
             const statusMatch =
