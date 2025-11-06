@@ -7,6 +7,7 @@ import {useCreateVehicleSale} from "@/hooks/useVehicleSales";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useForm} from "react-hook-form";
 import FormField from "@/components/FormField";
+import {useCreateUnavailableVehicleSale} from "@/hooks/useUnavailable";
 
 
 export const vehicleSaleSchema = z.object({
@@ -28,11 +29,29 @@ export const vehicleSaleSchema = z.object({
 
 export type VehicleSaleFormData = z.infer<typeof vehicleSaleSchema>;
 
+export const unavailableVehicleSaleSchema = z.object({
+    vehicle_make: z.string().min(1, "Vehicle make is required"),
+    vehicle_model: z.string().min(1, "Vehicle model is required"),
+    manufacture_year: z.string().min(1, "Manufacture year is required"),
+    transmission: z.string().min(1, "Transmission is required"),
+    fuel_type: z.string().min(1, "Fuel type is required"),
+    down_payment: z.string().optional(),
+    price_from: z.string().optional(),
+    price_to: z.string().optional(),
+});
+
+export type UnavailableVehicleSaleFormData = z.infer<
+    typeof unavailableVehicleSaleSchema
+>;
+
 
 const VehicleSales = () => {
 
     const {mutate: createSale, isPending} = useCreateVehicleSale();
     const [submitSuccess, setSubmitSuccess] = useState(false);
+
+    const {mutate: createUnavailableSale, isPending: isUnavailablePending} = useCreateUnavailableVehicleSale();
+    const [unavailableSubmitSuccess, setUnavailableSubmitSuccess] = useState(false);
 
     const {
         register,
@@ -59,6 +78,25 @@ const VehicleSales = () => {
         },
     });
 
+    const {
+        register: registerUnavailable,
+        handleSubmit: handleSubmitUnavailable,
+        formState: {errors: unavailableErrors},
+        reset: resetUnavailable,
+    } = useForm<UnavailableVehicleSaleFormData>({
+        resolver: zodResolver(unavailableVehicleSaleSchema),
+        defaultValues: {
+            vehicle_make: "",
+            vehicle_model: "",
+            manufacture_year: "",
+            transmission: "",
+            fuel_type: "",
+            down_payment: "",
+            price_from: "",
+            price_to: "",
+        },
+    });
+
     const onSubmit = (data: VehicleSaleFormData) => {
         const submissionData = {
             ...data,
@@ -77,6 +115,27 @@ const VehicleSales = () => {
             },
             onError: (error) => {
                 console.error("Error creating vehicle sale:", error);
+            },
+        });
+    };
+
+    const onUnavailableSubmit = (data: UnavailableVehicleSaleFormData) => {
+        const submissionData = {
+            call_agent_id: 1,
+            ...data,
+            manufacture_year: parseInt(data.manufacture_year, 10),
+            down_payment: data.down_payment ? parseFloat(data.down_payment) : 0,
+            price_from: data.price_from ? parseFloat(data.price_from) : 0,
+            price_to: data.price_to ? parseFloat(data.price_to) : 0,
+        };
+        createUnavailableSale(submissionData, {
+            onSuccess: () => {
+                setUnavailableSubmitSuccess(true);
+                resetUnavailable();
+                setTimeout(() => setUnavailableSubmitSuccess(false), 3000);
+            },
+            onError: (error) => {
+                console.error("Error creating unavailable vehicle sale:", error);
             },
         });
     };
@@ -456,56 +515,154 @@ const VehicleSales = () => {
                                     error={errors.down_payment}
                                 />
 
-                                <div>
-                                    <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Price Range</span>
-                                        <div className="flex flex-row gap-4">
-                                            <div className="relative">
-                                                {/*<input*/}
-                                                {/*    type="text"*/}
-                                                {/*    placeholder="Price From"*/}
-                                                {/*    {...register("date")}*/}
-                                                {/*    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
-                                                {/*/>*/}
-                                                {/*<svg*/}
-                                                {/*    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"*/}
-                                                {/*    width="10" height="6"*/}
-                                                {/*    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">*/}
-                                                {/*    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"*/}
-                                                {/*          fill="#575757"/>*/}
-                                                {/*</svg>*/}
-                                                <FormField
-                                                    label=""
-                                                    type="number"
-                                                    placeholder="Price From"
-                                                    register={register("price_from")}
-                                                    error={errors.price_from}
-                                                />
-                                            </div>
-                                            <div className="relative">
-                                                {/*<input*/}
-                                                {/*    type="text"*/}
-                                                {/*    placeholder="Price To"*/}
-                                                {/*    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
-                                                {/*/>*/}
-                                                {/*<svg*/}
-                                                {/*    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"*/}
-                                                {/*    width="10" height="6"*/}
-                                                {/*    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">*/}
-                                                {/*    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"*/}
-                                                {/*          fill="#575757"/>*/}
-                                                {/*</svg>*/}
-                                                <FormField
-                                                    label=""
-                                                    type="number"
-                                                    placeholder="Price To"
-                                                    register={register("price_to")}
-                                                    error={errors.price_to}
-                                                />
+                                {/*<div>*/}
+                                {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                                {/*    <span*/}
+                                {/*        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Price Range</span>*/}
+                                {/*        <div className="flex flex-row gap-4">*/}
+                                {/*            <div className="relative">*/}
+                                {/*                /!*<input*!/*/}
+                                {/*                /!*    type="text"*!/*/}
+                                {/*                /!*    placeholder="Price From"*!/*/}
+                                {/*                /!*    {...register("date")}*!/*/}
+                                {/*                /!*    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*!/*/}
+
+                                {/*                /!*    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"*!/*/}
+                                {/*                /!*    width="10" height="6"*!/*/}
+                                {/*                /!*    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">*!/*/}
+                                {/*                /!*    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"*!/*/}
+                                {/*                /!*          fill="#575757"/>*!/*/}
+                                {/*                /!*</svg>*!/*/}
+                                {/*                <FormField*/}
+                                {/*                    label=""*/}
+                                {/*                    type="number"*/}
+                                {/*                    placeholder="Price From"*/}
+                                {/*                    register={register("price_from")}*/}
+                                {/*                    error={errors.price_from}*/}
+                                {/*                />*/}
+                                {/*            </div>*/}
+                                {/*            <div className="relative">*/}
+                                {/*                /!*<input*!/*/}
+                                {/*                /!*    type="text"*!/*/}
+                                {/*                /!*    placeholder="Price To"*!/*/}
+                                {/*                /!*    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*!/*/}
+
+
+                                {/*                /!*    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"*!/*/}
+                                {/*                /!*    width="10" height="6"*!/*/}
+                                {/*                /!*    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">*!/*/}
+                                {/*                /!*    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"*!/*/}
+                                {/*                /!*          fill="#575757"/>*!/*/}
+                                {/*                /!*</svg>*!/*/}
+                                {/*                <FormField*/}
+                                {/*                    label=""*/}
+                                {/*                    type="number"*/}
+                                {/*                    placeholder="Price To"*/}
+                                {/*                    register={register("price_to")}*/}
+                                {/*                    error={errors.price_to}*/}
+                                {/*                />*/}
+                                {/*            </div>*/}
+                                {/*        </div>*/}
+                                {/*    </label>*/}
+                                {/*</div>*/}
+                                <div className="flex flex-col space-y-2 font-medium text-gray-900">
+                                <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
+                                  Price Range
+                                </span>
+
+                                    <div className="flex gap-4">
+                                        {/* Price From */}
+                                        <div className="relative w-1/2">
+                                            <input
+                                                type="number"
+                                                placeholder="Price From"
+                                                value={priceFrom}
+                                                {...register("price_from", {
+                                                    onChange: (e) =>
+                                                        setPriceFrom(e.target.value === "" ? "" : Number(e.target.value)),
+                                                })}
+                                                className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                            />
+                                            {errors.price_from && <span
+                                                className="text-red-600 text-sm">{errors.price_from.message}</span>}
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleIncrement(setPriceFrom, priceFrom)}
+                                                    className="p-1 hover:bg-gray-200 rounded"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="6"
+                                                        viewBox="0 0 10 6"
+                                                        fill="none"
+                                                    >
+                                                        <path d="M0 6L5 0L10 6H0Z" fill="#575757"/>
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDecrement(setPriceFrom, priceFrom)}
+                                                    className="p-1 hover:bg-gray-200 rounded"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="6"
+                                                        viewBox="0 0 10 6"
+                                                        fill="none"
+                                                    >
+                                                        <path d="M0 0L5 6L10 0H0Z" fill="#575757"/>
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
-                                    </label>
+
+                                        {/* Price To */}
+                                        <div className="relative w-1/2">
+                                            <input
+                                                type="number"
+                                                placeholder="Price To"
+                                                value={priceTo}
+                                                {...register("price_to", {
+                                                    onChange: (e) =>
+                                                        setPriceTo(e.target.value === "" ? "" : Number(e.target.value)),
+                                                })}
+                                                className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                            />
+                                            {errors.price_to && <span
+                                                className="text-red-600 text-sm">{errors.price_to.message}</span>}
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleIncrement(setPriceTo, priceTo)}
+                                                    className="p-1 hover:bg-gray-200 rounded"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="6"
+                                                        viewBox="0 0 10 6"
+                                                        fill="none"
+                                                    >
+                                                        <path d="M0 6L5 0L10 6H0Z" fill="#575757"/>
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDecrement(setPriceTo, priceTo)}
+                                                    className="p-1 hover:bg-gray-200 rounded"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="6"
+                                                        viewBox="0 0 10 6"
+                                                        fill="none"
+                                                    >
+                                                        <path d="M0 0L5 6L10 0H0Z" fill="#575757"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             {/*<div className="flex flex-col space-y-2 font-medium text-gray-900">*/}
@@ -591,16 +748,18 @@ const VehicleSales = () => {
             {isVehicleAvailabilityModalOpen && (
                 <Modal
                     title="Unavailable Vehicle"
-                    onClose={() => setIsVehicleAvailabilityModalOpen(false)}
+                    onClose={() => {
+                        setIsVehicleAvailabilityModalOpen(false);
+                        setUnavailableSubmitSuccess(false);
+                    }}
                     actionButton={{
                         label: "Submit",
-                        onClick: () => {
-                            console.log("filtered data");
-                        },
+                        onClick: handleSubmitUnavailable(onUnavailableSubmit),
+                        // disabled: isUnavailablePending,
                     }}
                     isPriorityAvailable={false}
                 >
-                    <div>
+                    <form onSubmit={handleSubmitUnavailable(onUnavailableSubmit)}>
                         <div className="mb-8">
                             <div className="flex flex-col justify-center items-center">
                                 <Image src="/search.gif" alt="search" width={128} height={128} className="w-32 h-32"/>
@@ -613,28 +772,80 @@ const VehicleSales = () => {
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make" isIcon={true}/>
-                            <VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"
-                                                  isIcon={true}/>
-                            <VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"
-                                                  isIcon={true}/>
-                            <VerificationDropdown label="Transmission" placeholder="Select Transmission"
-                                                  isIcon={true}/>
-                            <VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type"
-                                                  isIcon={false}/>
-                            <div>
-                                <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Down Payment</span>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Enter Down Payment"
-                                            className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                        />
-                                    </div>
-                                </label>
-                            </div>
+                            {/*<VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make" isIcon={true}/>*/}
+                            <FormField
+                                label="Vehicle Make"
+                                type="select"
+                                isIcon={true}
+                                options={vehicleMakeOptions}
+                                register={registerUnavailable("vehicle_make")}
+                                error={unavailableErrors.vehicle_make}
+                            />
+                            {/*<VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"*/}
+                            {/*                      isIcon={true}/>*/}
+
+                            <FormField
+                                label="Vehicle Model"
+                                type="select"
+                                isIcon={true}
+                                options={vehicleModelOptions}
+                                register={registerUnavailable("vehicle_model")}
+                                error={unavailableErrors.vehicle_model}
+                            />
+
+                            {/*<VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"*/}
+                            {/*                      isIcon={true}/>*/}
+
+                            <FormField
+                                label="Manufacture Year"
+                                type="select"
+                                isIcon={true}
+                                options={manufactureYearOptions}
+                                register={registerUnavailable("manufacture_year")}
+                                error={unavailableErrors.manufacture_year}
+                            />
+                            {/*<VerificationDropdown label="Transmission" placeholder="Select Transmission"*/}
+                            {/*                      isIcon={true}/>*/}
+
+                            <FormField
+                                label="Transmission"
+                                type="select"
+                                options={transmissionOptions}
+                                register={registerUnavailable("transmission")}
+                                error={unavailableErrors.transmission}
+                            />
+                            {/*<VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type"*/}
+                            {/*                      isIcon={false}/>*/}
+
+                            <FormField
+                                label="Fuel Type"
+                                type="select"
+                                options={fuelTypeOptions}
+                                register={registerUnavailable("fuel_type")}
+                                error={unavailableErrors.fuel_type}
+                            />
+
+                            {/*<div>*/}
+                            {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
+                            {/*        <span*/}
+                            {/*            className="text-[#1D1D1D] font-medium text-[17px] montserrat">Down Payment</span>*/}
+                            {/*        <div className="relative">*/}
+                            {/*            <input*/}
+                            {/*                type="text"*/}
+                            {/*                placeholder="Enter Down Payment"*/}
+                            {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
+                            {/*            />*/}
+                            {/*        </div>*/}
+                            {/*    </label>*/}
+                            {/*</div>*/}
+
+                            <FormField
+                                label="Down Payment"
+                                type="number"
+                                placeholder="Enter Down Payment"
+                                register={registerUnavailable("down_payment")}
+                                error={unavailableErrors.down_payment}
+                            />
 
                             <div className="flex flex-col space-y-2 font-medium text-gray-900">
                                 <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
@@ -648,13 +859,14 @@ const VehicleSales = () => {
                                             type="number"
                                             placeholder="Price From"
                                             value={priceFrom}
-                                            onChange={(e) =>
-                                                setPriceFrom(
-                                                    e.target.value === "" ? "" : Number(e.target.value)
-                                                )
-                                            }
+                                            {...registerUnavailable("price_from", {
+                                                onChange: (e) =>
+                                                    setPriceFrom(e.target.value === "" ? "" : Number(e.target.value)),
+                                            })}
                                             className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
                                         />
+                                        {unavailableErrors.price_from && <span
+                                            className="text-red-600 text-sm">{unavailableErrors.price_from.message}</span>}
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
                                             <button
                                                 type="button"
@@ -693,13 +905,14 @@ const VehicleSales = () => {
                                             type="number"
                                             placeholder="Price To"
                                             value={priceTo}
-                                            onChange={(e) =>
-                                                setPriceTo(
-                                                    e.target.value === "" ? "" : Number(e.target.value)
-                                                )
-                                            }
+                                            {...registerUnavailable("price_to", {
+                                                onChange: (e) =>
+                                                    setPriceTo(e.target.value === "" ? "" : Number(e.target.value)),
+                                            })}
                                             className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
                                         />
+                                        {unavailableErrors.price_to && <span
+                                            className="text-red-600 text-sm">{unavailableErrors.price_to.message}</span>}
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
                                             <button
                                                 type="button"
@@ -734,7 +947,11 @@ const VehicleSales = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        {unavailableSubmitSuccess && (
+                            <div className="text-green-600 text-sm mt-4">Unavailable vehicle sale created
+                                successfully!</div>
+                        )}
+                    </form>
                 </Modal>
             )}
         </div>

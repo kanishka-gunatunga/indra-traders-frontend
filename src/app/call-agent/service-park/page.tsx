@@ -8,6 +8,8 @@ import {useForm} from "react-hook-form";
 import {useAssignToSale, useServiceIntake} from "@/hooks/useServicePark";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {message} from "antd";
+import Modal from "@/components/Modal";
+import {useCreateUnavailableService} from "@/hooks/useUnavailable";
 
 
 // export const serviceParkSchema = z.object({
@@ -60,9 +62,17 @@ export const assignToSaleSchema = z.object({
     additional_note: z.string().optional(),
 });
 
+export const unavailableServiceSchema = z.object({
+    unavailable_repair: z.string().optional(),
+    unavailable_paint: z.string().optional(),
+    unavailable_add_on: z.string().optional(),
+    note: z.string().min(1, "Note is required"),
+});
+
 
 export type ServiceParkHistoryFormData = z.infer<typeof vehicleHistorySchema>;
 export type ServiceParkSaleFormData = z.infer<typeof assignToSaleSchema>;
+export type UnavailableServiceFormData = z.infer<typeof unavailableServiceSchema>;
 
 
 const ServicePark = () => {
@@ -173,6 +183,9 @@ const ServicePark = () => {
 
     const [copiedIndex, setCopiedIndex] = useState<null | number>(null);
 
+    const [isServiceAvailabilityModalOpen, setIsServiceAvailabilityModalOpen] = useState(false);
+    const [unavailableSubmitSuccess, setUnavailableSubmitSuccess] = useState(false);
+
 
     // const {
     //     register,
@@ -226,9 +239,26 @@ const ServicePark = () => {
         },
     });
 
+    const {
+        register: registerUnavailable,
+        handleSubmit: handleSubmitUnavailable,
+        formState: {errors: unavailableErrors},
+        reset: resetUnavailable,
+    } = useForm<z.infer<typeof unavailableServiceSchema>>({
+        resolver: zodResolver(unavailableServiceSchema),
+        defaultValues: {
+            unavailable_repair: "",
+            unavailable_paint: "",
+            unavailable_add_on: "",
+            note: "",
+        },
+    });
+
 
     const serviceIntake = useServiceIntake();
     const assignToSale = useAssignToSale();
+
+    const {mutate: createUnavailableServiceMutation, isPending: isUnavailablePending} = useCreateUnavailableService();
 
     const handleVehicleHistory = async (data: ServiceParkHistoryFormData) => {
         try {
@@ -288,6 +318,32 @@ const ServicePark = () => {
             console.error(error);
             setSubmitSuccess(false);
             message.error("Failed to create sale.");
+        }
+    };
+
+
+    const handleUnavailableSubmit = async (data: UnavailableServiceFormData) => {
+        try {
+            const submissionData = {
+                call_agent_id: 1,
+                ...data,
+            };
+
+            createUnavailableServiceMutation(submissionData, {
+                onSuccess: () => {
+                    setUnavailableSubmitSuccess(true);
+                    resetUnavailable();
+                    setTimeout(() => setUnavailableSubmitSuccess(false), 3000);
+                },
+                onError: (error) => {
+                    console.error("Error creating unavailable vehicle sale:", error);
+                },
+            });
+            // setIsServiceAvailabilityModalOpen(false);
+            // message.success("Unavailable service created successfully!");
+        } catch (error) {
+            console.error(error);
+            // message.error("Failed to create unavailable service.");
         }
     };
 
@@ -784,7 +840,8 @@ const ServicePark = () => {
                                 <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Repairs</h2>
                                 <div className="flex flex-row gap-6">
                                     <button
-                                        className="ml-auto text-white text-base font-medium rounded-full">
+                                        onClick={() => setIsServiceAvailabilityModalOpen(true)}
+                                        className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
                                         <Image src="/repair.svg" alt="search" height={36}
                                                width={36} className="h-12 w-12"/>
                                     </button>
@@ -1265,52 +1322,89 @@ const ServicePark = () => {
                         </div>
                     </section>
                 </main>
+
+                {isServiceAvailabilityModalOpen && (
+                    <Modal
+                        title="Unavailable Service"
+                        onClose={() => {
+                            setIsServiceAvailabilityModalOpen(false);
+                            setUnavailableSubmitSuccess(false);
+                        }}
+                        actionButton={{
+                            label: "Submit",
+                            onClick: handleSubmitUnavailable(handleUnavailableSubmit),
+                            // disabled: isUnavailablePending,
+                        }}
+                        isPriorityAvailable={false}
+                    >
+                        <form onSubmit={handleSubmitUnavailable(handleUnavailableSubmit)}>
+                            <div className="mb-8">
+                                <div className="flex flex-col justify-center items-center">
+                                    <Image src="/search.gif" alt="search" width={128} height={128}
+                                           className="w-32 h-32"/>
+                                    <div className="text-center">
+                                        <h2 className="font-semibold text-xl text-[#000000]">Oops! That that service is
+                                            Not
+                                            Available</h2>
+                                        <h3 className="text-[#575757] text-[15px] font-medium">Please add it to the
+                                            unavailable service list.</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                {/*<VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make" isIcon={true}/>*/}
+                                <FormField
+                                    label="Unavailable Repair"
+                                    type="text"
+                                    placeholder="Unavailable Repair"
+                                    isIcon={false}
+                                    register={registerUnavailable("unavailable_repair")}
+                                    error={unavailableErrors.unavailable_repair}
+                                />
+                                {/*<VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"*/}
+                                {/*                      isIcon={true}/>*/}
+
+                                <FormField
+                                    label="Unavailable Paint"
+                                    type="text"
+                                    placeholder="Unavailable Paint"
+                                    isIcon={false}
+                                    register={registerUnavailable("unavailable_paint")}
+                                    error={unavailableErrors.unavailable_paint}
+                                />
+
+                                {/*<VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"*/}
+                                {/*                      isIcon={true}/>*/}
+
+                                <FormField
+                                    label="Unavailable Add-Ons"
+                                    type="text"
+                                    placeholder="Unavailable Add-Ons"
+                                    isIcon={false}
+                                    register={registerUnavailable("unavailable_add_on")}
+                                    error={unavailableErrors.unavailable_add_on}
+                                />
+                                {/*<VerificationDropdown label="Transmission" placeholder="Select Transmission"*/}
+                                {/*                      isIcon={true}/>*/}
+
+                                <FormField
+                                    label="Note"
+                                    type="text"
+                                    placeholder="Enter your note"
+                                    isIcon={false}
+                                    register={registerUnavailable("note")}
+                                    error={unavailableErrors.note}
+                                />
+                            </div>
+                            {unavailableSubmitSuccess && (
+                                <div className="text-green-600 text-sm mt-4">Unavailable services created
+                                    successfully!</div>
+                            )}
+                        </form>
+                    </Modal>
+                )}
             </div>
         </div>
-    );
-}
-
-type VerificationDropdownProps = {
-    label: string;
-    placeholder: string;
-    isIcon: boolean;
-};
-
-function VerificationDropdown({label, placeholder, isIcon}: VerificationDropdownProps) {
-    return (
-        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-            <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">{label}</span>
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder={placeholder}
-                    className={`w-full ${isIcon ? "px-10" : "px-4"} py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                />
-                {/*<FiSearch*/}
-                {/*    size={18}*/}
-                {/*    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"*/}
-                {/*/>*/}
-                {
-                    isIcon && (
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="20" height="20"
-                             viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M14.1935 13.5122L16.6532 15.9719M15.8762 9.1838C15.8762 10.7723 15.2451 12.2958 14.1219 13.419C12.9986 14.5422 11.4752 15.1733 9.88669 15.1733C8.29818 15.1733 6.77473 14.5422 5.65149 13.419C4.52825 12.2958 3.89722 10.7723 3.89722 9.1838C3.89722 7.5953 4.52825 6.07185 5.65149 4.94861C6.77473 3.82537 8.29818 3.19434 9.88669 3.19434C11.4752 3.19434 12.9986 3.82537 14.1219 4.94861C15.2451 6.07185 15.8762 7.5953 15.8762 9.1838Z"
-                                stroke="#575757" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                    )
-                }
-
-                {/*<BiChevronDown*/}
-                {/*    size={18}*/}
-                {/*    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"*/}
-                {/*/>*/}
-                <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="10" height="6"
-                     viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757"/>
-                </svg>
-            </div>
-        </label>
     );
 }
 

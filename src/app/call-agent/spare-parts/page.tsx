@@ -9,6 +9,7 @@ import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useSpareCreateSale} from "@/hooks/useSparePartSales";
 import FormField from "@/components/FormField";
+import { useCreateUnavailableSparePart } from "@/hooks/useUnavailable";
 
 
 export const spareSaleSchema = z.object({
@@ -24,7 +25,15 @@ export const spareSaleSchema = z.object({
     // call_agent_id: z.number().int().positive("Call Agent ID is required"),
 });
 
+export const unavailableSparePartSchema = z.object({
+    vehicle_make: z.string().min(1, "Vehicle make is required"),
+    vehicle_model: z.string().min(1, "Vehicle model is required"),
+    part_no: z.string().min(1, "Part number is required"),
+    year_of_manufacture: z.string().min(1, "Manufacture year is required"),
+});
+
 export type SpareSaleFormValues = z.infer<typeof spareSaleSchema>;
+export type UnavailableSparePartFormData = z.infer<typeof unavailableSparePartSchema>;
 
 const SpareParts = () => {
 
@@ -37,10 +46,28 @@ const SpareParts = () => {
         resolver: zodResolver(spareSaleSchema),
     });
 
+    const {
+        register: registerUnavailable,
+        handleSubmit: handleSubmitUnavailable,
+        formState: {errors: unavailableErrors},
+        reset: resetUnavailable,
+    } = useForm<UnavailableSparePartFormData>({
+        resolver: zodResolver(unavailableSparePartSchema),
+        defaultValues: {
+            vehicle_make: "",
+            vehicle_model: "",
+            part_no: "",
+            year_of_manufacture: "",
+        },
+    });
+
     console.log("Form errors:", errors);
 
     const createSaleMutation = useSpareCreateSale();
     const [submitSuccess, setSubmitSuccess] = useState(false);
+
+    const createUnavailableMutation = useCreateUnavailableSparePart();
+    const [unavailableSubmitSuccess, setUnavailableSubmitSuccess] = useState(false);
 
     const onSubmit = (data: SpareSaleFormValues) => {
         const payload = {
@@ -61,6 +88,26 @@ const SpareParts = () => {
             onError: (err: any) => {
                 console.error("Error:", err);
                 alert("Failed to assign sale");
+            },
+        });
+    };
+
+    const onUnavailableSubmit = (data: UnavailableSparePartFormData) => {
+        const payload = {
+            call_agent_id: 1,
+            ...data,
+            year_of_manufacture: parseInt(data.year_of_manufacture, 10),
+        };
+        createUnavailableMutation.mutate(payload, {
+            onSuccess: () => {
+                setUnavailableSubmitSuccess(true);
+                resetUnavailable();
+                // setIsSpareAvailabilityModalOpen(false);
+                setTimeout(() => setUnavailableSubmitSuccess(false), 3000);
+            },
+            onError: (error) => {
+                console.error("Error creating unavailable spare part:", error);
+                alert("Failed to create unavailable spare part");
             },
         });
     };
@@ -559,16 +606,17 @@ const SpareParts = () => {
             {isSpareAvailabilityModalOpen && (
                 <Modal
                     title="Unavailable Spare Part"
-                    onClose={() => setIsSpareAvailabilityModalOpen(false)}
+                    onClose={() => {
+                        setIsSpareAvailabilityModalOpen(false);
+                        setUnavailableSubmitSuccess(false);
+                    }}
                     actionButton={{
                         label: "Submit",
-                        onClick: () => {
-                            console.log("filtered data");
-                        },
+                        onClick: handleSubmitUnavailable(onUnavailableSubmit),
                     }}
                     isPriorityAvailable={false}
                 >
-                    <div>
+                    <form onSubmit={handleSubmitUnavailable(onUnavailableSubmit)}>
                         <div className="mb-8">
                             <div className="flex flex-col justify-center items-center">
                                 <Image src="/search.gif" alt="search" width={128} height={128} className="w-32 h-32"/>
@@ -581,15 +629,54 @@ const SpareParts = () => {
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make" isIcon={true}/>
-                            <VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"
-                                                  isIcon={true}/>
-                            <VerificationDropdown label="Part No." placeholder="Select Part No."
-                                                  isIcon={true}/>
-                            <VerificationDropdown label="Year of Manufacture" placeholder="Manufacture Year"
-                                                  isIcon={true}/>
+                            {/*<VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make" isIcon={true}/>*/}
+                            <FormField
+                                label="Vehicle Make"
+                                type="select"
+                                isIcon={true}
+                                options={vehicleMakeOptions}
+                                register={registerUnavailable("vehicle_make")}
+                                error={unavailableErrors.vehicle_make}
+                            />
+                            {/*<VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"*/}
+                            {/*                      isIcon={true}/>*/}
+
+                            <FormField
+                                label="Vehicle Model"
+                                type="select"
+                                isIcon={true}
+                                options={vehicleModelOptions}
+                                register={registerUnavailable("vehicle_model")}
+                                error={unavailableErrors.vehicle_model}
+                            />
+                            {/*<VerificationDropdown label="Part No." placeholder="Select Part No."*/}
+                            {/*                      isIcon={true}/>*/}
+
+                            <FormField
+                                label="Part No."
+                                type="select"
+                                isIcon={true}
+                                options={partNo}
+                                register={registerUnavailable("part_no")}
+                                error={unavailableErrors.part_no}
+                            />
+                            {/*<VerificationDropdown label="Year of Manufacture" placeholder="Manufacture Year"*/}
+                            {/*                      isIcon={true}/>*/}
+
+                            <FormField
+                                label="Manufacture Year"
+                                type="select"
+                                isIcon={true}
+                                options={manufactureYearOptions}
+                                register={registerUnavailable("year_of_manufacture")}
+                                error={unavailableErrors.year_of_manufacture}
+                            />
                         </div>
-                    </div>
+                        {unavailableSubmitSuccess && (
+                            <div className="text-green-600 text-sm mt-4">Unavailable spare part created
+                                successfully!</div>
+                        )}
+                    </form>
                 </Modal>
             )}
 
