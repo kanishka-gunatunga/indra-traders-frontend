@@ -33,5 +33,9 @@ export const SparePartSalesService = {
         axiosInstance.get(`/spare-part-sales/${ticket}/reminders`),
 
     getNearestReminders :(userId: number) =>
-        axiosInstance.get(`/service-park/sales-user/${userId}/reminders/nearest`),
+        axiosInstance.get(`/spare-part-sales/sales-user/${userId}/reminders/nearest`),
+
+    updatePriority(id: number, data: { priority: number }) {
+        return axiosInstance.put(`/spare-part-sales/priority/${id}`, data);
+    }
 };

@@ -107,3 +107,17 @@ export const useNearestReminders = (userId: number) =>
         },
         enabled: !!userId,
     });
+
+export const useUpdatePriority = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({id, priority}: { id: number; priority: number }) =>
+            SparePartSalesService.updatePriority(id, {priority}),
+
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({queryKey: ["spareSales"]});
+            queryClient.invalidateQueries({queryKey: ["spareSale", variables.id]});
+        },
+    });
+};
