@@ -218,7 +218,7 @@ export default function SalesDashboard() {
 
                             <div className="h-[100] overflow-y-auto no-scrollbar">
                                 {/* Table rows */}
-                                {reminderData.map((item:any, idx: number) => (
+                                {reminderData?.map((item:any, idx: number) => (
                                     <div
                                         key={idx}
                                         className={`flex ${
@@ -247,7 +247,7 @@ export default function SalesDashboard() {
 
                             <div className="h-[100] overflow-y-auto no-scrollbar">
                                 {/* Table rows */}
-                                {upcomingEventsData.map((item, idx) => (
+                                {upcomingEventsData?.map((item, idx: number) => (
                                     <div
                                         key={idx}
                                         className={`flex ${

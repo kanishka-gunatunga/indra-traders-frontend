@@ -13,7 +13,8 @@ import {
     useAssignToSalesAgent,
     useUpdateSaleStatus,
     useCreateFollowup,
-    useCreateReminder
+    useCreateReminder,
+    useUpdatePriority
 } from "@/hooks/useServicePark";
 import {useParams} from "next/navigation";
 import Image from "next/image";
@@ -62,6 +63,8 @@ export default function SalesDetailsPage() {
     const updateSaleStatusMutation = useUpdateSaleStatus();
     const createFollowupMutation = useCreateFollowup();
     const createReminderMutation = useCreateReminder();
+
+    const updatePriorityMutation = useUpdatePriority();
 
     console.log(saleDetails);
 
@@ -155,6 +158,22 @@ export default function SalesDetailsPage() {
         }
     }
 
+    const handlePriorityChange = (newPriority: number) => {
+        if (!saleDetails?.id) return;
+
+        updatePriorityMutation.mutate(
+            {id: saleDetails.id, priority: newPriority},
+            {
+                onSuccess: () => {
+                    message.success("Priority updated");
+                },
+                onError: () => {
+                    message.error("Failed to update priority");
+                }
+            }
+        );
+    };
+
     const source = saleDetails?.lead_source?.toLowerCase();
 
     let imageSrc = "";
@@ -217,14 +236,16 @@ export default function SalesDetailsPage() {
                             <div
                                 className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
                                 <select
+                                    value={saleDetails.priority}
+                                    onChange={(e) => handlePriorityChange(Number(e.target.value))}
                                     className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
                                     style={{textAlignLast: "center"}}
                                 >
-                                    <option value="P0">P0</option>
-                                    <option value="P1">P1</option>
-                                    <option value="P2">P2</option>
-                                    <option value="P3">P3</option>
-                                    <option value="P5">P5</option>
+                                    <option value={0}>P0</option>
+                                    <option value={1}>P1</option>
+                                    <option value={2}>P2</option>
+                                    <option value={3}>P3</option>
+                                    <option value={4}>P4</option>
                                 </select>
                             </div>
                         </div>
