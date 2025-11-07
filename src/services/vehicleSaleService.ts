@@ -47,4 +47,8 @@ export const VehicleSaleService = {
 
     getNearestReminders :(userId: number) =>
         axiosInstance.get(`/vehicle-sales/sales-user/${userId}/reminders/nearest`),
+
+    updatePriority(id: number, data: { priority: number }) {
+        return axiosInstance.put(`/vehicle-sales/priority/${id}`, data);
+    }
 };

@@ -14,9 +14,11 @@ import {
     useAssignVehicleSale,
     useCreateFollowup,
     useUpdateSaleStatus,
-    useVehicleSaleByTicket
+    useVehicleSaleByTicket,
+    useUpdatePriority
 } from "@/hooks/useVehicleSales";
 import {useCreateReminder} from "@/hooks/useReminder";
+import {message} from "antd";
 
 export default function SalesDetailsPage() {
     const [role, setRole] = useState<Role>(
@@ -33,6 +35,8 @@ export default function SalesDetailsPage() {
     const updateStatusMutation = useUpdateSaleStatus();
     const createFollowupMutation = useCreateFollowup();
     const createReminderMutation = useCreateReminder();
+
+    const updatePriorityMutation = useUpdatePriority();
 
     const [status, setStatus] = useState<SalesStatus>("New");
 
@@ -115,6 +119,22 @@ export default function SalesDetailsPage() {
         }
     };
 
+    const handlePriorityChange = (newPriority: number) => {
+        if (!sale?.id) return;
+
+        updatePriorityMutation.mutate(
+            {id: sale.id, priority: newPriority},
+            {
+                onSuccess: () => {
+                    message.success("Priority updated");
+                },
+                onError: () => {
+                    message.error("Failed to update priority");
+                }
+            }
+        );
+    };
+
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -165,14 +185,16 @@ export default function SalesDetailsPage() {
                             <div
                                 className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
                                 <select
+                                    value={sale.priority}
+                                    onChange={(e) => handlePriorityChange(Number(e.target.value))}
                                     className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
                                     style={{textAlignLast: "center"}}
                                 >
-                                    <option value="P0">P0</option>
-                                    <option value="P1">P1</option>
-                                    <option value="P2">P2</option>
-                                    <option value="P3">P3</option>
-                                    <option value="P5">P5</option>
+                                    <option value={0}>P0</option>
+                                    <option value={1}>P1</option>
+                                    <option value={2}>P2</option>
+                                    <option value={3}>P3</option>
+                                    <option value={4}>P4</option>
                                 </select>
                             </div>
                         </div>

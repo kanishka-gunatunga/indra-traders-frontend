@@ -5,7 +5,7 @@ import {
     getSaleDetails, getSaleDetailsByTicket,
     getVehicleHistoryByNumber,
     handleServiceIntake,
-    listVehicleHistories, listVehicleSales, updateStatus
+    listVehicleHistories, listVehicleSales, updatePriority, updateStatus
 } from "@/services/serviceParkService";
 
 
@@ -122,6 +122,20 @@ export const useCreateReminder = () => {
         mutationFn: createReminder,
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: ["servicePark", "reminders"]});
+        },
+    });
+};
+
+export const useUpdatePriority = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({id, priority}: { id: number; priority: number }) =>
+            updatePriority(id, {priority}),
+
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({queryKey: ["serviceParks"]});
+            queryClient.invalidateQueries({queryKey: ["servicePark", variables.id]});
         },
     });
 };
