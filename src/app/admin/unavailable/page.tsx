@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client"
 import Header from "@/components/Header";
 import Image from "next/image";
@@ -53,7 +55,7 @@ export default function Unavailable() {
                                 {/* Table body (scrollable vertically) */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {loadingVehicle ? <p>Loading...</p> :
-                                        (vehicleSales?.map((item, idx: number) => (
+                                        (vehicleSales?.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
@@ -108,7 +110,7 @@ export default function Unavailable() {
                                 {/* Table body (scrollable vertically) */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {loadingService ? <p>Loading...</p> :
-                                        (services?.map((item, idx: number) => (
+                                        (services?.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
@@ -157,7 +159,7 @@ export default function Unavailable() {
                                 {/* Table body (scrollable vertically) */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {loadingSpare ? <p>Loading...</p> :
-                                        (spareParts?.map((item, idx: number) => (
+                                        (spareParts?.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
