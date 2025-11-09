@@ -232,6 +232,7 @@ export default function FastTrackPage() {
             price_from: data.priceFrom ? Number(data.priceFrom) : null,
             price_to: data.priceTo ? Number(data.priceTo) : null,
             customer_id: "CUS1760976040167",
+            call_agent_id: 1,
         };
     };
 
