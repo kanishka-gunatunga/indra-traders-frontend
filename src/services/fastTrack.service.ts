@@ -2,50 +2,96 @@
 
 import axiosInstance from "@/utils/axiosinstance";
 
-export const fastTrackService = {
+export const FastTrackService = {
 
-    createDirectRequest: (data: any) =>
-        axiosInstance.post("/fast-track/direct-requests", data),
+    createDirectRequest(payload: any) {
+        return axiosInstance.post("/fast-track/direct-requests", payload).then(r => r.data);
+    },
 
-    listSales: () =>
-        axiosInstance.get("/fast-track/sales"),
+    listDirectRequests: async () => {
+        return axiosInstance.get("/fast-track/direct-requests").then(r => r.data);
+    },
 
-    updateSaleStatus: (saleId: string, status: string) =>
-        axiosInstance.put(`/fast-track/sales/${saleId}/status`, { status }),
+    addDirectRequestReminder(directRequestId: number, payload: any) {
+        return axiosInstance.post(
+            `/fast-track/direct-requests/${directRequestId}/reminders`,
+            payload
+        ).then(r => r.data);
+    },
 
-    listDirectRequests: () =>
-        axiosInstance.get("/fast-track/direct-requests"),
+    getDirectReminders: async (directRequestId?: number) => {
+        return axiosInstance.get(
+            `/fast-track/direct-requests/${directRequestId}/reminders`
+        ).then(r => r.data);
+    },
 
-    createReminder: (data: any) =>
-        axiosInstance.post("/fast-track/reminders", data),
+    getAllDirectReminders: async () => { // NEW: Get all
+        const res = await axiosInstance.get("/fast-track/direct-requests/reminders");
+        return res.data;
+    },
 
-    getRemindersByDirectRequest: (directRequestId: string) =>
-        axiosInstance.get(`/fast-track/direct-requests/${directRequestId}/reminders`),
+    getBestMatches: async (directRequestId: number) => { // NEW: Get list with vehicles
+        const res = await axiosInstance.get(`/fast-track/direct-requests/${directRequestId}/best-matches`);
+        return res.data;
+    },
 
-    getRemindersBySale: (saleId: string) =>
-        axiosInstance.get(`/fast-track/sales/${saleId}/reminders`),
+    buildBestMatches(directRequestId: number) {
+        return axiosInstance.post(`/fast-track/direct-requests/${directRequestId}/best-matches/build`); // FIXED: Added /build
+    },
 
-    getBestMatches: (directRequestId: string) =>
-        axiosInstance.get(`/fast-track/direct-requests/${directRequestId}/best-matches`),
+    listBestMatches(directRequestId: number) {
+        return axiosInstance.get(
+            `/fast-track/direct-requests/${directRequestId}/best-matches`
+        ).then(r => r.data);
+    },
 
-    getVehicleDetails: (vehicleId: string) =>
-        axiosInstance.get(`/fast-track/vehicles/${vehicleId}`),
+    getVehicleDetails(vehicleId: number) {
+        return axiosInstance.get(
+            `/fast-track/vehicles/${vehicleId}`
+        ).then(r => r.data);
+    },
 
-    assignSale: (directRequestId: string, vehicleId: string, data: any) =>
-        axiosInstance.post(`/fast-track/direct-requests/${directRequestId}/vehicles/${vehicleId}/assign`, data),
+    assignBestMatchToSale(directRequestId: number, vehicleId: number, payload: any) {
+        return axiosInstance.post(
+            `/fast-track/direct-requests/${directRequestId}/assign/${vehicleId}`,
+            payload
+        );
+    },
 
-    assignToMe: (saleId: string) =>
-        axiosInstance.put(`/fast-track/sales/${saleId}/assign-to-me`),
 
-    getSaleByTicket: (ticket: string) =>
-        axiosInstance.get(`/fast-track/sales/ticket/${ticket}`),
+    listSales(params?: any) {
+        return axiosInstance.get("/fast-track/sales", { params }).then(r => r.data);
+    },
 
-    createFollowup: (data: any) =>
-        axiosInstance.post("/fast-track/followups", data),
+    claimSaleLead(saleId: number, userId: number) {
+        return axiosInstance.post(`/fast-track/sales/${saleId}/claim`, { userId }).then(r => r.data);
+    },
 
-    getFollowupsBySale: (saleId: string) =>
-        axiosInstance.get(`/fast-track/sales/${saleId}/followups`),
+    updateSaleStatus(saleId: string, status: string) {
+        return axiosInstance.patch(`/fast-track/sales/${saleId}/status`, { status }).then(r => r.data);
+    },
 
-    getNearestReminders :(userId: number) =>
-        axiosInstance.get(`/service-park/sales-user/${userId}/reminders/nearest`),
+    updateSalePriority(saleId: number, priority: number) {
+        return axiosInstance.patch(`/fast-track/sales/${saleId}/priority`, { priority }).then(r => r.data);
+    },
+
+    getSaleByTicket(ticket: string) {
+        return axiosInstance.get(`/fast-track/sales/ticket/${ticket}`).then(r => r.data);
+    },
+
+    createSaleFollowup(payload: any) {
+        return axiosInstance.post("/fast-track/sales/followups", payload).then(r => r.data);
+    },
+
+    getSaleFollowups(saleId: number) {
+        return axiosInstance.get(`/fast-track/sales/${saleId}/followups`).then(r => r.data);
+    },
+
+    createSaleReminder(payload: any) {
+        return axiosInstance.post("/fast-track/sales/reminders", payload).then(r => r.data);
+    },
+
+    getSaleReminders(saleId: number) {
+        return axiosInstance.get(`/fast-track/sales/${saleId}/reminders`).then(r => r.data);
+    }
 };

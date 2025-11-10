@@ -11,7 +11,7 @@ import Image from "next/image";
 import React, {useEffect, useState} from "react";
 import Select from "react-select";
 import {Role} from "@/types/role";
-import {useCreateDirectRequest, useFastTrackSales, useUpdateSaleStatus} from "@/hooks/useFastTrack";
+import {useCreateDirectRequest, useSales, useUpdateSaleStatus} from "@/hooks/useFastTrack";
 import {useNearestReminders} from "@/hooks/useSparePartSales";
 
 type OptionType = { value: string; label: string };
@@ -55,8 +55,8 @@ const mapStatus = (apiStatus: string): MappedTicket["status"] => {
 const mapApiToTicket = (apiSale: any): MappedTicket => ({
     id: apiSale.ticket_number,
     priority: apiSale.priority || 0, // Assuming priority is optional in API response
-    user: apiSale.customer?.name || "Unknown",
-    phone: apiSale.customer?.contact_no || "",
+    user: apiSale.customer?.customer_name || "Unknown",
+    phone: apiSale.customer?.phone_number || "",
     date: new Date(apiSale.createdAt).toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
@@ -91,7 +91,7 @@ export default function SalesDashboard() {
     const [priceFrom, setPriceFrom] = useState("");
     const [priceTo, setPriceTo] = useState("");
 
-    const {data: apiSales, isLoading} = useFastTrackSales();
+    const {data: apiSales, isLoading} = useSales();
     const createDirectRequestMutation = useCreateDirectRequest();
     const updateSaleStatusMutation = useUpdateSaleStatus();
 
@@ -276,6 +276,7 @@ export default function SalesDashboard() {
                         <div className="w-full mt-6 flex gap-6 overflow-x-auto ">
                             {columns.map((col) => (
                                 <TicketColumn
+                                    route={"/sales-agent/fast-track"}
                                     key={col}
                                     title={col}
                                     tickets={tickets.filter((t) => t.status === col)}

@@ -9,8 +9,13 @@ import Modal from "@/components/Modal";
 import React, {useEffect, useState} from "react";
 import {Role} from "@/types/role";
 import {message} from "antd";
-import {useAssignToMe, useCreateFollowup, useSaleByTicket, useUpdateSaleStatus} from "@/hooks/useFastTrack";
-import {useCreateReminder} from "@/hooks/useReminder";
+import {
+    useClaimSaleLead,
+    useCreateSaleFollowup,
+    useCreateSaleReminder,
+    useSaleByTicket, useUpdateSalePriority,
+    useUpdateSaleStatus
+} from "@/hooks/useFastTrack";
 import {useParams} from "next/navigation";
 
 const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
@@ -37,11 +42,12 @@ export default function SalesDetailsPage() {
     const ticketNumber = params?.id as string;
     const userId = 1; // Replace with actual user ID from auth context
 
-    const { data: sale, isLoading, error } = useSaleByTicket(ticketNumber);
-    const assignToMeMutation = useAssignToMe();
-    const createFollowupMutation = useCreateFollowup();
-    const createReminderMutation = useCreateReminder();
+    const {data: sale, isLoading, error} = useSaleByTicket(ticketNumber);
+    const assignToMeMutation = useClaimSaleLead();
+    const createFollowupMutation = useCreateSaleFollowup();
+    const createReminderMutation = useCreateSaleReminder();
     const updateSaleStatusMutation = useUpdateSaleStatus();
+    const updateSalePriorityMutation = useUpdateSalePriority();
 
     const [status, setStatus] = useState<SalesStatus>("New");
     const [isActivityModalOpen, setActivityModalOpen] = useState(false);
@@ -59,7 +65,7 @@ export default function SalesDetailsPage() {
 
     const handleAssignClick = () => {
         if (sale && sale.id && status === "New") {
-            assignToMeMutation.mutate(sale.id, {
+            assignToMeMutation.mutate({saleId: sale.id, userId}, {
                 onSuccess: () => {
                     setStatus("Ongoing");
                     message.success("Sale assigned to you");
@@ -125,6 +131,25 @@ export default function SalesDetailsPage() {
         }
     };
 
+    const handlePriorityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+        const priority = parseInt(value);
+        if (sale && sale.id && !isNaN(priority)) {
+            updateSalePriorityMutation.mutate(
+                {saleId: sale.id, priority},
+                {
+                    onSuccess: () => {
+                        message.success(`Priority updated to ${value}`);
+                    },
+                    onError: (err) => {
+                        console.error("Failed to update priority:", err);
+                        message.error("Failed to update priority.");
+                    },
+                }
+            );
+        }
+    };
+
     const buttonText =
         status === "New" ? "Assign to me" : `Sales person: ${sale?.salesUser?.full_name || "Unknown"}`;
 
@@ -147,7 +172,7 @@ export default function SalesDetailsPage() {
                 <Header
                     name="Sophie Eleanor"
                     location="Bambalapitiya"
-                    title= "Indra Fast Track Sales Dashboard"
+                    title="Indra Fast Track Sales Dashboard"
                 />
 
                 <section
@@ -165,14 +190,15 @@ export default function SalesDetailsPage() {
                             <div
                                 className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
                                 <select
+                                    onChange={handlePriorityChange}
                                     className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
                                     style={{textAlignLast: "center"}}
                                 >
-                                    <option value="P0">P0</option>
-                                    <option value="P1">P1</option>
-                                    <option value="P2">P2</option>
-                                    <option value="P3">P3</option>
-                                    <option value="P5">P5</option>
+                                    <option value={0}>P0</option>
+                                    <option value={1}>P1</option>
+                                    <option value={2}>P2</option>
+                                    <option value={3}>P3</option>
+                                    <option value={4}>P4</option>
                                 </select>
                             </div>
                         </div>
@@ -183,7 +209,7 @@ export default function SalesDetailsPage() {
                                 setStatus(newStatus);
                                 if (sale?.id && (newStatus.toUpperCase() === "WON" || newStatus.toUpperCase() === "LOST")) {
                                     updateSaleStatusMutation.mutate(
-                                        { saleId: sale.id, status: newStatus.toUpperCase() },
+                                        {saleId: sale.id, status: newStatus.toUpperCase()},
                                         {
                                             onSuccess: () => {
                                                 message.success(`Status updated to ${newStatus}`);
@@ -252,50 +278,29 @@ export default function SalesDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value="Emily Charlotte"/>
-                            <InfoRow label="Contact No:" value="077 5898712"/>
-                            <InfoRow label="Email:" value="Info@indra.com"/>
+                            <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "Unknown"}/>
+                            <InfoRow label="Contact No:" value={sale.customer?.phone_number || "N/A"}/>
+                            <InfoRow label="Email:" value={sale.customer?.email || "N/A"}/>
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
-                                {role === "admin" ? "Spare Part Details" : "Vehicle Details"}
+                                Vehicle Details
                             </div>
-                            <InfoRow label="Vehicle Made:" value="Honda"/>
-                            <InfoRow label="Vehicle Model:" value="Civic"/>
-                            {role === "admin" ? (
-                                <>
-                                    <InfoRow label="Part No:" value="BF-DOT4"/>
-                                    <InfoRow label="YOM:" value="2024"/>
-                                    <InfoRow
-                                        label="Additional Note:"
-                                        value="hydraulic brake systems"
-                                    />
-                                </>
-                            ) : role === "tele-marketer" ? (
-                                <>
-                                    <InfoRow label="Manufacture Year:" value="2019"/>
-                                    <InfoRow label="Capacity:" value="2800cc"/>
-                                    <InfoRow label="Transmission:" value="Auto"/>
-                                    <InfoRow label="Fuel Type:" value="Petrol"/>
-                                    <InfoRow label="Price Range:" value="6,000,000 - 8,000,000"/>
-                                    <InfoRow label="Additional Note:" value="White color"/>
-                                </>
-                            ) : (
-                                <>
-                                    <InfoRow label="Manufacture Year:" value="2019"/>
-                                    <InfoRow label="Transmission:" value="Auto"/>
-                                    <InfoRow label="Fuel Type:" value="Petrol"/>
-                                    <InfoRow label="Down Payment:" value="500,000LKR"/>
-                                    <InfoRow label="Price Range:" value="6,000,000 - 8,000,000"/>
-                                    <InfoRow label="Additional Note:" value="White color"/>
-                                </>
-                            )}
+                            <InfoRow label="Vehicle Made:" value={sale.vehicle?.make || "Honda"}/>
+                            <InfoRow label="Vehicle Model:" value={sale.vehicle?.model || "Civic"}/>
+                            <InfoRow label="Manufacture Year:" value={sale.vehicle?.manufacture_year || "2019"}/>
+                            <InfoRow label="Capacity:" value={sale.vehicle?.capacity || "2800cc"}/>
+                            <InfoRow label="Transmission:" value={sale.vehicle?.transmission || "Auto"}/>
+                            <InfoRow label="Fuel Type:" value={sale.vehicle?.fuel_type || "Petrol"}/>
+                            <InfoRow label="Price Range:"
+                                     value={(sale.price_range_min && sale.price_range_max) ? `${sale.price_range_min.toLocaleString()} - ${sale.price_range_max.toLocaleString()}` : "N/A"}/>
+                            <InfoRow label="Additional Note:" value={sale.additional_note || "-"}/>
                         </div>
 
                         <div className="w-3/5 flex flex-col min-h-[400px]">
                             <SalesDetailsTab
-                                customerId="1"
-                                reminders={[]}
-                                followups={[]}
+                                customerId={sale.customer_id?.toString() || "1"}
+                                reminders={sale.saleReminders || []}
+                                followups={sale.followups || []}
                                 status={status}
                                 onOpenActivity={() => setActivityModalOpen(true)}
                                 onOpenReminder={() => setReminderModalOpen(true)}
@@ -320,11 +325,7 @@ export default function SalesDetailsPage() {
                     onClose={() => setActivityModalOpen(false)}
                     actionButton={{
                         label: "Save",
-                        onClick: () => {
-                            console.log("Activity saved:", activityText);
-                            setActivityText("");
-                            setActivityModalOpen(false);
-                        },
+                        onClick: handleSaveActivity,
                     }}
                 >
                     <div className="w-full">
@@ -346,17 +347,7 @@ export default function SalesDetailsPage() {
                     onClose={() => setReminderModalOpen(false)}
                     actionButton={{
                         label: "Save",
-                        onClick: () => {
-                            console.log("Reminder saved:", {
-                                reminderTitle,
-                                reminderDate,
-                                reminderNote,
-                            });
-                            setReminderTitle("");
-                            setReminderDate("");
-                            setReminderNote("");
-                            setReminderModalOpen(false);
-                        },
+                        onClick: handleSaveReminder,
                     }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">

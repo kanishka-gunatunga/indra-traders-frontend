@@ -8,8 +8,16 @@ import Modal from "@/components/Modal";
 import VehicleGallery from "@/components/VehicleGallery";
 import Image from "next/image";
 import React, {useState} from "react";
-import {useBestMatches, useDirectRequests, useRemindersByDirectRequest} from "@/hooks/useFastTrack";
-import {useCreateReminder} from "@/hooks/useReminder";
+import {
+    useDirectRequests,
+    useAddDirectReminder,
+    useDirectReminders,
+    useBuildBestMatches,
+    useBestMatches,
+    useAssignBestMatchToSale,
+    useAllDirectReminders, useVehicleDetails
+} from "@/hooks/useFastTrack";
+// import {useCreateReminder} from "@/hooks/useReminder";
 
 
 const bestMatchesData = [
@@ -162,7 +170,8 @@ export default function TeleMarketerPage() {
     const [isBestMatchesModalOpen, setIsBestMatchesModalOpen] = useState(false);
     const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
 
-    const [selectedDirectRequestId, setSelectedDirectRequestId] = useState<number | null>(null);
+    const [selectedDirectRequestId, setSelectedDirectRequestId] = useState<number | undefined>(undefined);
+    const [selectedVehicleId, setSelectedVehicleId] = useState<number | undefined>(undefined);
 
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
     const [isCustomerDetailsModalOpen, setIsCustomerDetailsModalOpen] =
@@ -172,60 +181,80 @@ export default function TeleMarketerPage() {
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
 
-    const {data: directRequests = [], isLoading: isLoadingRequests, error: requestsError} = useDirectRequests();
-    const {
-        data: bestMatches = [],
-        isLoading: isLoadingBestMatches
-    } = useBestMatches(selectedDirectRequestId?.toString() || "");
-    const {
-        data: reminders = [],
-        isLoading: isLoadingReminders
-    } = useRemindersByDirectRequest(selectedDirectRequestId?.toString() || "");
-    const createReminderMutation = useCreateReminder();
+    const { data: directRequests = [], isLoading: loadingDirect } = useDirectRequests();
 
+    const { data: reminders = [], isLoading: loadingReminders } = useAllDirectReminders();
+
+    const addReminder = useAddDirectReminder();
+
+    const buildMatches = useBuildBestMatches();
+
+    const { data: bestMatches = [], isLoading: loadingBestMatches } =
+        useBestMatches(selectedDirectRequestId);
+
+    const assignToSale = useAssignBestMatchToSale();
+    const { data: vehicle } = useVehicleDetails(selectedVehicleId ?? 0);
+
+    const selectedRequest = directRequests.find((r: { id: number | null; }) => r.id === selectedDirectRequestId);
+    const dynamicCustomer = selectedRequest?.customer || { name: "Unknown", contactNo: "N/A", email: "N/A", city: "N/A" };
 
     const handleBestMatchesClick = (directRequestId: number) => {
         setSelectedDirectRequestId(directRequestId);
-        setIsBestMatchesModalOpen(true);
+        buildMatches.mutate(directRequestId, {
+            onSuccess: () => {
+                setIsBestMatchesModalOpen(true);
+            }
+        });
     };
-
     const handleReminderClick = (directRequestId: number) => {
         setSelectedDirectRequestId(directRequestId);
         setReminderModalOpen(true);
     };
-
     const handleSaveReminder = () => {
         if (!selectedDirectRequestId) return;
-
-        createReminderMutation.mutate(
+        addReminder.mutate(
             {
-                task_title: reminderTitle,
-                task_date: reminderDate,
-                note: reminderNote,
-                direct_request_id: selectedDirectRequestId,
+                id: selectedDirectRequestId,
+                payload: {
+                    task_title: reminderTitle,
+                    task_date: reminderDate,
+                    note: reminderNote
+                }
             },
             {
                 onSuccess: () => {
-                    alert("Reminder created successfully!");
+                    alert("Reminder added");
                     setReminderTitle("");
                     setReminderDate("");
                     setReminderNote("");
                     setReminderModalOpen(false);
-                },
-                onError: (error) => {
-                    console.error("Failed to create reminder:", error);
-                    alert("Failed to create reminder");
-                },
+                }
             }
         );
     };
 
-    const handleRowClickForVehicle = () => {
-        setIsVehicleModalOpen(true);
+    const handleAssignToSale = () => { // NEW: Assign handler
+        if (!selectedDirectRequestId || !selectedVehicleId) return;
+        assignToSale.mutate(
+            {
+                directRequestId: selectedDirectRequestId,
+                vehicleId: selectedVehicleId,
+                payload: { salesUserId: 1 } // Assume ID 1 for demo; replace with real user ID from auth
+            },
+            {
+                onSuccess: () => {
+                    alert("Assigned to sale");
+                }
+            }
+        );
     };
 
-    if (requestsError) {
-        return <div>Error loading direct requests: {requestsError.message}</div>;
+    // const handleRowClickForVehicle = () => {
+    //     setIsVehicleModalOpen(true);
+    // };
+
+    if (loadingDirect) {
+        return <div>Loading...</div>;
     }
 
     return (
@@ -278,7 +307,7 @@ export default function TeleMarketerPage() {
 
                                     {/* Table body */}
                                     <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
-                                        {isLoadingRequests ? (
+                                        {loadingDirect ? (
                                             <div
                                                 className="flex items-center justify-center h-full text-gray-500">Loading
                                                 requests...</div>
@@ -293,7 +322,7 @@ export default function TeleMarketerPage() {
                                                 >
                                                     <div
                                                         className="flex-1 min-w-[140px] max-w-[220px] px-3 py-2 break-words whitespace-normal overflow-hidden">
-                                                        {request.customer?.name || "Unknown Customer"}
+                                                        {request.customer?.customer_name || "Unknown Customer"}
                                                     </div>
                                                     <div
                                                         className="flex-1 min-w-[120px] max-w-[180px] px-3 py-2 break-words whitespace-normal overflow-hidden">
@@ -324,7 +353,7 @@ export default function TeleMarketerPage() {
                                                         <button
                                                             className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
                                                             onClick={() => handleBestMatchesClick(request.id)}
-                                                            disabled={isLoadingBestMatches}
+                                                            disabled={loadingBestMatches}
                                                         >
                                                             <Image
                                                                 src={"/images/comparison.svg"}
@@ -377,9 +406,9 @@ export default function TeleMarketerPage() {
                                         {/* Table body */}
                                         <div
                                             className="h-[360px] py-3 overflow-y-auto no-scrollbar"
-                                            onClick={handleRowClickForVehicle}
+                                            // onClick={handleRowClickForVehicle}
                                         >
-                                            {isLoadingBestMatches ? (
+                                            {loadingBestMatches ? (
                                                 <div
                                                     className="flex items-center justify-center h-full text-gray-500">Loading
                                                     best matches...</div>
@@ -392,6 +421,10 @@ export default function TeleMarketerPage() {
                                                     <div
                                                         key={match.id || idx}
                                                         className="flex text-lg mt-2 text-black hover:bg-gray-50 transition"
+                                                        onClick={() => {
+                                                            setSelectedVehicleId(match.vehicle.id);
+                                                            setIsVehicleModalOpen(true);
+                                                        }}
                                                     >
                                                         <div
                                                             className="w-1/6 px-3 py-2">{match.vehicle?.model || "N/A"}</div>
@@ -423,14 +456,15 @@ export default function TeleMarketerPage() {
                         className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
                         <div className="w-full flex justify-between items-center">
               <span className="font-semibold text-[22px]">
-                2020 Toyota Hilux GR S
+                {vehicle ? `${vehicle.manufacture_year} ${vehicle.make} ${vehicle.model} ${vehicle.grade || ''}` : 'Loading...'}
               </span>
                             <div className="flex gap-3">
                                 <button
                                     className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
-                                    onClick={() => {
-                                        window.location.href = "/sales";
-                                    }}
+                                    // onClick={() => {
+                                    //     window.location.href = "/sales";
+                                    // }}
+                                    onClick={handleAssignToSale}
                                 >
                                     <Image
                                         src={"/images/fluent_person-star-20-regular.svg"}
@@ -499,10 +533,22 @@ export default function TeleMarketerPage() {
                   Vehicle Details
                 </span>
                                 <div className="text-[23px] mb-3 font-semibold tracking-wide text-[#DB2727] mt-5">
-                                    Rs. 22,400,000
+                                    Rs. {vehicle?.price?.toLocaleString() || 'N/A'}
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    {vehicleDetails.map((detail, idx) => (
+                                    {vehicle ? (
+                                        [
+                                            {label: "Millage:", value: `${vehicle.mileage || 'N/A'}km`},
+                                            {label: "No. of Owners:", value: vehicle.no_of_owners || 'N/A'},
+                                            {label: "Vehicle No:", value: vehicle.vehicle_no || 'N/A'},
+                                            {label: "Color:", value: vehicle.color || 'N/A'},
+                                            {label: "Capacity:", value: `${vehicle.capacity || 'N/A'}cc`},
+                                            {label: "Model:", value: vehicle.model || 'N/A'},
+                                            {label: "Fuel:", value: vehicle.fuel_type || 'N/A'},
+                                            {label: "Transmission:", value: vehicle.transmission || 'N/A'},
+                                            {label: "Year:", value: vehicle.manufacture_year || 'N/A'},
+                                            {label: "Grade:", value: vehicle.grade || 'N/A'},
+                                        ].map((detail, idx) => (
                                         <div
                                             key={idx}
                                             className="w-full flex text-lg font-medium tracking-wide"
@@ -510,7 +556,8 @@ export default function TeleMarketerPage() {
                                             <div className="w-2/6">{detail.label}</div>
                                             <div className="w-4/6 text-[#575757]">{detail.value}</div>
                                         </div>
-                                    ))}
+                                        ))
+                                    ) : <div>Loading details...</div>}
                                 </div>
                             </div>
                         </div>
@@ -537,7 +584,7 @@ export default function TeleMarketerPage() {
 
                                     {/* Table body */}
                                     <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
-                                        {isLoadingReminders ? (
+                                        {loadingReminders ? (
                                             <div
                                                 className="flex items-center justify-center h-full text-gray-500">Loading
                                                 reminders...</div>
@@ -551,9 +598,9 @@ export default function TeleMarketerPage() {
                                                     className="flex text-lg mt-2 text-black hover:bg-gray-50 transition"
                                                 >
                                                     <div
-                                                        className="w-1/5 px-3 py-2">{reminder.customer?.name || "Unknown"}</div>
+                                                        className="w-1/5 px-3 py-2">{reminder.directRequest.customer?.customer_name || "Unknown"}</div>
                                                     <div
-                                                        className="w-1/5 px-3 py-2">{reminder.customer?.contact_no || "N/A"}</div>
+                                                        className="w-1/5 px-3 py-2">{reminder.directRequest.customer?.phone_number || "N/A"}</div>
                                                     <div className="w-1/5 px-3 py-2">{reminder.task_title}</div>
                                                     <div className="w-1/5 px-3 py-2 relative">
                                                         {new Date(reminder.task_date).toLocaleDateString()}
@@ -576,17 +623,7 @@ export default function TeleMarketerPage() {
                     onClose={() => setReminderModalOpen(false)}
                     actionButton={{
                         label: "Save",
-                        onClick: () => {
-                            console.log("Reminder saved:", {
-                                reminderTitle,
-                                reminderDate,
-                                reminderNote,
-                            });
-                            setReminderTitle("");
-                            setReminderDate("");
-                            setReminderNote("");
-                            setReminderModalOpen(false);
-                        },
+                        onClick: handleSaveReminder,
                     }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
@@ -630,19 +667,19 @@ export default function TeleMarketerPage() {
                 >
                     <div className="flex font-medium">
                         <div className="w-1/4">Customer Name:</div>
-                        <div className="w-3/4 text-[#1D1D1D]">{customer.name}</div>
+                        <div className="w-3/4 text-[#1D1D1D]">{dynamicCustomer.customer_name}</div>
                     </div>
                     <div className="flex font-medium">
                         <div className="w-1/4">Contact No:</div>
-                        <div className="w-3/4 text-[#1D1D1D]">{customer.contactNo}</div>
+                        <div className="w-3/4 text-[#1D1D1D]">{dynamicCustomer.phone_number}</div>
                     </div>
                     <div className="flex font-medium">
                         <div className="w-1/4">Email:</div>
-                        <div className="w-3/4 text-[#1D1D1D]">{customer.email}</div>
+                        <div className="w-3/4 text-[#1D1D1D]">{dynamicCustomer.email}</div>
                     </div>
                     <div className="flex font-medium">
                         <div className="w-1/4">City:</div>
-                        <div className="w-3/4 text-[#1D1D1D]">{customer.city}</div>
+                        <div className="w-3/4 text-[#1D1D1D]">{dynamicCustomer.city}</div>
                     </div>
                 </DetailsModal>
             )}
