@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import SideMenu from "@/components/SideMenu";
 import AppWrapper from "@/components/AppWrapper";
 import Providers from "@/utils/providers";
+import ChatLauncher from "@/components/ChatLauncher";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
                 <Navbar/>
                 <SideMenu/>
                 {children}
+                <ChatLauncher />
             </AppWrapper>
         </Providers>
         </body>
