@@ -1,8 +1,9 @@
-// components/ChatLauncher.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
-import { useState } from "react";
-import { useCustomerChat } from "@/hooks/useCustomerChat";
+import React, {useState} from "react";
+import {useCustomerChat} from "@/hooks/useCustomerChat";
 import Image from "next/image";
 
 export default function ChatLauncher() {
@@ -14,9 +15,6 @@ export default function ChatLauncher() {
         sendMessage,
         askForAgent,
         typing,
-        showRating,
-        closeSession,
-        submitRating
     } = useCustomerChat();
 
     const [input, setInput] = useState("");
@@ -52,7 +50,7 @@ export default function ChatLauncher() {
                         zIndex: 9999
                     }}
                 >
-                    <Image src="/agent.png" alt="" width={20} height={20} className="w-10 h-10 m-auto" />
+                    <Image src="/agent.png" alt="" width={20} height={20} className="w-10 h-10 m-auto"/>
                 </button>
             )}
 
@@ -99,31 +97,18 @@ export default function ChatLauncher() {
                             ×
                         </button>
                     </div>
-                    {/*<button*/}
-                    {/*    onClick={closeSession}*/}
-                    {/*    style={{*/}
-                    {/*        background: "#F44336",*/}
-                    {/*        color: "#fff",*/}
-                    {/*        margin: "10px",*/}
-                    {/*        padding: "8px",*/}
-                    {/*        borderRadius: "8px",*/}
-                    {/*        border: "none",*/}
-                    {/*        cursor: "pointer"*/}
-                    {/*    }}*/}
-                    {/*>*/}
-                    {/*    End Chat*/}
-                    {/*</button>*/}
 
                     <div
                         style={{
                             flex: 1,
                             padding: "10px",
                             overflowY: "auto",
-                            fontSize: "14px"
+                            fontSize: "14px",
+                            overflowX: "hidden"
                         }}
                     >
                         {messages.length === 0 && (
-                            <p style={{ color: "#db2727" }}>
+                            <p style={{color: "#db2727"}}>
                                 Hello! How can I help you?
                             </p>
                         )}
@@ -147,12 +132,15 @@ export default function ChatLauncher() {
                                     }}
                                 >
                                     {m.message}
+                                    <span className="block text-xs text-[#7C7C7C] text-right mt-1">
+                                        {new Date(m.createdAt).toLocaleTimeString([], {timeStyle: 'short'})}
+                                    </span>
                                 </span>
                             </div>
                         ))}
 
                         {typing && (
-                            <p style={{ color: "#db2727", opacity: 0.7 }}>Agent typing...</p>
+                            <p style={{color: "#db2727", opacity: 0.7}}>Agent typing...</p>
                         )}
                     </div>
 
@@ -181,6 +169,7 @@ export default function ChatLauncher() {
                             gap: "5px"
                         }}
                     >
+
                         <input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -208,63 +197,6 @@ export default function ChatLauncher() {
                             Send
                         </button>
                     </form>
-                </div>
-            )}
-
-            {showRating && (
-                <div
-                    style={{
-                        position: "fixed",
-                        inset: 0,
-                        background: "rgba(0,0,0,0.5)",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        zIndex: 100000
-                    }}
-                >
-                    <div
-                        style={{
-                            background: "#fff",
-                            padding: "20px",
-                            borderRadius: "12px",
-                            width: "320px",
-                            textAlign: "center"
-                        }}
-                    >
-                        <h3 style={{ marginBottom: "10px" }}>Rate our Support</h3>
-
-                        <div style={{ marginBottom: "15px" }}>
-                            {[1,2,3,4,5].map(n => (
-                                <button
-                                    key={n}
-                                    onClick={() => submitRating(n)}
-                                    style={{
-                                        fontSize: "22px",
-                                        margin: "5px",
-                                        cursor: "pointer",
-                                        background: "none",
-                                        border: "none",
-                                    }}
-                                >
-                                    ⭐
-                                </button>
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={() => submitRating(0)}
-                            style={{
-                                background: "#ccc",
-                                border: "none",
-                                padding: "8px 12px",
-                                borderRadius: "8px",
-                                cursor: "pointer"
-                            }}
-                        >
-                            Skip
-                        </button>
-                    </div>
                 </div>
             )}
         </>

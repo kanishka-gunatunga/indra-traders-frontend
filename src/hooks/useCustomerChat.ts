@@ -1,7 +1,8 @@
-// hooks/useCustomerChat.ts
-import { useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
-import { useMutation, useQuery } from "@tanstack/react-query";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import {useEffect, useRef, useState} from "react";
+import {io, Socket} from "socket.io-client";
+import {useMutation, useQuery} from "@tanstack/react-query";
 import {ChatService} from "@/services/chatService";
 
 export function useCustomerChat() {
@@ -13,10 +14,9 @@ export function useCustomerChat() {
 
     const [messages, setMessages] = useState<any[]>([]);
     const [typing, setTyping] = useState(false);
-
     const [showRating, setShowRating] = useState(false);
 
-    // start chat if no chat_id exists
+
     const startChatMutation = useMutation({
         mutationFn: () => ChatService.startChat("en", "Web"),
         onSuccess: (data) => {
@@ -30,8 +30,8 @@ export function useCustomerChat() {
         queryKey: ["chat-messages", chatId],
         queryFn: () => ChatService.getMessages(chatId!),
         enabled: !!chatId,
-        refetchInterval: 2000 // fallback pull
     });
+
 
     // socket connection
     useEffect(() => {
@@ -39,7 +39,7 @@ export function useCustomerChat() {
 
         const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL as string, {
             transports: ["websocket"],
-            query: { role: "customer", chat_id: chatId }
+            query: {role: "customer", chat_id: chatId}
         });
 
         socketRef.current = socket;
@@ -56,53 +56,39 @@ export function useCustomerChat() {
             setTyping(false);
         });
 
+        socket.on("chat.closed", () => setShowRating(true));
+
         return () => {
-            socket.disconnect();
+            socket.disconnect()
         };
     }, [chatId]);
 
-    // merge socket + API messages
+
     useEffect(() => {
-        if (messagesQuery.data) {
-            setMessages(messagesQuery.data);
-        }
+        if (messagesQuery.data) setMessages(messagesQuery.data);
     }, [messagesQuery.data]);
 
+
     const sendMessage = (text: string) => {
-        socketRef.current?.emit("message.customer", { chat_id: chatId, text });
+        socketRef.current?.emit("message.customer", {chat_id: chatId, text});
     };
 
+
     const askForAgent = () => {
-        if (!chatId) return;
-        ChatService.requestAgent(chatId, 0);
-        socketRef.current?.emit("request.agent", { chat_id: chatId, priority: 0 });
+        socketRef.current?.emit("request.agent", {chat_id: chatId, priority: 0});
     };
 
     const closeSession = () => {
-        if (!chatId) return;
-
-        setShowRating(true);
-
-        ChatService.closeChat(chatId);
-        socketRef.current?.emit("chat.close", { chat_id: chatId });
-        localStorage.removeItem("chat_id");
-        setChatId(null);
-        setMessages([]);
+        socketRef.current?.emit("chat.close", {chat_id: chatId});
     };
 
     const submitRating = async (rating: number, message?: string) => {
         if (!chatId) return;
-
         await ChatService.rateAgent(chatId, rating, message);
-
-        ChatService.closeChat(chatId);
-        socketRef.current?.emit("chat.close", { chat_id: chatId });
-
+        setShowRating(false);
         localStorage.removeItem("chat_id");
-
         setChatId(null);
         setMessages([]);
-        setShowRating(false);
     };
 
     return {
@@ -114,6 +100,6 @@ export function useCustomerChat() {
         typing,
         closeSession,
         showRating,
-        submitRating
+        submitRating,
     };
 }
