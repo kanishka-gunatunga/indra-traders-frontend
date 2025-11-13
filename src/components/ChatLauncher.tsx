@@ -576,20 +576,36 @@
 // };
 
 
-import React, { useState, useRef, useEffect } from "react";
-import { useCustomerChat } from "@/hooks/useCustomerChat";
+import React, {useState, useRef, useEffect} from "react";
+import {useCustomerChat} from "@/hooks/useCustomerChat";
 import Image from "next/image";
 
-// ... (Keep your Icon components CloseIcon and SendIcon here) ...
 const CloseIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+        <path
+            d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
     </svg>
 );
 
 const SendIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
+        <path
+            d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
+    </svg>
+);
+
+const StarIcon = ({filled, onClick}: { filled: boolean; onClick: () => void }) => (
+    <svg
+        onClick={onClick}
+        xmlns="http://www.w3.org/2000/svg"
+        width="32"
+        height="32"
+        fill={filled ? "#FFD700" : "#E0E0E0"} // Gold if filled, Gray if empty
+        viewBox="0 0 16 16"
+        style={{cursor: "pointer", transition: "fill 0.2s"}}
+    >
+        <path
+            d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
     </svg>
 );
 
@@ -603,14 +619,21 @@ export default function ChatLauncher() {
         askForAgent,
         typing,
         isAgentActive,
+        closeSession,
+        showRating,
+        submitRating
     } = useCustomerChat();
 
     const [input, setInput] = useState("");
+
+    const [rating, setRating] = useState(0);
+    const [feedback, setFeedback] = useState("");
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (open && messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+            messagesEndRef.current.scrollIntoView({behavior: "smooth"});
         }
     }, [messages, open, typing]);
 
@@ -626,11 +649,18 @@ export default function ChatLauncher() {
         setInput("");
     };
 
+    const handleSubmitRating = async () => {
+        await submitRating(rating, feedback);
+        setRating(0);
+        setFeedback("");
+        setOpen(false);
+    }
+
     return (
-        <div style={{ fontFamily: '"Poppins", sans-serif' }}>
+        <div style={{fontFamily: '"Poppins", sans-serif'}}>
             {!open && (
                 <button onClick={handleOpen} style={styles.launcherButton}>
-                    <Image src="/agent.png" alt="Chat" width={30} height={30} style={{ margin: 'auto' }} />
+                    <Image src="/agent.png" alt="Chat" width={30} height={30} style={{margin: 'auto'}}/>
                     <span style={styles.statusBadge}></span>
                 </button>
             )}
@@ -640,112 +670,166 @@ export default function ChatLauncher() {
                     <div style={styles.header}>
                         <div style={styles.headerInfo}>
                             <div style={styles.agentImageContainer}>
-                                <Image src="/agent.png" alt="Agent" width={45} height={45} />
+                                <Image src="/agent.png" alt="Agent" width={45} height={45}/>
                                 <span style={styles.onlineIndicator}></span>
                             </div>
                             <div style={styles.headerText}>
                                 <p style={styles.headerTitle}>Indra Assistant</p>
+                                {/*<span style={styles.headerSubtitle}>*/}
+                                {/*    {isAgentActive ? "Live Support" : "Online"}*/}
+                                {/*</span>*/}
                                 <span style={styles.headerSubtitle}>
-                                    {isAgentActive ? "Live Support" : "Online"}
+                                    {showRating ? "Chat Ended" : (isAgentActive ? "Live Support" : "Online")}
                                 </span>
                             </div>
                         </div>
-                        <button onClick={() => setOpen(false)} style={styles.closeButton}>
-                            <CloseIcon />
+                        {/*<button onClick={() => setOpen(false)} style={styles.closeButton}>*/}
+                        {/*    <CloseIcon />*/}
+                        {/*</button>*/}
+
+                        <button
+                            onClick={() => showRating ? setOpen(false) : closeSession()}
+                            style={styles.closeButton}
+                            title={showRating ? "Close" : "End Chat"}
+                        >
+                            <CloseIcon/>
                         </button>
+
                     </div>
 
-                    <div style={styles.body}>
-                        {messages.length === 0 && (
-                            <div style={styles.botMessageContainer}>
-                                <Image src="/agent.png" width={30} height={30} alt="Bot" style={styles.botAvatar} />
-                                <div style={styles.messageWrapper}>
-                                    <span style={styles.botName}>Indra Assistant</span>
-                                    <div style={styles.botBubble}>
-                                        Hello! Welcome. How can I help you today?
-                                    </div>
-                                </div>
+                    {showRating ? (
+                        <div style={styles.ratingContainer}>
+                            <Image src="/agent.png" width={80} height={80} alt="Agent"
+                                   style={{borderRadius: '50%', marginBottom: '20px'}}/>
+                            <h3 style={{color: '#333', marginBottom: '10px', fontSize: '18px', fontWeight: 600}}>How was
+                                your experience?</h3>
+                            <p style={{color: '#777', fontSize: '13px', marginBottom: '20px', textAlign: 'center'}}>
+                                Please rate the service provided by our agent.
+                            </p>
+
+                            {/* Stars */}
+                            <div style={{display: 'flex', gap: '8px', marginBottom: '25px'}}>
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <StarIcon
+                                        key={star}
+                                        filled={star <= rating}
+                                        onClick={() => setRating(star)}
+                                    />
+                                ))}
                             </div>
-                        )}
 
-                        {messages.map((m: any, i: number) => {
-                            // HANDLE SYSTEM MESSAGE (Agent Joined)
-                            if (m.sender === "system") {
-                                return (
-                                    <div key={i} style={styles.systemMessageContainer}>
-                                        <span style={styles.systemMessage}>
-                                            {m.message}
-                                        </span>
-                                    </div>
-                                )
-                            }
+                            {/* Feedback Text Area */}
+                            <textarea
+                                placeholder="Optional feedback..."
+                                value={feedback}
+                                onChange={(e) => setFeedback(e.target.value)}
+                                style={styles.feedbackInput}
+                            />
 
-                            // STANDARD MESSAGES
-                            return (
-                                <div key={i} style={{
-                                    display: 'flex',
-                                    flexDirection: m.sender === "customer" ? 'row-reverse' : 'row',
-                                    marginBottom: '15px',
-                                    alignItems: 'flex-end'
-                                }}>
-                                    {/* Only show Avatar for bot/agent, not customer */}
-                                    {m.sender !== "customer" && (
-                                        <Image src="/agent.png" width={30} height={30} alt="Bot" style={styles.botAvatar} />
-                                    )}
-
-                                    <div style={m.sender === "customer" ? styles.userMessageWrapper : styles.messageWrapper}>
-                                        {m.sender !== "customer" && (
+                            <button onClick={handleSubmitRating} style={styles.submitRatingButton}>
+                                Submit Feedback
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <div style={styles.body}>
+                                {messages.length === 0 && (
+                                    <div style={styles.botMessageContainer}>
+                                        <Image src="/agent.png" width={30} height={30} alt="Bot"
+                                               style={styles.botAvatar}/>
+                                        <div style={styles.messageWrapper}>
                                             <span style={styles.botName}>Indra Assistant</span>
-                                        )}
-                                        <div style={m.sender === "customer" ? styles.userBubble : styles.botBubble}>
-                                            {m.message}
-                                            <div style={{
-                                                ...styles.timestamp,
-                                                textAlign: m.sender === "customer" ? 'right' : 'left',
-                                                color: m.sender === "customer" ? '#888' : 'rgba(255,255,255,0.8)'
-                                            }}>
-                                                {new Date(m.createdAt).toLocaleTimeString([], { timeStyle: 'short' })}
+                                            <div style={styles.botBubble}>
+                                                Hello! Welcome. How can I help you today?
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )
-                        })}
+                                )}
 
-                        {typing && (
-                            <div style={styles.botMessageContainer}>
-                                <Image src="/agent.png" width={30} height={30} alt="Bot" style={styles.botAvatar} />
-                                <div style={styles.messageWrapper}>
-                                    <div style={{...styles.botBubble, fontStyle: 'italic'}}>
-                                        Typing...
+                                {messages.map((m: any, i: number) => {
+                                    // HANDLE SYSTEM MESSAGE (Agent Joined)
+                                    if (m.sender === "system") {
+                                        return (
+                                            <div key={i} style={styles.systemMessageContainer}>
+                                        <span style={styles.systemMessage}>
+                                            {m.message}
+                                        </span>
+                                            </div>
+                                        )
+                                    }
+
+                                    // STANDARD MESSAGES
+                                    return (
+                                        <div key={i} style={{
+                                            display: 'flex',
+                                            flexDirection: m.sender === "customer" ? 'row-reverse' : 'row',
+                                            marginBottom: '15px',
+                                            alignItems: 'flex-end'
+                                        }}>
+                                            {/* Only show Avatar for bot/agent, not customer */}
+                                            {m.sender !== "customer" && (
+                                                <Image src="/agent.png" width={30} height={30} alt="Bot"
+                                                       style={styles.botAvatar}/>
+                                            )}
+
+                                            <div
+                                                style={m.sender === "customer" ? styles.userMessageWrapper : styles.messageWrapper}>
+                                                {m.sender !== "customer" && (
+                                                    <span style={styles.botName}>Indra Assistant</span>
+                                                )}
+                                                <div
+                                                    style={m.sender === "customer" ? styles.userBubble : styles.botBubble}>
+                                                    {m.message}
+                                                    <div style={{
+                                                        ...styles.timestamp,
+                                                        textAlign: m.sender === "customer" ? 'right' : 'left',
+                                                        color: m.sender === "customer" ? '#888' : 'rgba(255,255,255,0.8)'
+                                                    }}>
+                                                        {new Date(m.createdAt).toLocaleTimeString([], {timeStyle: 'short'})}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+
+                                {typing && (
+                                    <div style={styles.botMessageContainer}>
+                                        <Image src="/agent.png" width={30} height={30} alt="Bot"
+                                               style={styles.botAvatar}/>
+                                        <div style={styles.messageWrapper}>
+                                            <div style={{...styles.botBubble, fontStyle: 'italic'}}>
+                                                Typing...
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+                                <div ref={messagesEndRef}/>
                             </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
+                            {/* Live Agent Button - HIDDEN if isAgentActive is true */}
+                            {!isAgentActive && (
+                                <div style={{padding: '0 10px'}}>
+                                    <button onClick={() => askForAgent()} style={styles.liveAgentButton}>
+                                        Talk to a Live Agent
+                                    </button>
+                                </div>
+                            )}
 
-                    {/* Live Agent Button - HIDDEN if isAgentActive is true */}
-                    {!isAgentActive && (
-                        <div style={{padding: '0 10px'}}>
-                            <button onClick={() => askForAgent()} style={styles.liveAgentButton}>
-                                Talk to a Live Agent
-                            </button>
-                        </div>
+                            <form onSubmit={handleSend} style={styles.footer}>
+                                <input
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    type="text"
+                                    placeholder="Write message here..."
+                                    style={styles.input}
+                                />
+                                <button type="submit" style={styles.sendButton}>
+                                    <SendIcon/>
+                                </button>
+                            </form>
+
+                        </>
                     )}
-
-                    <form onSubmit={handleSend} style={styles.footer}>
-                        <input
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            type="text"
-                            placeholder="Write message here..."
-                            style={styles.input}
-                        />
-                        <button type="submit" style={styles.sendButton}>
-                            <SendIcon />
-                        </button>
-                    </form>
                 </div>
             )}
         </div>
@@ -809,20 +893,61 @@ const styles: { [key: string]: React.CSSProperties } = {
         alignItems: 'center',
         gap: '10px'
     },
-    agentImageContainer: { position: 'relative', display: 'flex' },
+    agentImageContainer: {position: 'relative', display: 'flex'},
     onlineIndicator: {
         position: 'absolute', bottom: '0', right: '0', width: '10px', height: '10px',
         backgroundColor: '#05e905', borderRadius: '50%', border: '1px solid #fff'
     },
-    headerText: { display: 'flex', flexDirection: 'column', lineHeight: '1.2' },
-    headerTitle: { margin: 0, color: '#fff', fontWeight: 600, fontSize: '16px' },
-    headerSubtitle: { margin: 0, color: '#fff', fontWeight: 300, fontSize: '11px' },
+    headerText: {display: 'flex', flexDirection: 'column', lineHeight: '1.2'},
+    headerTitle: {margin: 0, color: '#fff', fontWeight: 600, fontSize: '16px'},
+    headerSubtitle: {margin: 0, color: '#fff', fontWeight: 300, fontSize: '11px'},
     closeButton: {
-        background: "transparent", border: "none", color: "#fff", cursor: "pointer", display: 'flex', alignItems: 'center'
+        background: "transparent",
+        border: "none",
+        color: "#fff",
+        cursor: "pointer",
+        display: 'flex',
+        alignItems: 'center'
     },
     body: {
         flex: 1, padding: "15px", overflowY: "auto", backgroundColor: "#fff", display: 'flex', flexDirection: 'column'
     },
+
+
+    ratingContainer: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '30px',
+        backgroundColor: '#fff',
+        animation: 'fadeIn 0.3s ease'
+    },
+    feedbackInput: {
+        width: '100%',
+        height: '80px',
+        border: '1px solid #e0e0e0',
+        borderRadius: '8px',
+        padding: '10px',
+        fontSize: '12px',
+        fontFamily: "'Poppins', sans-serif",
+        marginBottom: '20px',
+        outlineColor: '#DB2727',
+        resize: 'none'
+    },
+    submitRatingButton: {
+        backgroundColor: '#DB2727',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '25px',
+        padding: '10px 30px',
+        fontSize: '14px',
+        fontWeight: 500,
+        cursor: 'pointer',
+        boxShadow: '0 4px 10px rgba(219, 39, 39, 0.3)'
+    },
+
 
     // --- NEW STYLES FOR SYSTEM MESSAGE ---
     systemMessageContainer: {
@@ -843,20 +968,20 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     // -------------------------------------
 
-    botMessageContainer: { display: 'flex', alignItems: 'flex-end', marginBottom: '15px' },
-    botAvatar: { borderRadius: '50%', marginRight: '10px', marginBottom: '5px' },
-    messageWrapper: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '75%' },
-    botName: { fontSize: '10px', color: '#BFBFBF', marginLeft: '2px', marginBottom: '2px' },
+    botMessageContainer: {display: 'flex', alignItems: 'flex-end', marginBottom: '15px'},
+    botAvatar: {borderRadius: '50%', marginRight: '10px', marginBottom: '5px'},
+    messageWrapper: {display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: '75%'},
+    botName: {fontSize: '10px', color: '#BFBFBF', marginLeft: '2px', marginBottom: '2px'},
     botBubble: {
         backgroundColor: "#DB2727", color: "#fff", padding: "10px 14px", borderRadius: "12px",
         borderTopLeftRadius: "0px", fontSize: "12px", lineHeight: "1.5"
     },
-    userMessageWrapper: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', maxWidth: '75%' },
+    userMessageWrapper: {display: 'flex', flexDirection: 'column', alignItems: 'flex-end', maxWidth: '75%'},
     userBubble: {
         backgroundColor: "#F4F9FF", color: "#595E62", padding: "10px 14px", borderRadius: "12px",
         borderBottomRightRadius: "0px", fontSize: "12px", textAlign: "left", lineHeight: "1.5"
     },
-    timestamp: { display: 'block', fontSize: '9px', marginTop: '4px' },
+    timestamp: {display: 'block', fontSize: '9px', marginTop: '4px'},
     liveAgentButton: {
         width: '100%', backgroundColor: '#fff', border: '1px solid #DB2727', color: '#DB2727',
         padding: '8px', borderRadius: '5px', fontSize: '12px', cursor: 'pointer',
@@ -866,7 +991,15 @@ const styles: { [key: string]: React.CSSProperties } = {
         padding: "10px", borderTop: "1px solid #e0e0e0", display: "flex", gap: "10px",
         alignItems: "center", backgroundColor: '#fff'
     },
-    input: { flex: 1, border: "none", outline: "none", fontSize: "12px", padding: "8px", color: "#595E62", fontFamily: "'Poppins', sans-serif" },
+    input: {
+        flex: 1,
+        border: "none",
+        outline: "none",
+        fontSize: "12px",
+        padding: "8px",
+        color: "#595E62",
+        fontFamily: "'Poppins', sans-serif"
+    },
     sendButton: {
         background: "transparent", border: "1px solid #DB2727", color: "#DB2727", width: "35px", height: "35px",
         borderRadius: "50%", display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: "pointer"
