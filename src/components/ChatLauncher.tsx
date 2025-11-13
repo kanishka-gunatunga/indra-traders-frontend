@@ -868,7 +868,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     input: { flex: 1, border: "none", outline: "none", fontSize: "12px", padding: "8px", color: "#595E62", fontFamily: "'Poppins', sans-serif" },
     sendButton: {
-        background: "transparent", border: "1px solid #1C73D4", color: "#DB2727", width: "35px", height: "35px",
+        background: "transparent", border: "1px solid #DB2727", color: "#DB2727", width: "35px", height: "35px",
         borderRadius: "50%", display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: "pointer"
     }
 };
