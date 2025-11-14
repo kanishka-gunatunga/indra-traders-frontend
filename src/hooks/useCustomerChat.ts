@@ -160,18 +160,30 @@ export function useCustomerChat() {
             setMessages((prev) => [...prev, msg]);
         });
 
-        socket.on("typing", () => {
-            setTyping(true);
-        });
+        // socket.on("typing",  () => {
+        //     setTyping(true);
+        // });
 
-        socket.on("stop_typing", () => {
-            setTyping(false);
+        socket.on("typing", ({by}) => {
+            if (by === 'bot' || by === 'agent'){
+                setTyping(true);
+            }
+        })
+
+        // socket.on("stop_typing", () => {
+        //     setTyping(false);
+        // });
+
+        socket.on("stop_typing", ({ by }) => {
+            if (by === 'bot' || by === 'agent') {
+                setTyping(false);
+            }
         });
 
         // --- NEW LISTENER: Handle Agent Joining ---
         socket.on("agent.joined", () => {
             setIsAgentActive(true);
-
+            setTyping(false);
             // Inject a local system message
             setMessages((prev) => [
                 ...prev,
@@ -200,21 +212,50 @@ export function useCustomerChat() {
             setMessages(messagesQuery.data);
             // Optional: If your API returns the chat status in the message list or separate query,
             // you should set setIsAgentActive(true) here if the chat is already assigned.
+
+            const session = messagesQuery.data[0]?.session;
+            if (session?.status === 'assigned'){
+                setIsAgentActive(true);
+            }
         }
     }, [messagesQuery.data]);
 
 
+    // const sendMessage = (text: string) => {
+    //     socketRef.current?.emit("message.customer", {chat_id: chatId, text});
+    // };
+
     const sendMessage = (text: string) => {
+        if (!chatId) return;
         socketRef.current?.emit("message.customer", {chat_id: chatId, text});
     };
 
 
+    // const askForAgent = () => {
+    //     socketRef.current?.emit("request.agent", {chat_id: chatId, priority: 0});
+    //     // Optional: You can add a temporary system message here saying "Waiting for agent..."
+    // };
+
     const askForAgent = () => {
+        if (!chatId) return;
         socketRef.current?.emit("request.agent", {chat_id: chatId, priority: 0});
-        // Optional: You can add a temporary system message here saying "Waiting for agent..."
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: "sys-" + Date.now(),
+                sender: "system",
+                message: "Connecting you to a live agent...",
+                createdAt: new Date().toISOString()
+            }
+        ]);
     };
 
+    // const closeSession = () => {
+    //     socketRef.current?.emit("chat.close", {chat_id: chatId});
+    // };
+
     const closeSession = () => {
+        if (!chatId) return;
         socketRef.current?.emit("chat.close", {chat_id: chatId});
     };
 
@@ -228,6 +269,14 @@ export function useCustomerChat() {
         setIsAgentActive(false);
     };
 
+    const sendTyping = () => {
+        if (chatId) socketRef.current?.emit("typing", { chat_id: chatId, by: 'customer' });
+    };
+
+    const sendStopTyping = () => {
+        if (chatId) socketRef.current?.emit("stop_typing", { chat_id: chatId, by: 'customer' });
+    };
+
     return {
         chatId,
         startChatMutation,
@@ -239,5 +288,7 @@ export function useCustomerChat() {
         showRating,
         submitRating,
         isAgentActive, // Return this to the UI
+        sendTyping,       // Expose functions
+        sendStopTyping
     };
 }

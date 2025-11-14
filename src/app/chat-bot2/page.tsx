@@ -3,10 +3,9 @@
 import React, {useState, useEffect, useRef} from "react";
 import {useAgentChat} from "@/hooks/useChat";
 import Image from "next/image";
+// import {useCurrentUser} from "@/utils/auth";
 
-// --- Icons ---
-// const SendIcon = () => (
-//     <svg className="w-5 h-5 text-[#DB2727]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+
 const SendIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
         <path
@@ -35,14 +34,11 @@ const DoubleCheck = () => (
 
 const ChatDashboard: React.FC = () => {
 
-
-    // useEffect(() => {
-    //     console.log("SESSION STATUS:", status);
-    //     console.log("SESSION DATA:", session);
-    // }, [session, status]);
+    // const user = useCurrentUser();
+    // console.log("--------------- :", user);
 
     const agentId = 2;
-    console.log(agentId);
+
     const {
         queue,
         assigned,
@@ -58,8 +54,15 @@ const ChatDashboard: React.FC = () => {
     } = useAgentChat(agentId);
 
     const [inputText, setInputText] = useState("");
+
+    const [acceptingChatId, setAcceptingChatId] = useState<string | null>(null);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        setAcceptingChatId(null);
+    }, [queue]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -82,6 +85,14 @@ const ChatDashboard: React.FC = () => {
         setInputText("");
         sendStopTyping();
     };
+
+    if (!agentId) {
+        return (
+            <div className="flex items-center justify-center min-h-screen w-full bg-[#e0e0e0] p-6">
+                Loading Agent Dashboard...
+            </div>
+        )
+    }
 
     return (
         <div className="flex items-center justify-center min-h-screen w-full bg-[#e0e0e0] p-6">
@@ -126,13 +137,15 @@ const ChatDashboard: React.FC = () => {
                                                 </div>
                                             </div>
                                             <button
+                                                disabled={acceptingChatId === chat.chat_id}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
+                                                    setAcceptingChatId(chat.chat_id);
                                                     acceptChat(chat.chat_id);
                                                 }}
                                                 className="bg-green-600 hover:bg-green-700 text-white text-[10px] font-semibold px-3 py-1.5 rounded-full shadow-sm transition"
                                             >
-                                                Accept
+                                                {acceptingChatId === chat.chat_id ? 'Accepting...' : 'Accept'}
                                             </button>
                                         </div>
                                         <div
@@ -237,7 +250,8 @@ const ChatDashboard: React.FC = () => {
                                                 <div
                                                     className={`text-[9px] flex items-center justify-end gap-1 ${isAgent ? "text-red-100" : "text-gray-400"}`}>
                                                     {new Date(msg.createdAt).toLocaleTimeString([], {timeStyle: "short"})}
-                                                    {isAgent && msg.viewed_by_customer && <DoubleCheck/>}
+                                                    {/*{isAgent && msg.viewed_by_customer && <DoubleCheck/>}*/}
+                                                    {isAgent && <DoubleCheck/>}
                                                 </div>
                                             </div>
                                         </div>

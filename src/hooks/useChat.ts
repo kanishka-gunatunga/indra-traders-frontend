@@ -1,76 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
-// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// import {ChatService} from "@/services/chatService";
-//
-// // GENERAL CHATS LIST
-// export function useQueue() {
-//     return useQuery({
-//         queryKey: ["chat_queue"],
-//         queryFn: ChatService.getQueue,
-//     });
-// }
-//
-// // AGENT'S ASSIGNED CHATS
-// export function useAssignedChats(userId: number) {
-//     return useQuery({
-//         queryKey: ["assigned_chats", userId],
-//         queryFn: () => ChatService.getAssigned(userId),
-//         enabled: !!userId,
-//     });
-// }
-//
-// // CHAT MESSAGES
-// export function useChatMessages(chatId: string | null) {
-//     return useQuery({
-//         queryKey: ["chat_messages", chatId],
-//         queryFn: () => ChatService.getMessages(String(chatId)),
-//         enabled: !!chatId,
-//         refetchInterval: 2000, // optional polling if you want fallback
-//     });
-// }
-//
-// // START CHAT
-// // export function useStartChat() {
-// //     return useMutation({
-// //         mutationFn: ChatService.startChat,
-// //     });
-// // }
-//
-// // REQUEST AGENT
-// export function useRequestAgent() {
-//     return useMutation({
-//         mutationFn: ({ chat_id, priority }: { chat_id: string; priority: number }) =>
-//             ChatService.requestAgent(chat_id, priority),
-//     });
-// }
-//
-// // ASSIGN CHAT
-// export function useAssignChat() {
-//     const qc = useQueryClient();
-//     return useMutation({
-//         mutationFn: ({ chat_id, user_id }: { chat_id: string; user_id: number }) =>
-//             ChatService.assignChat(chat_id, user_id),
-//         onSuccess: () => {
-//             qc.invalidateQueries({ queryKey: ["assigned_chats"] });
-//             qc.invalidateQueries({ queryKey: ["chat_queue"] });
-//         },
-//     });
-// }
-//
-// // CLOSE CHAT
-// export function useCloseChat() {
-//     const qc = useQueryClient();
-//     return useMutation({
-//         mutationFn: (chat_id: string) => ChatService.closeChat(chat_id),
-//         onSuccess: () => {
-//             qc.invalidateQueries({ queryKey: ["assigned_chats"] });
-//             qc.invalidateQueries({ queryKey: ["chat_queue"] });
-//         },
-//     });
-// }
-
 // import {useEffect, useRef, useState} from "react";
 // import {io, Socket} from "socket.io-client";
 // import {ChatService} from "@/services/chatService";
@@ -327,7 +256,7 @@ import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { ChatService } from "@/services/chatService";
 
-export function useAgentChat(agentId: number) {
+export function useAgentChat(agentId: number | undefined) {
     const socketRef = useRef<Socket | null>(null);
 
     // We use a Ref for the selected ID so the socket listener
@@ -413,6 +342,7 @@ export function useAgentChat(agentId: number) {
     };
 
     const fetchAssigned = async () => {
+        if (!agentId) return;
         const a = await ChatService.getAssigned(agentId);
         setAssigned(a);
     };
@@ -427,6 +357,14 @@ export function useAgentChat(agentId: number) {
         setMessages([]);
         setIsCustomerTyping(false);
 
+        setAssigned(prev =>
+            prev.map(chat =>
+                chat.chat_id === chat_id ? { ...chat, unread_count: 0 } : chat
+            )
+        );
+
+        socketRef.current?.emit("agent.read", { chat_id });
+
         try {
             socketRef.current?.emit("join.chat", { chat_id });
             const msgs = await ChatService.getMessages(chat_id);
@@ -437,12 +375,14 @@ export function useAgentChat(agentId: number) {
     };
 
     const acceptChat = (chat_id: string) => {
+        if (!agentId) return;
         socketRef.current?.emit("agent.accept", { chat_id, user_id: agentId });
         selectChat(chat_id);
     };
 
     const sendMessage = (text: string) => {
-        if (!selectedChatId) return;
+        // if (!selectedChatId) return;
+        if (!selectedChatId || !agentId) return;
         // We do NOT manually add the message to 'messages' state here.
         // We wait for the server to emit 'message.new' to ensure consistency.
         socketRef.current?.emit("message.agent", { chat_id: selectedChatId, text, user_id: agentId });
