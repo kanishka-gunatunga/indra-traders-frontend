@@ -621,7 +621,9 @@ export default function ChatLauncher() {
         isAgentActive,
         closeSession,
         showRating,
-        submitRating
+        submitRating,
+        sendTyping,
+        sendStopTyping
     } = useCustomerChat();
 
     const [input, setInput] = useState("");
@@ -630,6 +632,7 @@ export default function ChatLauncher() {
     const [feedback, setFeedback] = useState("");
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (open && messagesEndRef.current) {
@@ -642,11 +645,31 @@ export default function ChatLauncher() {
         if (!chatId) startChatMutation.mutate();
     };
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInput(e.target.value);
+
+        // Don't send typing if agent isn't active
+        if (!isAgentActive) return;
+
+        sendTyping();
+
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+        typingTimeoutRef.current = setTimeout(() => {
+            sendStopTyping();
+        }, 1500); // 1.5 seconds
+    };
+
     const handleSend = (e: any) => {
         e.preventDefault();
         if (!input.trim()) return;
         sendMessage(input);
         setInput("");
+
+        if (isAgentActive) {
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            sendStopTyping();
+        }
     };
 
     const handleSubmitRating = async () => {
@@ -818,7 +841,8 @@ export default function ChatLauncher() {
                             <form onSubmit={handleSend} style={styles.footer}>
                                 <input
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    // onChange={(e) => setInput(e.target.value)}
+                                    onChange={handleInputChange}
                                     type="text"
                                     placeholder="Write message here..."
                                     style={styles.input}

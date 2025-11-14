@@ -18,6 +18,7 @@ export type ChatMessage = {
     message: string;
     viewed_by_agent: "yes" | "no";
     createdAt: string;
+    session?: ChatSession;
 };
 
 export const ChatService = {
