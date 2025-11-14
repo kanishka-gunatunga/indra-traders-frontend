@@ -60,18 +60,18 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
 
-    useSecureCookies: false,
-    cookies: {
-        sessionToken: {
-            name: 'next-auth.session-token',
-            options: {
-                httpOnly: true,
-                sameSite: 'lax',
-                path: '/',
-                secure: false,
-            },
-        },
-    },
+    // useSecureCookies: false,
+    // cookies: {
+    //     sessionToken: {
+    //         name: 'next-auth.session-token',
+    //         options: {
+    //             httpOnly: true,
+    //             sameSite: 'lax',
+    //             path: '/',
+    //             secure: false,
+    //         },
+    //     },
+    // },
 
     callbacks: {
         async jwt({token, user}) {
