@@ -6,6 +6,7 @@ import SideMenu from "@/components/SideMenu";
 import AppWrapper from "@/components/AppWrapper";
 import Providers from "@/utils/providers";
 import ChatLauncher from "@/components/ChatLauncher";
+import SessionAuthProvider from "@/utils/SessionAuthProvider";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -32,14 +33,16 @@ export default function RootLayout({
         <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased `}
         >
-        <Providers>
-            <AppWrapper>
-                <Navbar/>
-                <SideMenu/>
-                {children}
-                <ChatLauncher />
-            </AppWrapper>
-        </Providers>
+            <SessionAuthProvider>
+                <Providers>
+                    <AppWrapper>
+                        <Navbar/>
+                        <SideMenu/>
+                        {children}
+                        <ChatLauncher/>
+                    </AppWrapper>
+                </Providers>
+            </SessionAuthProvider>
         </body>
         </html>
     );
