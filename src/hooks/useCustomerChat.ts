@@ -125,9 +125,11 @@ export function useCustomerChat() {
     // New State: Track if agent is connected
     const [isAgentActive, setIsAgentActive] = useState(false);
 
+    const [language, setLanguage] = useState<string>("en");
+
 
     const startChatMutation = useMutation({
-        mutationFn: () => ChatService.startChat("en", "Web"),
+        mutationFn: () => ChatService.startChat(language, "Web"),
         onSuccess: (data) => {
             setChatId(data.chat_id);
             localStorage.setItem("chat_id", data.chat_id);
@@ -289,6 +291,8 @@ export function useCustomerChat() {
         submitRating,
         isAgentActive, // Return this to the UI
         sendTyping,       // Expose functions
-        sendStopTyping
+        sendStopTyping,
+        language,
+        setLanguage
     };
 }
