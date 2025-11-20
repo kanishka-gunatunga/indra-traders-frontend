@@ -129,7 +129,9 @@ export function useCustomerChat() {
 
 
     const startChatMutation = useMutation({
-        mutationFn: () => ChatService.startChat(language, "Web"),
+        // mutationFn: () => ChatService.startChat(language, "Web"),
+        mutationFn: (variables: { lang: string, channel: string }) =>
+            ChatService.startChat(variables.lang, variables.channel),
         onSuccess: (data) => {
             setChatId(data.chat_id);
             localStorage.setItem("chat_id", data.chat_id);
@@ -167,7 +169,7 @@ export function useCustomerChat() {
         // });
 
         socket.on("typing", ({by}) => {
-            if (by === 'bot' || by === 'agent'){
+            if (by === 'bot' || by === 'agent') {
                 setTyping(true);
             }
         })
@@ -176,7 +178,7 @@ export function useCustomerChat() {
         //     setTyping(false);
         // });
 
-        socket.on("stop_typing", ({ by }) => {
+        socket.on("stop_typing", ({by}) => {
             if (by === 'bot' || by === 'agent') {
                 setTyping(false);
             }
@@ -216,7 +218,7 @@ export function useCustomerChat() {
             // you should set setIsAgentActive(true) here if the chat is already assigned.
 
             const session = messagesQuery.data[0]?.session;
-            if (session?.status === 'assigned'){
+            if (session?.status === 'assigned') {
                 setIsAgentActive(true);
             }
         }
@@ -272,11 +274,11 @@ export function useCustomerChat() {
     };
 
     const sendTyping = () => {
-        if (chatId) socketRef.current?.emit("typing", { chat_id: chatId, by: 'customer' });
+        if (chatId) socketRef.current?.emit("typing", {chat_id: chatId, by: 'customer'});
     };
 
     const sendStopTyping = () => {
-        if (chatId) socketRef.current?.emit("stop_typing", { chat_id: chatId, by: 'customer' });
+        if (chatId) socketRef.current?.emit("stop_typing", {chat_id: chatId, by: 'customer'});
     };
 
     return {
@@ -293,6 +295,7 @@ export function useCustomerChat() {
         sendTyping,       // Expose functions
         sendStopTyping,
         language,
-        setLanguage
+        setLanguage,
+        isChatStarting: startChatMutation.isPending
     };
 }
