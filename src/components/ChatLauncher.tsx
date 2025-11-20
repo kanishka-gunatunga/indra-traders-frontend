@@ -1635,12 +1635,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     botName: {fontSize: '10px', color: '#BFBFBF', marginLeft: '2px', marginBottom: '2px'},
     botBubble: {
         backgroundColor: "#DB2727", color: "#fff", padding: "10px 14px", borderRadius: "12px",
-        borderTopLeftRadius: "0px", fontSize: "12px", lineHeight: "1.5"
+        borderTopLeftRadius: "0px", fontSize: "12px", lineHeight: "1.5",
+        wordBreak: "normal",
+        overflowWrap: "anywhere",
+        maxWidth: "100%"
     },
     userMessageWrapper: {display: 'flex', flexDirection: 'column', alignItems: 'flex-end', maxWidth: '75%'},
     userBubble: {
         backgroundColor: "#F4F9FF", color: "#595E62", padding: "10px 14px", borderRadius: "12px",
-        borderBottomRightRadius: "0px", fontSize: "12px", textAlign: "left", lineHeight: "1.5"
+        borderBottomRightRadius: "0px", fontSize: "12px", textAlign: "left", lineHeight: "1.5",
+        wordBreak: "normal",
+        overflowWrap: "anywhere",
+        maxWidth: "100%"
     },
     timestamp: {display: 'block', fontSize: '9px', marginTop: '4px'},
     liveAgentButton: {
