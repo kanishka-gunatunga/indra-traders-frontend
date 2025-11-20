@@ -507,6 +507,11 @@ const ChatDashboard: React.FC = () => {
                                                     max-w-[65%] rounded-lg px-3 py-2 text-sm shadow-sm relative
                                                     ${isAgent ? "bg-[#DB2727] text-white rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none"}
                                                 `}
+                                                style={{
+                                                    wordBreak: "normal",
+                                                    overflowWrap: "anywhere",
+                                                    maxWidth: "100%"
+                                                }}
                                             >
                                                 <p className="mb-1 leading-relaxed text-[13px]">{msg.message}</p>
                                                 <div
