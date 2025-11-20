@@ -1169,6 +1169,12 @@ export default function ChatLauncher() {
         // setTransliterationText("");
     }
 
+    const getLiveAgentText = () => {
+        if (language === 'si') return "සජීවී නියෝජිතයෙකු සමඟ කතා කරන්න";
+        if (language === 'ta') return "நேரடி முகவருடன் பேசவும்";
+        return "Talk to a Live Agent";
+    };
+
     return (
         <div style={{fontFamily: '"Poppins", sans-serif'}}>
             {!open && (
@@ -1413,7 +1419,7 @@ export default function ChatLauncher() {
                                         {!isAgentActive && (
                                             <div style={{padding: '0 10px'}}>
                                                 <button onClick={() => askForAgent()} style={styles.liveAgentButton}>
-                                                    Talk to a Live Agent
+                                                    {getLiveAgentText()}
                                                 </button>
                                             </div>
                                         )}
