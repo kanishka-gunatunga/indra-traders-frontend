@@ -6,6 +6,7 @@ export type ChatSession = {
     status: "bot" | "queued" | "assigned" | "closed";
     agent_id: number | null;
     channel?: string;
+    language?: string;
     priority?: number;
     unread_count?: number;
     last_message_at?: string;
