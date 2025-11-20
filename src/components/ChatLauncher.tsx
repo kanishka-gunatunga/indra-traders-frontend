@@ -1332,8 +1332,15 @@ export default function ChatLauncher() {
                                                            style={styles.botAvatar}/>
                                                     <div style={styles.messageWrapper}>
                                                         <span style={styles.botName}>Indra Assistant</span>
+                                                        {/*<div style={styles.botBubble}>*/}
+                                                        {/*    Hello! Welcome. How can I help you today?*/}
+                                                        {/*</div>*/}
                                                         <div style={styles.botBubble}>
-                                                            Hello! Welcome. How can I help you today?
+                                                            {language === 'si'
+                                                                ? "ආයුබෝවන්! සාදරයෙන් පිළිගනිමු. අද ඔබට උදව් කරන්නේ කෙසේද?"
+                                                                : language === 'ta'
+                                                                    ? "வணக்கம்! வரவேற்கிறோம். இன்று நான் உங்களுக்கு எப்படி உதவ முடியும்?"
+                                                                    : "Hello! Welcome. How can I help you today?"}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1459,7 +1466,7 @@ export default function ChatLauncher() {
                                                 style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '5px'}}>
                                                 <div style={styles.inputContainer}>
                                                     <input value={input} onChange={handleInputChange} type="text"
-                                                           placeholder={inputMode === 'direct' ? "Write message..." : "Converted text..."}
+                                                           placeholder={inputMode === 'direct' && language === 'en' ? "Write message..." : inputMode === 'direct' && language === 'si' ? "පණිවිඩයක් ලියන්න..." : inputMode === 'direct' && language === 'ta' ? "செய்தியை எழுதுங்கள்..." : "Converted text..." }
                                                            style={inputMode === 'direct' ? styles.input : styles.inputConverted}
                                                            readOnly={inputMode !== 'direct'}/>
                                                 </div>
@@ -1467,7 +1474,7 @@ export default function ChatLauncher() {
                                                     <div style={styles.inputContainerSecondary}>
                                                         <input value={transliterationText}
                                                                onChange={handleTransliterationChange} type="text"
-                                                               placeholder={inputMode === 'singlish' ? "Type in Singlish..." : "Type in Tanglish..."}
+                                                               placeholder={inputMode === 'singlish' ? "මෙතන සිංග්ලිශ් වලින් ටයිප් කරන්න..." : "இங்கே Tanglish இல் தட்டச்சு செய்யவும்.."}
                                                                style={styles.inputSecondary} autoFocus/>
                                                     </div>
                                                 )}
