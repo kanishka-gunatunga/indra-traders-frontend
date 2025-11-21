@@ -438,7 +438,8 @@ const ChatMessageContent = ({msg, onImageClick}: { msg: any, onImageClick: (url:
             )}
 
             {message && (
-                <div className="whitespace-pre-wrap word-break-normal overflow-wrap-anywhere">
+                // <div className="whitespace-pre-wrap word-break-normal overflow-wrap-anywhere">
+                <div className="">
                     {message}
                 </div>
             )}
