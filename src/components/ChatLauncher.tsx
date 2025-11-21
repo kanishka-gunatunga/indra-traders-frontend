@@ -991,7 +991,7 @@ const ChatMessageContent = ({msg, onImageClick}: { msg: any, onImageClick: (url:
     const {message, attachment_url, attachment_type, file_name} = msg;
 
     const getFullUrl = (url: string) => {
-        if (url.startsWith('http')) return url;
+        if (url?.startsWith('http')) return url;
         return `${process.env.NEXT_PUBLIC_API_URL || ''}${url}`;
     };
 
