@@ -264,7 +264,6 @@
 // };
 
 
-
 "use client"
 import React, {useState, useEffect, useRef} from "react";
 import {useAgentChat} from "@/hooks/useChat";
@@ -299,10 +298,46 @@ const DoubleCheck = () => (
 );
 
 // const DocumentIcon = () => (
+//     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-red-500"
+//          viewBox="0 0 16 16">
+//         <path
+//             d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+//     </svg>
+// );
+
+const CloseIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"
+         stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+);
+
+// const DocumentIcon = () => (
 //     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-red-500" viewBox="0 0 16 16">
 //         <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
 //     </svg>
 // );
+
+const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => {
+    return (
+        <div
+            className="fixed inset-0 z-[9999] bg-black/90 flex flex-col items-center justify-center p-4 animate-fadeIn">
+            <button onClick={onClose}
+                    className="absolute top-4 right-4 text-white p-2 hover:bg-white/10 rounded-full transition">
+                <CloseIcon/>
+            </button>
+            <img src={src} alt="Full Preview" className="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl"/>
+            <a
+                href={src}
+                download
+                target="_blank"
+                className="mt-4 px-6 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-gray-200 transition"
+            >
+                Download Original
+            </a>
+        </div>
+    );
+};
 
 
 const renderBold = (text: string) => {
@@ -323,7 +358,8 @@ const ChatMessageContent = ({msg}: { msg: any }) => {
         <div className="flex flex-col gap-1">
             {/* Attachment Rendering */}
             {attachment_type === 'image' && attachment_url && (
-                <div className="mb-1 relative w-full max-w-[200px] h-auto rounded-lg overflow-hidden border border-gray-200">
+                <div
+                    className="mb-1 relative w-full max-w-[200px] h-auto rounded-lg overflow-hidden border border-gray-200">
                     <img
                         src={process.env.NEXT_PUBLIC_API_URL + attachment_url}
                         alt="attachment"
@@ -341,12 +377,15 @@ const ChatMessageContent = ({msg}: { msg: any }) => {
                     className="flex items-center gap-2 p-3 bg-black/5 rounded-lg hover:bg-black/10 transition mb-1 no-underline"
                 >
                     <div className="w-8 h-8 bg-red-100 text-red-500 rounded flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             viewBox="0 0 16 16">
+                            <path
+                                d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
                         </svg>
                     </div>
                     <div className="flex flex-col overflow-hidden">
-                        <span className="text-xs font-medium truncate max-w-[150px] text-gray-700">{file_name || "Document"}</span>
+                        <span
+                            className="text-xs font-medium truncate max-w-[150px] text-gray-700">{file_name || "Document"}</span>
                         <span className="text-[10px] text-gray-500 uppercase">Download</span>
                     </div>
                 </a>
@@ -386,6 +425,7 @@ const ChatDashboard: React.FC = () => {
     const [inputText, setInputText] = useState("");
 
     const [acceptingChatId, setAcceptingChatId] = useState<string | null>(null);
+    const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -469,6 +509,7 @@ const ChatDashboard: React.FC = () => {
 
     return (
         <div className="flex items-center justify-center min-h-screen w-full bg-[#e0e0e0] p-6">
+            {lightboxUrl && <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)}/>}
 
             {/* --- Main Card Container (Resized) --- */}
             <div
@@ -605,7 +646,10 @@ const ChatDashboard: React.FC = () => {
                             </header>
 
                             <div className="flex-1 overflow-y-auto p-6 space-y-3 z-10 custom-scrollbar">
-                                {messages.map((msg: any) => {
+                                {messages.map((msg: any, index: number) => {
+
+                                    if (index > 0 && messages[index - 1].id === msg.id) return null;
+
                                     const isAgent = msg.sender === "agent";
                                     return (
                                         <div key={msg.id}
@@ -661,7 +705,8 @@ const ChatDashboard: React.FC = () => {
 
                                                 {/*<p className="mb-1 leading-relaxed text-[13px]">{msg.message}</p>*/}
 
-                                                {msg.message && <p className="mb-1 leading-relaxed text-[13px] whitespace-pre-wrap">{msg.message}</p>}
+                                                {msg.message &&
+                                                    <p className="mb-1 leading-relaxed text-[13px] whitespace-pre-wrap">{msg.message}</p>}
 
                                                 <div
                                                     className={`text-[9px] flex items-center justify-end gap-1 ${isAgent ? "text-red-100" : "text-gray-400"}`}>
@@ -694,7 +739,7 @@ const ChatDashboard: React.FC = () => {
                                     <input
                                         type="file"
                                         ref={fileInputRef}
-                                        style={{ display: 'none' }}
+                                        style={{display: 'none'}}
                                         onChange={handleFileChange}
                                         accept="image/*,.pdf,.doc,.docx,.txt"
                                     />
@@ -707,7 +752,8 @@ const ChatDashboard: React.FC = () => {
                                         title="Attach File"
                                     >
                                         {isUploading ? (
-                                            <div className="w-5 h-5 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
+                                            <div
+                                                className="w-5 h-5 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
                                         ) : (
                                             <AttachIcon/>
                                         )}

@@ -147,6 +147,21 @@ export function useCustomerChat() {
         enabled: !!chatId,
     });
 
+    useEffect(() => {
+        if (messagesQuery.data && messagesQuery.data.length > 0) {
+            setMessages(messagesQuery.data);
+
+            const firstMsg = messagesQuery.data[0];
+            if (firstMsg.session?.status === 'assigned') {
+                setIsAgentActive(true);
+            }
+
+            if (firstMsg.session?.language) {
+                setLanguage(firstMsg.session.language);
+            }
+        }
+    }, [messagesQuery.data]);
+
 
     // socket connection
     useEffect(() => {
@@ -160,8 +175,16 @@ export function useCustomerChat() {
 
         socketRef.current = socket;
 
+        // socket.on("message.new", (msg) => {
+        //     setMessages((prev) => [...prev, msg]);
+        // });
+
         socket.on("message.new", (msg) => {
-            setMessages((prev) => [...prev, msg]);
+            setMessages((prev) => {
+                // Prevent duplicates
+                if (prev.some(m => m.id === msg.id)) return prev;
+                return [...prev, msg];
+            });
         });
 
         // socket.on("typing",  () => {
@@ -202,7 +225,7 @@ export function useCustomerChat() {
 
         socket.on("chat.closed", () => {
             setShowRating(true);
-            setIsAgentActive(false); // Reset active state
+            setIsAgentActive(false);
         });
 
         return () => {
