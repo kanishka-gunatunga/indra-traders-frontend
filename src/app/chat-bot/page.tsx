@@ -270,6 +270,7 @@ import React, {useState, useEffect, useRef} from "react";
 import {useAgentChat} from "@/hooks/useChat";
 import Image from "next/image";
 import {useCurrentUser} from "@/utils/auth";
+import {ChatService} from "@/services/chatService";
 
 
 const SendIcon = () => (
@@ -297,6 +298,70 @@ const DoubleCheck = () => (
     </svg>
 );
 
+// const DocumentIcon = () => (
+//     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-red-500" viewBox="0 0 16 16">
+//         <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+//     </svg>
+// );
+
+
+const renderBold = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
+        }
+        return part;
+    });
+};
+
+// Updated Component to handle both Text and Attachments
+const ChatMessageContent = ({msg}: { msg: any }) => {
+    const {message, attachment_url, attachment_type, file_name} = msg;
+
+    return (
+        <div className="flex flex-col gap-1">
+            {/* Attachment Rendering */}
+            {attachment_type === 'image' && attachment_url && (
+                <div className="mb-1 relative w-full max-w-[200px] h-auto rounded-lg overflow-hidden border border-gray-200">
+                    <img
+                        src={process.env.NEXT_PUBLIC_API_URL + attachment_url}
+                        alt="attachment"
+                        className="w-full h-auto object-cover"
+                        loading="lazy"
+                    />
+                </div>
+            )}
+
+            {attachment_type === 'document' && attachment_url && (
+                <a
+                    href={process.env.NEXT_PUBLIC_API_URL + attachment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-3 bg-black/5 rounded-lg hover:bg-black/10 transition mb-1 no-underline"
+                >
+                    <div className="w-8 h-8 bg-red-100 text-red-500 rounded flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                        </svg>
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                        <span className="text-xs font-medium truncate max-w-[150px] text-gray-700">{file_name || "Document"}</span>
+                        <span className="text-[10px] text-gray-500 uppercase">Download</span>
+                    </div>
+                </a>
+            )}
+
+            {/* Text Rendering */}
+            {message && (
+                <div className="whitespace-pre-wrap">
+                    {renderBold(message)}
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 const ChatDashboard: React.FC = () => {
 
@@ -322,8 +387,13 @@ const ChatDashboard: React.FC = () => {
 
     const [acceptingChatId, setAcceptingChatId] = useState<string | null>(null);
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
     useEffect(() => {
         setAcceptingChatId(null);
@@ -349,6 +419,44 @@ const ChatDashboard: React.FC = () => {
         sendMessage(inputText);
         setInputText("");
         sendStopTyping();
+    };
+
+    const handleAttachClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !selectedChatId) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert("File is too large. Max size is 5MB.");
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            // 1. Upload
+            const data = await ChatService.uploadFile(file);
+
+            // 2. Determine Type
+            const type = file.type.startsWith("image/") ? "image" : "document";
+
+            // 3. Send Message with Attachment
+            // Note: Ensure your useAgentChat 'sendMessage' accepts this second argument
+            sendMessage("", {
+                url: data.url,
+                type: type,
+                name: data.filename
+            });
+
+        } catch (error) {
+            console.error("Agent Upload Error:", error);
+            alert("Failed to upload file.");
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
     };
 
     if (!agentId) {
@@ -513,7 +621,48 @@ const ChatDashboard: React.FC = () => {
                                                     maxWidth: "100%"
                                                 }}
                                             >
-                                                <p className="mb-1 leading-relaxed text-[13px]">{msg.message}</p>
+
+                                                {/*{msg.attachment_type === 'image' && msg.attachment_url && (*/}
+                                                {/*    <div className="mb-2 mt-1">*/}
+                                                {/*        /!* Using standard img for remote/dynamic URLs *!/*/}
+                                                {/*        <img*/}
+                                                {/*            src={msg.attachment_url.startsWith('http') ? msg.attachment_url : `${API_URL}${msg.attachment_url}`}*/}
+                                                {/*            alt="attachment"*/}
+                                                {/*            className="rounded-lg max-h-[250px] w-auto object-cover cursor-pointer hover:opacity-95"*/}
+                                                {/*            onClick={() => window.open(msg.attachment_url.startsWith('http') ? msg.attachment_url : `${API_URL}${msg.attachment_url}`, '_blank')}*/}
+                                                {/*        />*/}
+                                                {/*    </div>*/}
+                                                {/*)}*/}
+
+                                                {/*{msg.attachment_type === 'document' && msg.attachment_url && (*/}
+                                                {/*    <a*/}
+                                                {/*        href={msg.attachment_url.startsWith('http') ? msg.attachment_url : `${API_URL}${msg.attachment_url}`}*/}
+                                                {/*        target="_blank" rel="noreferrer"*/}
+                                                {/*        className={`flex items-center gap-3 p-3 rounded-lg mb-2 transition no-underline*/}
+                                                {/*            ${isAgent ? 'bg-red-800 bg-opacity-20 hover:bg-opacity-30' : 'bg-gray-100 hover:bg-gray-200'}*/}
+                                                {/*        `}*/}
+                                                {/*    >*/}
+                                                {/*        <div className="p-2 bg-white rounded-full shadow-sm text-red-500">*/}
+                                                {/*            <DocumentIcon />*/}
+                                                {/*        </div>*/}
+                                                {/*        <div className="flex flex-col overflow-hidden">*/}
+                                                {/*            <span className={`text-xs font-medium truncate max-w-[150px] ${isAgent ? 'text-white' : 'text-gray-700'}`}>*/}
+                                                {/*                {msg.file_name || "Document"}*/}
+                                                {/*            </span>*/}
+                                                {/*            <span className={`text-[9px] uppercase ${isAgent ? 'text-red-100' : 'text-gray-500'}`}>*/}
+                                                {/*                Click to download*/}
+                                                {/*            </span>*/}
+                                                {/*        </div>*/}
+                                                {/*    </a>*/}
+                                                {/*)}*/}
+
+                                                <ChatMessageContent msg={msg}/>
+
+
+                                                {/*<p className="mb-1 leading-relaxed text-[13px]">{msg.message}</p>*/}
+
+                                                {msg.message && <p className="mb-1 leading-relaxed text-[13px] whitespace-pre-wrap">{msg.message}</p>}
+
                                                 <div
                                                     className={`text-[9px] flex items-center justify-end gap-1 ${isAgent ? "text-red-100" : "text-gray-400"}`}>
                                                     {new Date(msg.createdAt).toLocaleTimeString([], {timeStyle: "short"})}
@@ -542,9 +691,26 @@ const ChatDashboard: React.FC = () => {
 
                             <footer className="bg-[#F0F2F5] px-4 py-3 z-10">
                                 <form onSubmit={handleSend} className="flex items-center gap-2">
-                                    <button type="button"
-                                            className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500">
-                                        <AttachIcon/>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        style={{ display: 'none' }}
+                                        onChange={handleFileChange}
+                                        accept="image/*,.pdf,.doc,.docx,.txt"
+                                    />
+
+                                    <button
+                                        type="button"
+                                        onClick={handleAttachClick}
+                                        disabled={isUploading}
+                                        className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500 relative"
+                                        title="Attach File"
+                                    >
+                                        {isUploading ? (
+                                            <div className="w-5 h-5 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
+                                        ) : (
+                                            <AttachIcon/>
+                                        )}
                                     </button>
                                     <div
                                         className="flex-1 bg-white rounded-lg overflow-hidden flex items-center border border-gray-300 focus-within:ring-1 focus-within:ring-red-500 transition-shadow">
@@ -558,8 +724,9 @@ const ChatDashboard: React.FC = () => {
                                     </div>
                                     <button
                                         type="submit"
-                                        className={`p-2.5 rounded-full shadow-md transition transform active:scale-95 ${inputText.trim() ? 'bg-[#DB2727] text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                                        disabled={!inputText.trim()}
+                                        className={`p-2.5 rounded-full shadow-md transition transform active:scale-95 
+                                            ${(inputText.trim() || isUploading) ? 'bg-[#DB2727] text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                                        disabled={(!inputText.trim() && !isUploading)}
                                     >
                                         <SendIcon/>
                                     </button>

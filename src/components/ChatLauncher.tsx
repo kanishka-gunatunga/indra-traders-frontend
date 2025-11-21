@@ -941,6 +941,7 @@ import React, {useState, useRef, useEffect} from "react";
 import {useCustomerChat} from "@/hooks/useCustomerChat";
 import Image from "next/image";
 import {singlishToSinhala, tanglishToTamil} from "@/utils/transliteration";
+import {ChatService} from "@/services/chatService";
 
 
 const renderBold = (text: string) => {
@@ -954,36 +955,88 @@ const renderBold = (text: string) => {
     });
 };
 
-const ChatMessageContent = ({text}: { text: string }) => {
-    if (!text) return null; // Add a guard for empty messages
-    const lines = text.split('\n');
-    const elements: React.ReactNode[] = [];
-    let listItems: React.ReactNode[] = [];
+// const ChatMessageContent = ({text}: { text: string }) => {
+//     if (!text) return null; // Add a guard for empty messages
+//     const lines = text.split('\n');
+//     const elements: React.ReactNode[] = [];
+//     let listItems: React.ReactNode[] = [];
+//
+//     const flushList = () => {
+//         if (listItems.length > 0) {
+//             elements.push(
+//                 <ul key={`ul-${elements.length}`} style={{paddingLeft: '20px', margin: '5px 0'}}>
+//                     {listItems}
+//                 </ul>
+//             );
+//             listItems = [];
+//         }
+//     };
+//
+//     lines.forEach((line, index) => {
+//         if (line.startsWith('* ')) {
+//             const lineContent = line.substring(2);
+//             listItems.push(<li key={index}>{renderBold(lineContent)}</li>);
+//         } else {
+//             flushList();
+//             elements.push(<div key={index}>{renderBold(line)}</div>);
+//         }
+//     });
+//
+//     flushList();
+//
+//     return <>{elements}</>;
+// };
 
-    const flushList = () => {
-        if (listItems.length > 0) {
-            elements.push(
-                <ul key={`ul-${elements.length}`} style={{paddingLeft: '20px', margin: '5px 0'}}>
-                    {listItems}
-                </ul>
-            );
-            listItems = [];
-        }
-    };
+const ChatMessageContent = ({msg}: { msg: any }) => {
+    const {message, attachment_url, attachment_type, file_name} = msg;
 
-    lines.forEach((line, index) => {
-        if (line.startsWith('* ')) {
-            const lineContent = line.substring(2);
-            listItems.push(<li key={index}>{renderBold(lineContent)}</li>);
-        } else {
-            flushList();
-            elements.push(<div key={index}>{renderBold(line)}</div>);
-        }
-    });
+    return (
+        <div className="flex flex-col gap-1">
+            {/* Attachment Rendering */}
+            {attachment_type === 'image' && attachment_url && (
+                <div
+                    className="mb-1 relative w-full max-w-[200px] h-auto rounded-lg overflow-hidden border border-gray-200">
+                    {/* Use standard img tag for external URLs or non-optimized local serving */}
+                    <img
+                        src={process.env.NEXT_PUBLIC_API_URL + attachment_url}
+                        alt="attachment"
+                        className="w-full h-auto object-cover"
+                        loading="lazy"
+                    />
+                </div>
+            )}
 
-    flushList();
+            {attachment_type === 'document' && attachment_url && (
+                <a
+                    href={process.env.NEXT_PUBLIC_API_URL + attachment_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-3 bg-black/5 rounded-lg hover:bg-black/10 transition mb-1 no-underline"
+                >
+                    <div className="w-8 h-8 bg-red-100 text-red-500 rounded flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             viewBox="0 0 16 16">
+                            <path
+                                d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                        </svg>
+                    </div>
+                    <div className="flex flex-col overflow-hidden">
+                        <span
+                            className="text-xs font-medium truncate max-w-[150px] text-gray-700">{file_name || "Document"}</span>
+                        <span className="text-[10px] text-gray-500 uppercase">Download</span>
+                    </div>
+                </a>
+            )}
 
-    return <>{elements}</>;
+            {/* Text Rendering */}
+            {message && (
+                <div className="whitespace-pre-wrap overflow-wrap-anywhere">
+                    {/* ... your existing bold/text rendering logic ... */}
+                    {renderBold(message)}
+                </div>
+            )}
+        </div>
+    );
 };
 
 const CloseIcon = () => (
@@ -1015,9 +1068,19 @@ const StarIcon = ({filled, onClick}: { filled: boolean; onClick: () => void }) =
     </svg>
 );
 
+const AttachIcon = () => (
+    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+    </svg>
+);
+
 export default function ChatLauncher() {
     const [open, setOpen] = useState(false);
     const [view, setView] = useState<'language' | 'chat'>('language');
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isUploading, setIsUploading] = useState<boolean>(false);
 
     // const [hasSelectedLanguage, setHasSelectedLanguage] = useState<boolean>(false);
     // const [selectedLang, setSelectedLang] = useState("en");
@@ -1143,6 +1206,40 @@ export default function ChatLauncher() {
     //         sendStopTyping();
     //     }, 1500);
     // }
+
+    const handleAttachClick = () => {
+        fileInputRef.current?.click();
+    }
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert("File is too large (Max 5MB)");
+            return;
+        }
+
+        setIsUploading(true);
+
+        try {
+            const data = await ChatService.uploadFile(file);
+
+            const type = file.type.startsWith("image/") ? "image" : "document";
+
+            sendMessage("", {
+                url: data.url,
+                type: type,
+                name: data.filename
+            });
+        } catch (error) {
+            console.error("Upload failed", error);
+            alert("Failed to upload file");
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
 
     const handleSend = (e: any) => {
         e.preventDefault();
@@ -1387,7 +1484,7 @@ export default function ChatLauncher() {
                                                                 style={m.sender === "customer" ? styles.userBubble : styles.botBubble}>
                                                                 {/* --- MODIFICATION HERE --- */}
                                                                 {/* We use the new component to render the message content */}
-                                                                <ChatMessageContent text={m.message}/>
+                                                                <ChatMessageContent msg={m}/>
 
                                                                 <div style={{
                                                                     ...styles.timestamp,
@@ -1468,11 +1565,36 @@ export default function ChatLauncher() {
                                         {/*</form>*/}
 
                                         <form onSubmit={handleSend} style={styles.footer}>
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                style={{display: 'none'}}
+                                                onChange={handleFileChange}
+                                                accept="image/*,.pdf,.doc,.docx,.txt"
+                                            />
+                                            {
+                                                isAgentActive && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAttachClick}
+                                                        disabled={isUploading}
+                                                        className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500"
+                                                    >
+                                                        {isUploading ? (
+                                                            <div
+                                                                className="w-5 h-5 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <AttachIcon/>
+                                                        )}
+                                                    </button>
+                                                )
+                                            }
+
                                             <div
                                                 style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '5px'}}>
                                                 <div style={styles.inputContainer}>
                                                     <input value={input} onChange={handleInputChange} type="text"
-                                                           placeholder={inputMode === 'direct' && language === 'en' ? "Write message..." : inputMode === 'direct' && language === 'si' ? "පණිවිඩයක් ලියන්න..." : inputMode === 'direct' && language === 'ta' ? "செய்தியை எழுதுங்கள்..." : "Converted text..." }
+                                                           placeholder={inputMode === 'direct' && language === 'en' ? "Write message..." : inputMode === 'direct' && language === 'si' ? "පණිවිඩයක් ලියන්න..." : inputMode === 'direct' && language === 'ta' ? "செய்தியை எழுதுங்கள்..." : "Converted text..."}
                                                            style={inputMode === 'direct' ? styles.input : styles.inputConverted}
                                                            readOnly={inputMode !== 'direct'}/>
                                                 </div>
@@ -1485,7 +1607,7 @@ export default function ChatLauncher() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <button type="submit" style={styles.sendButton} disabled={isChatStarting}>
+                                            <button type="submit" style={styles.sendButton} disabled={isChatStarting} >
                                                 <SendIcon/></button>
                                         </form>
 

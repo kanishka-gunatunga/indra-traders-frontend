@@ -269,12 +269,12 @@ export function useAgentChat(agentId: number | undefined) {
         selectChat(chat_id);
     };
 
-    const sendMessage = (text: string) => {
+    const sendMessage = (text: string, attachment?: { url: string, type: string, name: string }) => {
         // if (!selectedChatId) return;
         if (!selectedChatId || !agentId) return;
         // We do NOT manually add the message to 'messages' state here.
         // We wait for the server to emit 'message.new' to ensure consistency.
-        socketRef.current?.emit("message.agent", { chat_id: selectedChatId, text, user_id: agentId });
+        socketRef.current?.emit("message.agent", { chat_id: selectedChatId, text, user_id: agentId, attachment });
     };
 
     const closeChat = (chat_id: string) => {
