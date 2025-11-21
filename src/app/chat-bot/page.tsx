@@ -312,11 +312,11 @@ const CloseIcon = () => (
     </svg>
 );
 
-// const DocumentIcon = () => (
-//     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-red-500" viewBox="0 0 16 16">
-//         <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
-//     </svg>
-// );
+const DocumentIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-red-500" viewBox="0 0 16 16">
+        <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+    </svg>
+);
 
 const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => {
     return (
@@ -340,61 +340,106 @@ const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => 
 };
 
 
-const renderBold = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, index) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
-        }
-        return part;
-    });
-};
+// const renderBold = (text: string) => {
+//     const parts = text.split(/(\*\*.*?\*\*)/g);
+//     return parts.map((part, index) => {
+//         if (part.startsWith('**') && part.endsWith('**')) {
+//             return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
+//         }
+//         return part;
+//     });
+// };
+//
+// // Updated Component to handle both Text and Attachments
+// const ChatMessageContent = ({msg}: { msg: any }) => {
+//     const {message, attachment_url, attachment_type, file_name} = msg;
+//
+//     return (
+//         <div className="flex flex-col gap-1">
+//             {/* Attachment Rendering */}
+//             {attachment_type === 'image' && attachment_url && (
+//                 <div
+//                     className="mb-1 relative w-full max-w-[200px] h-auto rounded-lg overflow-hidden border border-gray-200">
+//                     <img
+//                         src={process.env.NEXT_PUBLIC_API_URL + attachment_url}
+//                         alt="attachment"
+//                         className="w-full h-auto object-cover"
+//                         loading="lazy"
+//                     />
+//                 </div>
+//             )}
+//
+//             {attachment_type === 'document' && attachment_url && (
+//                 <a
+//                     href={process.env.NEXT_PUBLIC_API_URL + attachment_url}
+//                     target="_blank"
+//                     rel="noopener noreferrer"
+//                     className="flex items-center gap-2 p-3 bg-black/5 rounded-lg hover:bg-black/10 transition mb-1 no-underline"
+//                 >
+//                     <div className="w-8 h-8 bg-red-100 text-red-500 rounded flex items-center justify-center">
+//                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+//                              viewBox="0 0 16 16">
+//                             <path
+//                                 d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+//                         </svg>
+//                     </div>
+//                     <div className="flex flex-col overflow-hidden">
+//                         <span
+//                             className="text-xs font-medium truncate max-w-[150px] text-gray-700">{file_name || "Document"}</span>
+//                         <span className="text-[10px] text-gray-500 uppercase">Download</span>
+//                     </div>
+//                 </a>
+//             )}
+//
+//             {/* Text Rendering */}
+//             {message && (
+//                 <div className="whitespace-pre-wrap">
+//                     {renderBold(message)}
+//                 </div>
+//             )}
+//         </div>
+//     );
+// };
 
-// Updated Component to handle both Text and Attachments
-const ChatMessageContent = ({msg}: { msg: any }) => {
+const ChatMessageContent = ({msg, onImageClick}: { msg: any, onImageClick: (url: string) => void }) => {
     const {message, attachment_url, attachment_type, file_name} = msg;
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+    const fullUrl = attachment_url ? (attachment_url.startsWith('http') ? attachment_url : `${API_URL}${attachment_url}`) : null;
 
     return (
         <div className="flex flex-col gap-1">
-            {/* Attachment Rendering */}
-            {attachment_type === 'image' && attachment_url && (
-                <div
-                    className="mb-1 relative w-full max-w-[200px] h-auto rounded-lg overflow-hidden border border-gray-200">
+            {attachment_type === 'image' && fullUrl && (
+                <div className="mb-1 mt-1 relative w-full max-w-[250px] rounded-lg overflow-hidden border border-gray-200 group">
                     <img
-                        src={process.env.NEXT_PUBLIC_API_URL + attachment_url}
+                        src={fullUrl}
                         alt="attachment"
-                        className="w-full h-auto object-cover"
+                        className="w-full h-auto object-cover cursor-zoom-in hover:opacity-95 transition"
                         loading="lazy"
+                        onClick={() => onImageClick(fullUrl)}
                     />
                 </div>
             )}
 
-            {attachment_type === 'document' && attachment_url && (
+            {attachment_type === 'document' && fullUrl && (
                 <a
-                    href={process.env.NEXT_PUBLIC_API_URL + attachment_url}
+                    href={fullUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 p-3 bg-black/5 rounded-lg hover:bg-black/10 transition mb-1 no-underline"
+                    className="flex items-center gap-3 p-3 bg-white/10 border border-black/5 rounded-lg hover:bg-black/5 transition mb-1 no-underline group"
                 >
-                    <div className="w-8 h-8 bg-red-100 text-red-500 rounded flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                             viewBox="0 0 16 16">
-                            <path
-                                d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
-                        </svg>
+                    <div className="p-2 bg-white rounded-full shadow-sm text-red-500 group-hover:scale-110 transition">
+                        <DocumentIcon />
                     </div>
                     <div className="flex flex-col overflow-hidden">
-                        <span
-                            className="text-xs font-medium truncate max-w-[150px] text-gray-700">{file_name || "Document"}</span>
-                        <span className="text-[10px] text-gray-500 uppercase">Download</span>
+                        <span className="text-xs font-medium truncate max-w-[180px] text-gray-700">{file_name || "Document"}</span>
+                        <span className="text-[9px] text-gray-500 uppercase font-semibold">Click to download</span>
                     </div>
                 </a>
             )}
 
-            {/* Text Rendering */}
             {message && (
-                <div className="whitespace-pre-wrap">
-                    {renderBold(message)}
+                <div className="whitespace-pre-wrap word-break-normal overflow-wrap-anywhere">
+                    {message}
                 </div>
             )}
         </div>
@@ -700,7 +745,7 @@ const ChatDashboard: React.FC = () => {
                                                 {/*    </a>*/}
                                                 {/*)}*/}
 
-                                                <ChatMessageContent msg={msg}/>
+                                                <ChatMessageContent msg={msg} onImageClick={setLightboxUrl} />
 
 
                                                 {/*<p className="mb-1 leading-relaxed text-[13px]">{msg.message}</p>*/}
