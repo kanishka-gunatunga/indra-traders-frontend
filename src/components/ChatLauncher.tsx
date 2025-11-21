@@ -987,8 +987,15 @@ const renderBold = (text: string) => {
 //     return <>{elements}</>;
 // };
 
-const ChatMessageContent = ({msg}: { msg: any }) => {
+const ChatMessageContent = ({msg, onImageClick}: { msg: any, onImageClick: (url: string) => void }) => {
     const {message, attachment_url, attachment_type, file_name} = msg;
+
+    const getFullUrl = (url: string) => {
+        if (url.startsWith('http')) return url;
+        return `${process.env.NEXT_PUBLIC_API_URL || ''}${url}`;
+    };
+
+    const fullUrl = getFullUrl(attachment_url);
 
     return (
         <div className="flex flex-col gap-1">
@@ -1002,6 +1009,7 @@ const ChatMessageContent = ({msg}: { msg: any }) => {
                         alt="attachment"
                         className="w-full h-auto object-cover"
                         loading="lazy"
+                        onClick={() => onImageClick(fullUrl)}
                     />
                 </div>
             )}
@@ -1075,15 +1083,41 @@ const AttachIcon = () => (
     </svg>
 );
 
+
+const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => {
+    return (
+        <div
+            className="fixed inset-0 z-[100000] bg-black/90 flex flex-col items-center justify-center p-4 animate-fadeIn">
+            <button onClick={onClose}
+                    className="absolute top-4 right-4 text-white p-2 hover:bg-white/10 rounded-full transition">
+                <CloseIcon/>
+            </button>
+            {/* Standard img for lightbox to avoid next/image complexity in modal */}
+            <img src={src} alt="Full Preview" className="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl"/>
+            <a
+                href={src}
+                download
+                target="_blank"
+                className="mt-4 px-6 py-2 bg-white text-black rounded-full text-sm font-medium hover:bg-gray-200 transition"
+            >
+                Download Original
+            </a>
+        </div>
+    );
+};
+
 export default function ChatLauncher() {
     const [open, setOpen] = useState(false);
     const [view, setView] = useState<'language' | 'chat'>('language');
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
+    const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
     // const [hasSelectedLanguage, setHasSelectedLanguage] = useState<boolean>(false);
     // const [selectedLang, setSelectedLang] = useState("en");
+
+    const agentImageUrl = "https://placehold.co/80x80/3B82F6/FFFFFF?text=A";
 
     const [inputMode, setInputMode] = useState<'direct' | 'singlish' | 'tanglish'>('direct');
     const [transliterationText, setTransliterationText] = useState<string>("");
@@ -1274,6 +1308,9 @@ export default function ChatLauncher() {
 
     return (
         <div style={{fontFamily: '"Poppins", sans-serif'}}>
+
+            {lightboxUrl && <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)}/>}
+
             {!open && (
                 <button onClick={handleOpen} style={styles.launcherButton}>
                     <Image src="/agent.png" alt="Chat" width={30} height={30} style={{margin: 'auto'}}/>
@@ -1484,7 +1521,10 @@ export default function ChatLauncher() {
                                                                 style={m.sender === "customer" ? styles.userBubble : styles.botBubble}>
                                                                 {/* --- MODIFICATION HERE --- */}
                                                                 {/* We use the new component to render the message content */}
-                                                                <ChatMessageContent msg={m}/>
+                                                                {/*<ChatMessageContent msg={m}/>*/}
+
+                                                                <ChatMessageContent msg={m}
+                                                                                    onImageClick={setLightboxUrl}/>
 
                                                                 <div style={{
                                                                     ...styles.timestamp,
@@ -1607,7 +1647,7 @@ export default function ChatLauncher() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <button type="submit" style={styles.sendButton} disabled={isChatStarting} >
+                                            <button type="submit" style={styles.sendButton} disabled={isChatStarting}>
                                                 <SendIcon/></button>
                                         </form>
 
