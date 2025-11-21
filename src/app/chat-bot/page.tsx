@@ -751,8 +751,8 @@ const ChatDashboard: React.FC = () => {
 
                                                 {/*<p className="mb-1 leading-relaxed text-[13px]">{msg.message}</p>*/}
 
-                                                {msg.message &&
-                                                    <p className="mb-1 leading-relaxed text-[13px] whitespace-pre-wrap">{msg.message}</p>}
+                                                {/*{msg.message &&*/}
+                                                {/*    <p className="mb-1 leading-relaxed text-[13px] whitespace-pre-wrap">{msg.message}</p>}*/}
 
                                                 <div
                                                     className={`text-[9px] flex items-center justify-end gap-1 ${isAgent ? "text-red-100" : "text-gray-400"}`}>
