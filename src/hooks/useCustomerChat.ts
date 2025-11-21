@@ -229,9 +229,18 @@ export function useCustomerChat() {
     //     socketRef.current?.emit("message.customer", {chat_id: chatId, text});
     // };
 
-    const sendMessage = (text: string) => {
+    // const sendMessage = (text: string) => {
+    //     if (!chatId) return;
+    //     socketRef.current?.emit("message.customer", {chat_id: chatId, text});
+    // };
+
+    const sendMessage = (text: string, attachment?: { url: string, type: string, name: string }) => {
         if (!chatId) return;
-        socketRef.current?.emit("message.customer", {chat_id: chatId, text});
+        socketRef.current?.emit("message.customer", {
+            chat_id: chatId,
+            text,
+            attachment
+        });
     };
 
 

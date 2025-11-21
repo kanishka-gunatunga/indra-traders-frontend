@@ -28,14 +28,14 @@ export const ChatService = {
     //     return axiosInstance.post<ChatSession>("/chat/start", payload).then(r => r.data);
     // },
 
-    startChat : async (language: string, channel: string) => {
-        const res = await axiosInstance.post("/chat/start", { language, channel });
+    startChat: async (language: string, channel: string) => {
+        const res = await axiosInstance.post("/chat/start", {language, channel});
         return res.data;
     },
 
     /** promote customer to live agent queue */
     requestAgent(chat_id: string, priority = 0) {
-        return axiosInstance.post(`/chat/${chat_id}/request-agent`, { priority }).then(r => r.data);
+        return axiosInstance.post(`/chat/${chat_id}/request-agent`, {priority}).then(r => r.data);
     },
 
     /** list queued chats (for agent dashboard) */
@@ -45,7 +45,7 @@ export const ChatService = {
 
     /** agent claims chat manually */
     assignChat(chat_id: string, user_id: number) {
-        return axiosInstance.post(`/chat/${chat_id}/assign`, { user_id }).then(r => r.data);
+        return axiosInstance.post(`/chat/${chat_id}/assign`, {user_id}).then(r => r.data);
     },
 
     /** close chat */
@@ -64,6 +64,16 @@ export const ChatService = {
     },
 
     rateAgent(chat_id: string, rating: number, message?: string) {
-        return axiosInstance.post(`/chat/${chat_id}/rate`, { rating, message }).then(r => r.data);
+        return axiosInstance.post(`/chat/${chat_id}/rate`, {rating, message}).then(r => r.data);
+    },
+
+    uploadFile: async (file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await axiosInstance.post("/chat/upload", formData, {
+            headers: {"Content-Type": "multipart/form-data"}
+        });
+        return res.data;
     }
 };
