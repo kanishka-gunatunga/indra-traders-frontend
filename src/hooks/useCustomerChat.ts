@@ -130,8 +130,8 @@ export function useCustomerChat() {
 
     const startChatMutation = useMutation({
         // mutationFn: () => ChatService.startChat(language, "Web"),
-        mutationFn: (variables: { lang: string, channel: string }) =>
-            ChatService.startChat(variables.lang, variables.channel),
+        mutationFn: (variables: { lang: string, channel: string, userType: string, name?:string, mobile?:string  }) =>
+            ChatService.startChat(variables.lang, variables.channel, variables.userType, variables.name, variables.mobile),
         onSuccess: (data) => {
             setChatId(data.chat_id);
             localStorage.setItem("chat_id", data.chat_id);

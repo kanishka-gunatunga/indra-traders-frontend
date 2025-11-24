@@ -945,7 +945,6 @@ import {ChatService} from "@/services/chatService";
 
 
 const renderBold = (text: string) => {
-    // Split the text by the bold delimiter, keeping the delimiters
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
@@ -999,11 +998,9 @@ const ChatMessageContent = ({msg, onImageClick}: { msg: any, onImageClick: (url:
 
     return (
         <div className="flex flex-col gap-1">
-            {/* Attachment Rendering */}
             {attachment_type === 'image' && attachment_url && (
                 <div
                     className="mb-1 relative w-full max-w-[200px] h-auto rounded-lg overflow-hidden border border-gray-200">
-                    {/* Use standard img tag for external URLs or non-optimized local serving */}
                     <img
                         src={process.env.NEXT_PUBLIC_API_URL + attachment_url}
                         alt="attachment"
@@ -1036,10 +1033,8 @@ const ChatMessageContent = ({msg, onImageClick}: { msg: any, onImageClick: (url:
                 </a>
             )}
 
-            {/* Text Rendering */}
             {message && (
                 <div className="whitespace-pre-wrap overflow-wrap-anywhere">
-                    {/* ... your existing bold/text rendering logic ... */}
                     {renderBold(message)}
                 </div>
             )}
@@ -1108,14 +1103,14 @@ const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => 
 
 export default function ChatLauncher() {
     const [open, setOpen] = useState(false);
-    const [view, setView] = useState<'language' | 'chat'>('language');
+    const [view, setView] = useState<'language' | 'type' | 'register' | 'chat'>('language');
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
-    // const [hasSelectedLanguage, setHasSelectedLanguage] = useState<boolean>(false);
-    // const [selectedLang, setSelectedLang] = useState("en");
+    const [formData, setFormData] = useState({name: "", mobile: ""});
+    const [selectedType, setSelectedType] = useState<'guest' | 'registered'>('guest');
 
     const agentImageUrl = "https://placehold.co/80x80/3B82F6/FFFFFF?text=A";
 
@@ -1154,11 +1149,6 @@ export default function ChatLauncher() {
         }
     }, [messages, open, typing]);
 
-    // const handleOpen = () => {
-    //     setOpen(true);
-    //     if (!chatId) startChatMutation.mutate();
-    // };
-
     useEffect(() => {
         if (chatId) {
             setView('chat')
@@ -1172,18 +1162,48 @@ export default function ChatLauncher() {
     const handleLanguageSelect = (lang: string, mode: 'direct' | 'singlish' | 'tanglish') => {
         setLanguage(lang);
         setInputMode(mode);
-        startChatMutation.mutate({lang, channel: "Web"});
-        setView('chat');
+        // startChatMutation.mutate({lang, channel: "Web"});
+        setView('type');
     }
+
+    const handleTypeSelect = (type: 'guest' | 'registered') => {
+        setSelectedType(type);
+        if (type === 'registered') {
+            setView('register');
+        } else {
+            startChatMutation.mutate({
+                lang: language,
+                channel: "web",
+                userType: 'guest'
+            });
+            // setView('chat');
+        }
+    }
+
+    const handleRegisterSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        startChatMutation.mutate({
+            lang: language,
+            channel: "web",
+            userType: 'registered',
+            name: formData.name,
+            mobile: formData.mobile,
+        });
+        // setView('chat');
+    }
+
+    const handleBack = () => {
+        if (view === 'register') setView('type');
+        else if (view === 'type') setView('language');
+    };
 
     const handleClose = () => {
         if (!chatId || showRating) {
-            // If no chat started OR we are rating, just close window & reset view
             setOpen(false);
             if (showRating) setView('language');
-            // Also reset input modes
             setTransliterationText("");
             setInput("");
+            setFormData({name: "", mobile: ""});
         } else {
             // Active chat -> End Session
             closeSession();
@@ -1192,23 +1212,12 @@ export default function ChatLauncher() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
-        if (!isAgentActive) return;
+        // if (!isAgentActive) return;
         sendTyping();
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => {
             sendStopTyping();
         }, 1500);
-
-        // Don't send typing if agent isn't active
-        // if (!isAgentActive) return;
-        //
-        // sendTyping();
-        //
-        // if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        //
-        // typingTimeoutRef.current = setTimeout(() => {
-        //     sendStopTyping();
-        // }, 1500); // 1.5 seconds
     };
 
     const handleTransliterationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1223,23 +1232,14 @@ export default function ChatLauncher() {
         }
 
         setInput(converted);
-        if (isAgentActive) {
-            sendTyping();
-            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-            typingTimeoutRef.current = setTimeout(() => {
-                sendStopTyping();
-            }, 1500);
-        }
+        // if (isAgentActive) {
+        sendTyping();
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+            sendStopTyping();
+        }, 1500);
+        // }
     }
-
-    // const triggerTypingEvents = () => {
-    //     if (!isAgentActive) return;
-    //     sendTyping();
-    //     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    //     typingTimeoutRef.current = setTimeout(() => {
-    //         sendStopTyping();
-    //     }, 1500);
-    // }
 
     const handleAttachClick = () => {
         fileInputRef.current?.click();
@@ -1277,7 +1277,6 @@ export default function ChatLauncher() {
 
     const handleSend = (e: any) => {
         e.preventDefault();
-        // if (!input.trim()) return;
 
         if (!input.trim() || isChatStarting) return;
         sendMessage(input);
@@ -1285,10 +1284,10 @@ export default function ChatLauncher() {
 
         setTransliterationText("");
 
-        if (isAgentActive) {
-            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-            sendStopTyping();
-        }
+        // if (isAgentActive) {
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        sendStopTyping();
+        // }
     };
 
     const handleSubmitRating = async () => {
@@ -1296,15 +1295,13 @@ export default function ChatLauncher() {
         setRating(0);
         setFeedback("");
         setOpen(false);
-        // setView('language');
-        // setTransliterationText("");
     }
 
-    const getLiveAgentText = () => {
-        if (language === 'si') return "සජීවී නියෝජිතයෙකු සමඟ කතා කරන්න";
-        if (language === 'ta') return "நேரடி முகவருடன் பேசவும்";
-        return "Talk to a Live Agent";
-    };
+    // const getLiveAgentText = () => {
+    //     if (language === 'si') return "සජීවී නියෝජිතයෙකු සමඟ කතා කරන්න";
+    //     if (language === 'ta') return "நேரடி முகவருடன் பேசவும்";
+    //     return "Talk to a Live Agent";
+    // };
 
     return (
         <div style={{fontFamily: '"Poppins", sans-serif'}}>
@@ -1322,6 +1319,13 @@ export default function ChatLauncher() {
                 <div style={styles.chatWindow}>
                     <div style={styles.header}>
                         <div style={styles.headerInfo}>
+
+                            {!chatId && view !== 'language' && (
+                                <button onClick={handleBack} style={{...styles.closeButton, marginRight: 8}}>
+                                    <span style={{fontSize: 18}}>←</span>
+                                </button>
+                            )}
+
                             <div style={styles.agentImageContainer}>
                                 <Image src="/agent.png" alt="Agent" width={45} height={45}/>
                                 <span style={styles.onlineIndicator}></span>
@@ -1336,12 +1340,8 @@ export default function ChatLauncher() {
                                 </span>
                             </div>
                         </div>
-                        {/*<button onClick={() => setOpen(false)} style={styles.closeButton}>*/}
-                        {/*    <CloseIcon />*/}
-                        {/*</button>*/}
 
                         <button
-                            // onClick={() => showRating ? setOpen(false) : closeSession()}
                             onClick={handleClose}
                             style={styles.closeButton}
                             title={showRating ? "Close" : "End Chat"}
@@ -1351,74 +1351,136 @@ export default function ChatLauncher() {
 
                     </div>
 
-                    {isChatStarting ? (
-                        <div style={{
-                            flex: 1,
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            flexDirection: 'column',
-                            backgroundColor: '#fff'
-                        }}>
-                            <div style={{
-                                width: 30,
-                                height: 30,
-                                border: '3px solid #f3f3f3',
-                                borderTop: '3px solid #DB2727',
-                                borderRadius: '50%',
-                                animation: 'spin 1s linear infinite'
-                            }}></div>
-                            <p style={{marginTop: 10, color: '#666', fontSize: 12}}>Connecting...</p>
-                            <style>{`@keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);}}`}</style>
+                    {/*{isChatStarting ? (*/}
+                    {/*    <div style={{*/}
+                    {/*        flex: 1,*/}
+                    {/*        display: 'flex',*/}
+                    {/*        justifyContent: 'center',*/}
+                    {/*        alignItems: 'center',*/}
+                    {/*        flexDirection: 'column',*/}
+                    {/*        backgroundColor: '#fff'*/}
+                    {/*    }}>*/}
+                    {/*        <div style={{*/}
+                    {/*            width: 30,*/}
+                    {/*            height: 30,*/}
+                    {/*            border: '3px solid #f3f3f3',*/}
+                    {/*            borderTop: '3px solid #DB2727',*/}
+                    {/*            borderRadius: '50%',*/}
+                    {/*            animation: 'spin 1s linear infinite'*/}
+                    {/*        }}></div>*/}
+                    {/*        <p style={{marginTop: 10, color: '#666', fontSize: 12}}>Connecting...</p>*/}
+                    {/*        <style>{`@keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);}}`}</style>*/}
+                    {/*    </div>*/}
+                    {/*) : (*/}
+                    {/*    <>*/}
+                    {!chatId && view === 'language' && (
+                        /* LANGUAGE SELECTION SCREEN */
+                        <div style={styles.languageContainer}>
+                            <div style={{textAlign: 'center', marginBottom: '20px'}}>
+                                <Image src="/agent.png" width={60} height={60} alt="Logo"
+                                       style={{margin: '0 auto 10px'}}/>
+                                <h3 style={{color: '#333', fontWeight: 600}}>Welcome to Indra Traders</h3>
+                                <p style={{color: '#666', fontSize: '13px'}}>Please select your preferred
+                                    language</p>
+                            </div>
+
+                            <div style={styles.langGrid}>
+                                <button onClick={() => handleLanguageSelect('en', 'direct')}
+                                        style={styles.langButton}>
+                                    <span>English</span>
+                                </button>
+                                <button onClick={() => handleLanguageSelect('si', 'direct')}
+                                        style={styles.langButton}>
+                                    <span>Sinhala (සිංහල)</span>
+                                </button>
+                                <button onClick={() => handleLanguageSelect('ta', 'direct')}
+                                        style={styles.langButton}>
+                                    <span>Tamil (தமிழ்)</span>
+                                </button>
+
+                                <button onClick={() => handleLanguageSelect('si', 'singlish')}
+                                        style={styles.langButton}>
+                                    <span>Singlish (සිංහල)</span>
+                                </button>
+                                <button onClick={() => handleLanguageSelect('ta', 'tanglish')}
+                                        style={styles.langButton}>
+                                    <span>Tanglish (தமிழ்)</span>
+                                </button>
+                            </div>
                         </div>
-                    ) : (
+                    )}
+
+                    {!chatId && view === 'type' && (
+                        <div style={styles.languageContainer}>
+                            <div style={{textAlign: 'center', marginBottom: '20px'}}>
+                                <img src={agentImageUrl} width={60} height={60} alt="Logo"
+                                     style={{margin: '0 auto 10px', borderRadius: '50%'}}/>
+                                <h3 style={{color: '#333', fontWeight: 600}}>Select Account Type</h3>
+                            </div>
+                            <div style={styles.langGrid}>
+                                <button onClick={() => handleTypeSelect('guest')} style={styles.langButton}>
+                                    Guest User <br/> <span
+                                    style={{fontSize: 10, color: '#888'}}>General Info Only</span>
+                                </button>
+                                <button onClick={() => handleTypeSelect('registered')} style={styles.langButton}>
+                                    Registered User <br/> <span style={{fontSize: 10, color: '#888'}}>Check Inventory & Prices</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {!chatId && view === 'register' && (
+                        <div style={styles.languageContainer}>
+                            <h3 style={{color: '#333', fontWeight: 600, marginBottom: 20, textAlign: 'center'}}>Enter
+                                Your Details</h3>
+                            <form onSubmit={handleRegisterSubmit}
+                                  style={{width: '100%', display: 'flex', flexDirection: 'column', gap: 15}}>
+                                <input
+                                    placeholder="Your Name"
+                                    value={formData.name}
+                                    onChange={e => setFormData({...formData, name: e.target.value})}
+                                    style={styles.inputSecondary}
+                                    required
+                                />
+                                <input
+                                    placeholder="Mobile Number"
+                                    value={formData.mobile}
+                                    onChange={e => setFormData({...formData, mobile: e.target.value})}
+                                    style={styles.inputSecondary}
+                                    required
+                                />
+                                <button type="submit" style={{...styles.submitRatingButton, width: '100%'}}
+                                        disabled={isChatStarting}>
+                                    {isChatStarting ? "Starting..." : "Start Chat"}
+                                </button>
+                            </form>
+                        </div>
+                    )}
+
+                    {(chatId || showRating || isChatStarting) && (
                         <>
-                            {!chatId && view === 'language' ? (
-                                /* LANGUAGE SELECTION SCREEN */
-                                <div style={styles.languageContainer}>
-                                    <div style={{textAlign: 'center', marginBottom: '20px'}}>
-                                        <Image src="/agent.png" width={60} height={60} alt="Logo"
-                                               style={{margin: '0 auto 10px'}}/>
-                                        <h3 style={{color: '#333', fontWeight: 600}}>Welcome to Indra Traders</h3>
-                                        <p style={{color: '#666', fontSize: '13px'}}>Please select your preferred
-                                            language</p>
-                                    </div>
-
-                                    <div style={styles.langGrid}>
-                                        {/*<button onClick={() => handleLanguageSelect('en')} style={styles.langButton}>*/}
-                                        {/*    English*/}
-                                        {/*</button>*/}
-                                        {/*<button onClick={() => handleLanguageSelect('si')} style={styles.langButton}>*/}
-                                        {/*    සිංහල (Sinhala)*/}
-                                        {/*</button>*/}
-                                        {/*<button onClick={() => handleLanguageSelect('ta')} style={styles.langButton}>*/}
-                                        {/*    தமிழ் (Tamil)*/}
-                                        {/*</button>*/}
-
-                                        <button onClick={() => handleLanguageSelect('en', 'direct')}
-                                                style={styles.langButton}>
-                                            <span>English</span>
-                                        </button>
-                                        <button onClick={() => handleLanguageSelect('si', 'direct')}
-                                                style={styles.langButton}>
-                                            <span>Sinhala (සිංහල)</span>
-                                        </button>
-                                        <button onClick={() => handleLanguageSelect('ta', 'direct')}
-                                                style={styles.langButton}>
-                                            <span>Tamil (தமிழ்)</span>
-                                        </button>
-
-                                        <button onClick={() => handleLanguageSelect('si', 'singlish')}
-                                                style={styles.langButton}>
-                                            <span>Singlish (සිංහල)</span>
-                                        </button>
-                                        <button onClick={() => handleLanguageSelect('ta', 'tanglish')}
-                                                style={styles.langButton}>
-                                            <span>Tanglish (தமிழ்)</span>
-                                        </button>
-                                    </div>
+                            {isChatStarting ? (
+                                <div style={{
+                                    flex: 1,
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    flexDirection: 'column',
+                                    backgroundColor: '#fff'
+                                }}>
+                                    <div style={{
+                                        width: 30,
+                                        height: 30,
+                                        border: '3px solid #f3f3f3',
+                                        borderTop: '3px solid #DB2727',
+                                        borderRadius: '50%',
+                                        animation: 'spin 1s linear infinite'
+                                    }}></div>
+                                    <p style={{marginTop: 10, color: '#666', fontSize: 12}}>Connecting...</p>
+                                    <style>{`@keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);}}`}</style>
                                 </div>
                             ) : (
+
                                 showRating ? (
                                     <div style={styles.ratingContainer}>
                                         <Image src="/agent.png" width={80} height={80} alt="Agent"
@@ -1440,7 +1502,6 @@ export default function ChatLauncher() {
                                             Please rate the service provided by our agent.
                                         </p>
 
-                                        {/* Stars */}
                                         <div style={{display: 'flex', gap: '8px', marginBottom: '25px'}}>
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <StarIcon
@@ -1450,8 +1511,6 @@ export default function ChatLauncher() {
                                                 />
                                             ))}
                                         </div>
-
-                                        {/* Feedback Text Area */}
                                         <textarea
                                             placeholder="Optional feedback..."
                                             value={feedback}
@@ -1472,9 +1531,6 @@ export default function ChatLauncher() {
                                                            style={styles.botAvatar}/>
                                                     <div style={styles.messageWrapper}>
                                                         <span style={styles.botName}>Indra Assistant</span>
-                                                        {/*<div style={styles.botBubble}>*/}
-                                                        {/*    Hello! Welcome. How can I help you today?*/}
-                                                        {/*</div>*/}
                                                         <div style={styles.botBubble}>
                                                             {language === 'si'
                                                                 ? "ආයුබෝවන්! සාදරයෙන් පිළිගනිමු. අද ඔබට උදව් කරන්නේ කෙසේද?"
@@ -1487,7 +1543,6 @@ export default function ChatLauncher() {
                                             )}
 
                                             {messages.map((m: any, i: number) => {
-                                                // HANDLE SYSTEM MESSAGE (Agent Joined)
                                                 if (m.sender === "system") {
                                                     return (
                                                         <div key={i} style={styles.systemMessageContainer}>
@@ -1498,7 +1553,6 @@ export default function ChatLauncher() {
                                                     )
                                                 }
 
-                                                // STANDARD MESSAGES
                                                 return (
                                                     <div key={i} style={{
                                                         display: 'flex',
@@ -1506,7 +1560,6 @@ export default function ChatLauncher() {
                                                         marginBottom: '15px',
                                                         alignItems: 'flex-end'
                                                     }}>
-                                                        {/* Only show Avatar for bot/agent, not customer */}
                                                         {m.sender !== "customer" && (
                                                             <Image src="/agent.png" width={30} height={30} alt="Bot"
                                                                    style={styles.botAvatar}/>
@@ -1519,9 +1572,6 @@ export default function ChatLauncher() {
                                                             )}
                                                             <div
                                                                 style={m.sender === "customer" ? styles.userBubble : styles.botBubble}>
-                                                                {/* --- MODIFICATION HERE --- */}
-                                                                {/* We use the new component to render the message content */}
-                                                                {/*<ChatMessageContent msg={m}/>*/}
 
                                                                 <ChatMessageContent msg={m}
                                                                                     onImageClick={setLightboxUrl}/>
@@ -1552,57 +1602,14 @@ export default function ChatLauncher() {
                                             )}
                                             <div ref={messagesEndRef}/>
                                         </div>
-                                        {/* Live Agent Button - HIDDEN if isAgentActive is true */}
-                                        {!isAgentActive && (
-                                            <div style={{padding: '0 10px'}}>
-                                                <button onClick={() => askForAgent()} style={styles.liveAgentButton}>
-                                                    {getLiveAgentText()}
-                                                </button>
-                                            </div>
-                                        )}
 
-                                        {/*<form onSubmit={handleSend} style={styles.footer}>*/}
-                                        {/*    /!*<input*!/*/}
-                                        {/*    /!*    value={input}*!/*/}
-                                        {/*    /!*    // onChange={(e) => setInput(e.target.value)}*!/*/}
-                                        {/*    /!*    onChange={handleInputChange}*!/*/}
-                                        {/*    /!*    type="text"*!/*/}
-                                        {/*    /!*    placeholder="Write message here..."*!/*/}
-                                        {/*    /!*    style={styles.input}*!/*/}
-
-                                        {/*    /!*<button type="submit" style={styles.sendButton}>*!/*/}
-                                        {/*    /!*    <SendIcon/>*!/*/}
-                                        {/*    /!*</button>*!/*/}
-
-                                        {/*    <div*/}
-                                        {/*        style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '5px'}}>*/}
-
-                                        {/*        /!* PRIMARY INPUT (Auto-converted text) *!/*/}
-                                        {/*        <div style={styles.inputContainer}>*/}
-                                        {/*            <input*/}
-                                        {/*                value={input}*/}
-                                        {/*                onChange={handleInputChange}*/}
-                                        {/*                type="text"*/}
-                                        {/*                placeholder={inputMode === 'direct' ? "Write message..." : "Converted text..."}*/}
-                                        {/*                style={inputMode === 'direct' ? styles.input : styles.inputConverted}*/}
-                                        {/*                readOnly={inputMode !== 'direct'}*/}
-                                        {/*            />*/}
-                                        {/*        </div>*/}
-
-                                        {/*        {inputMode !== 'direct' && (*/}
-                                        {/*            <div style={styles.inputContainerSecondary}>*/}
-                                        {/*                <input*/}
-                                        {/*                    value={transliterationText}*/}
-                                        {/*                    onChange={handleTransliterationChange}*/}
-                                        {/*                    type="text"*/}
-                                        {/*                    placeholder={inputMode === 'singlish' ? "Type here in Singlish..." : "Type here in Tanglish..."}*/}
-                                        {/*                    style={styles.inputSecondary}*/}
-                                        {/*                    autoFocus*/}
-                                        {/*                />*/}
-                                        {/*            </div>*/}
-                                        {/*        )}*/}
+                                        {/*{!isAgentActive && (*/}
+                                        {/*    <div style={{padding: '0 10px'}}>*/}
+                                        {/*        <button onClick={() => askForAgent()} style={styles.liveAgentButton}>*/}
+                                        {/*            {getLiveAgentText()}*/}
+                                        {/*        </button>*/}
                                         {/*    </div>*/}
-                                        {/*</form>*/}
+                                        {/*)}*/}
 
                                         <form onSubmit={handleSend} style={styles.footer}>
                                             <input
@@ -1612,23 +1619,21 @@ export default function ChatLauncher() {
                                                 onChange={handleFileChange}
                                                 accept="image/*,.pdf,.doc,.docx,.txt"
                                             />
-                                            {
-                                                isAgentActive && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleAttachClick}
-                                                        disabled={isUploading}
-                                                        className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500"
-                                                    >
-                                                        {isUploading ? (
-                                                            <div
-                                                                className="w-5 h-5 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
-                                                        ) : (
-                                                            <AttachIcon/>
-                                                        )}
-                                                    </button>
-                                                )
-                                            }
+                                            {/*{isAgentActive && (*/}
+                                            <button
+                                                type="button"
+                                                onClick={handleAttachClick}
+                                                disabled={isUploading}
+                                                className="p-2 hover:bg-gray-200 rounded-full transition text-gray-500"
+                                            >
+                                                {isUploading ? (
+                                                    <div
+                                                        className="w-5 h-5 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <AttachIcon/>
+                                                )}
+                                            </button>
+                                            {/*)}*/}
 
                                             <div
                                                 style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '5px'}}>
@@ -1662,7 +1667,6 @@ export default function ChatLauncher() {
     );
 }
 
-// Styles Object
 const styles: { [key: string]: React.CSSProperties } = {
     launcherButton: {
         position: "fixed",
@@ -1820,15 +1824,6 @@ const styles: { [key: string]: React.CSSProperties } = {
         padding: "10px", borderTop: "1px solid #e0e0e0", display: "flex", gap: "10px",
         alignItems: "center", backgroundColor: '#fff'
     },
-    // input: {
-    //     flex: 1,
-    //     border: "none",
-    //     outline: "none",
-    //     fontSize: "12px",
-    //     padding: "8px",
-    //     color: "#595E62",
-    //     fontFamily: "'Poppins', sans-serif"
-    // },
 
     inputContainer: {width: '100%'},
     inputContainerSecondary: {width: '100%'},
