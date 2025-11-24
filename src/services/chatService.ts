@@ -28,8 +28,8 @@ export const ChatService = {
     //     return axiosInstance.post<ChatSession>("/chat/start", payload).then(r => r.data);
     // },
 
-    startChat: async (language: string, channel: string) => {
-        const res = await axiosInstance.post("/chat/start", {language, channel});
+    startChat: async (language: string, channel: string, userType: string, name?:string, mobile?:string) => {
+        const res = await axiosInstance.post("/chat/start", {language, channel, user_type: userType, name, mobile});
         return res.data;
     },
 
