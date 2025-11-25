@@ -20,6 +20,13 @@ const userRoles = [
 const departments = ["ITPL", "ISP", "IMS", "IFT"];
 const branches = ["Bambalapitiya", "Kandy", "Jaffna", "Galle", "Negombo"];
 
+const languageOptions = [
+    {code: "en", label: "English", badge: "EN"},
+    {code: "si", label: "Sinhala", badge: "SI"},
+    {code: "ta", label: "Tamil", badge: "TA"},
+];
+
+
 export default function UserManagement() {
 
     const [filters, setFilters] = useState({
@@ -47,12 +54,40 @@ export default function UserManagement() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
+    const [userLanguages, setUserLanguages] = useState<string[]>(["en"]);
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
     const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
+
+    const toggleCreateLanguage = (code: string) => {
+        if (userLanguages.includes(code)) {
+            if (userLanguages.length > 1) {
+                setUserLanguages(userLanguages.filter((l) => l !== code));
+            }
+        } else {
+            setUserLanguages([...userLanguages, code]);
+        }
+    };
+
+    const toggleUpdateLanguage = (code: string) => {
+        const currentLangs = selectedUser.languages || ["en"];
+        let newLangs;
+        if (currentLangs.includes(code)) {
+            if (currentLangs.length > 1) {
+                newLangs = currentLangs.filter((l: string) => l !== code);
+            } else {
+                newLangs = currentLangs;
+            }
+        } else {
+            newLangs = [...currentLangs, code];
+        }
+        setSelectedUser({...selectedUser, languages: newLangs});
+    };
+
 
     return (
         <div
@@ -106,6 +141,7 @@ export default function UserManagement() {
                                     <div className="w-1/6 px-3 py-2">User Role</div>
                                     <div className="w-1/6 px-3 py-2">Department</div>
                                     <div className="w-1/6 px-3 py-2">Branch</div>
+                                    <div className="w-1/6 px-3 py-2">Languages</div>
                                 </div>
 
                                 {/* Table body (scrollable vertically) */}
@@ -120,7 +156,8 @@ export default function UserManagement() {
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
                                                 onClick={() => {
-                                                    setSelectedUser(item);
+                                                    // setSelectedUser(item);
+                                                    setSelectedUser({...item, languages: item.languages || ["en"]});
                                                     setIsUserDetailsModalOpen(true);
                                                 }}
                                             >
@@ -132,6 +169,14 @@ export default function UserManagement() {
                                                     {item.department || "-"}
                                                 </div>
                                                 <div className="w-1/6 px-3 py-2">{item.branch}</div>
+                                                <div className="w-1/6 px-3 py-2 flex gap-1">
+                                                    {(item.languages || ["en"]).map((lang: string) => (
+                                                        <span key={lang}
+                                                              className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded uppercase">
+                                                            {lang}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
                                         ))
                                     )}
@@ -186,6 +231,7 @@ export default function UserManagement() {
                                     branch,
                                     password,
                                     confirm_password: confirmPassword,
+                                    languages: userLanguages,
                                 });
                                 setIsAddNewUserModalOpen(false);
                                 // Reset form
@@ -197,6 +243,7 @@ export default function UserManagement() {
                                 setUserRole("");
                                 setPassword("");
                                 setConfirmPassword("");
+                                setUserLanguages(["en"]);
                             } catch (error: any) {
                                 console.error("Error creating user:", error);
                                 alert(`Failed to create user: ${error.response?.data?.message || error.message}`);
@@ -255,13 +302,13 @@ export default function UserManagement() {
                                         <option value="Telemarketer">Telemarketer</option>
                                     </select>
                                     <span className="absolute right-4 pointer-events-none">
-                    <Image
-                        src={"/images/sales/icon-park-solid_down-one.svg"}
-                        width={19}
-                        height={19}
-                        alt="Arrow"
-                    />
-                  </span>
+                                        <Image
+                                            src={"/images/sales/icon-park-solid_down-one.svg"}
+                                            width={19}
+                                            height={19}
+                                            alt="Arrow"
+                                        />
+                                      </span>
                                 </div>
                             </div>
                         </div>
@@ -284,13 +331,13 @@ export default function UserManagement() {
                                     <option value="IFT">IFT</option>
                                 </select>
                                 <span className="absolute right-4 pointer-events-none">
-                  <Image
-                      src={"/images/sales/icon-park-solid_down-one.svg"}
-                      width={19}
-                      height={19}
-                      alt="Arrow"
-                  />
-                </span>
+                                  <Image
+                                      src={"/images/sales/icon-park-solid_down-one.svg"}
+                                      width={19}
+                                      height={19}
+                                      alt="Arrow"
+                                  />
+                                </span>
                             </div>
                         </div>
 
@@ -311,13 +358,13 @@ export default function UserManagement() {
                                     <option value="NEGOMBO">Negombo</option>
                                 </select>
                                 <span className="absolute right-4 pointer-events-none">
-                  <Image
-                      src={"/images/sales/icon-park-solid_down-one.svg"}
-                      width={19}
-                      height={19}
-                      alt="Arrow"
-                  />
-                </span>
+                                  <Image
+                                      src={"/images/sales/icon-park-solid_down-one.svg"}
+                                      width={19}
+                                      height={19}
+                                      alt="Arrow"
+                                  />
+                                </span>
                             </div>
                         </div>
 
@@ -336,8 +383,8 @@ export default function UserManagement() {
                                     className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                                     onClick={() => setShowPassword((prev) => !prev)}
                                 >
-                  {showPassword ? <FaEye/> : <FaEyeSlash/>}
-                </span>
+                                  {showPassword ? <FaEye/> : <FaEyeSlash/>}
+                                </span>
                             </div>
                         </div>
 
@@ -356,9 +403,33 @@ export default function UserManagement() {
                                     className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                                 >
-                  {showConfirmPassword ? <FaEye/> : <FaEyeSlash/>}
-                </span>
+                                  {showConfirmPassword ? <FaEye/> : <FaEyeSlash/>}
+                                </span>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full mt-5">
+                        <label className="block mb-2 font-medium">Languages</label>
+                        <div className="flex gap-3">
+                            {languageOptions.map((lang) => {
+                                const isSelected = userLanguages.includes(lang.code);
+                                return (
+                                    <button
+                                        key={lang.code}
+                                        type="button"
+                                        onClick={() => toggleCreateLanguage(lang.code)}
+                                        className={`px-4 py-2 rounded-full border text-sm font-medium transition
+                                ${isSelected
+                                            ? "bg-blue-600 text-white border-blue-600"
+                                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                        }
+                            `}
+                                    >
+                                        {lang.label}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
                 </Modal>
@@ -383,9 +454,9 @@ export default function UserManagement() {
                 >
                     {/* --- User Role --- */}
                     <div className="w-full">
-            <span className="font-montserrat font-semibold text-lg leading-[100%]">
-              User Role
-            </span>
+                        <span className="font-montserrat font-semibold text-lg leading-[100%]">
+                          User Role
+                        </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
                             {userRoles.map((role) => {
                                 const isSelected = selectedRoles.includes(role);
@@ -393,7 +464,7 @@ export default function UserManagement() {
                                     <div
                                         key={role}
                                         className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
+                                            ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
                                         onClick={() => {
                                             if (isSelected) {
                                                 setSelectedRoles(
@@ -413,9 +484,9 @@ export default function UserManagement() {
 
                     {/* --- Department --- */}
                     <div className="w-full mt-5">
-            <span className="font-montserrat font-semibold text-lg leading-[100%]">
-              Department
-            </span>
+                        <span className="font-montserrat font-semibold text-lg leading-[100%]">
+                          Department
+                        </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
                             {departments.map((dept) => {
                                 const isSelected = selectedDepartments.includes(dept);
@@ -423,7 +494,7 @@ export default function UserManagement() {
                                     <div
                                         key={dept}
                                         className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
+                                            ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
                                         onClick={() => {
                                             if (isSelected) {
                                                 setSelectedDepartments(
@@ -443,9 +514,9 @@ export default function UserManagement() {
 
                     {/* --- Branch --- */}
                     <div className="w-full mt-5">
-            <span className="font-montserrat font-semibold text-lg leading-[100%]">
-              Branch
-            </span>
+                        <span className="font-montserrat font-semibold text-lg leading-[100%]">
+                          Branch
+                        </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
                             {branches.map((branch) => {
                                 const isSelected = selectedBranches.includes(branch);
@@ -453,7 +524,7 @@ export default function UserManagement() {
                                     <div
                                         key={branch}
                                         className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
+                                        ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
                                         onClick={() => {
                                             if (isSelected) {
                                                 setSelectedBranches(
@@ -576,6 +647,7 @@ export default function UserManagement() {
                                         user_role: selectedUser.user_role,
                                         department: selectedUser.department,
                                         branch: selectedUser.branch,
+                                        languages: selectedUser.languages,
                                     },
                                 });
                                 setIsUserDetailsModalOpen(false);
@@ -661,6 +733,30 @@ export default function UserManagement() {
                                 <option>GALLE</option>
                                 <option>NEGOMBO</option>
                             </select>
+                        </div>
+
+                        <div className="grid grid-cols-[150px_1fr] gap-4 items-start pt-2">
+                            <div className="text-lg font-semibold">Languages:</div>
+                            <div className="flex gap-3">
+                                {languageOptions.map((lang) => {
+                                    const isSelected = (selectedUser.languages || ["en"]).includes(lang.code);
+                                    return (
+                                        <button
+                                            key={lang.code}
+                                            type="button"
+                                            onClick={() => toggleUpdateLanguage(lang.code)}
+                                            className={`px-4 py-1 rounded-full border text-sm font-medium transition
+                                  ${isSelected
+                                                ? "bg-blue-600 text-white border-blue-600"
+                                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            }
+                              `}
+                                        >
+                                            {lang.label}
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
                     </div>
                 </Modal>
