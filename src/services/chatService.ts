@@ -28,7 +28,7 @@ export const ChatService = {
     //     return axiosInstance.post<ChatSession>("/chat/start", payload).then(r => r.data);
     // },
 
-    startChat: async (language: string, channel: string, userType: string, name?:string, mobile?:string) => {
+    startChat: async (language: string, channel: string, userType: string, name?: string, mobile?: string) => {
         const res = await axiosInstance.post("/chat/start", {language, channel, user_type: userType, name, mobile});
         return res.data;
     },
@@ -74,6 +74,16 @@ export const ChatService = {
         const res = await axiosInstance.post("/chat/upload", formData, {
             headers: {"Content-Type": "multipart/form-data"}
         });
+        return res.data;
+    },
+
+    // getRatedSessions: async () => {
+    //     const res = await axiosInstance.get("/chat/ratings");
+    //     return res.data;
+    // },
+
+    getRatedSessions: async (page = 1, limit = 10) => {
+        const res = await axiosInstance.get(`/chat/ratings?page=${page}&limit=${limit}`);
         return res.data;
     }
 };

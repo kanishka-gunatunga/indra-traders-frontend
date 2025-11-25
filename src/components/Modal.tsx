@@ -100,6 +100,31 @@ export default function Modal({
       aria-modal="true"
       aria-labelledby="modal-title"
     >
+
+
+        <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1; /* slate-300 */
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: #94a3b8; /* slate-400 */
+        }
+        /* Firefox fallback */
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #cbd5e1 transparent;
+        }
+      `}</style>
+
+
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -111,7 +136,7 @@ export default function Modal({
         ref={modalRef}
         tabIndex={-1}
         className={`relative rounded-[45px] border border-[#E7E7E7] bg-[#FFFFFF]/70 opacity-70 backdrop-blur-[60px] shadow-2xl p-8 z-10 max-h-[90vh] 
-         max-w-[1350px] overflow-y-auto`}
+         max-w-[1350px] overflow-y-auto custom-scrollbar`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Title row */}
