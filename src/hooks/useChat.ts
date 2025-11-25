@@ -146,6 +146,8 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { ChatService } from "@/services/chatService";
+import { useQuery } from "@tanstack/react-query";
+import {keepPreviousData} from "@tanstack/query-core";
 
 export function useAgentChat(agentId: number | undefined) {
     const socketRef = useRef<Socket | null>(null);
@@ -305,3 +307,26 @@ export function useAgentChat(agentId: number | undefined) {
         sendStopTyping
     };
 }
+
+// export const useRatedSessions = () => {
+//     return useQuery({
+//         queryKey: ["rated-sessions"],
+//         queryFn: ChatService.getRatedSessions,
+//     });
+// };
+
+export const useRatedSessions = (page: number, limit: number) => {
+    return useQuery({
+        queryKey: ["rated-sessions", page, limit],
+        queryFn: () => ChatService.getRatedSessions(page, limit),
+        placeholderData: keepPreviousData,
+    });
+};
+
+export const useChatHistory = (chatId: string | null) => {
+    return useQuery({
+        queryKey: ["chat-history", chatId],
+        queryFn: () => ChatService.getMessages(chatId!),
+        enabled: !!chatId,
+    });
+};
