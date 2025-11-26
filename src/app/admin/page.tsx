@@ -63,6 +63,21 @@ export default function UserManagement() {
     const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
 
+    const parseLanguages = (langData: any): string[] => {
+        if (!langData) return ["en"];
+        if (Array.isArray(langData)) return langData;
+        if (typeof langData === "string") {
+            try {
+                if (langData.trim() === "") return ["en"];
+                const parsed = JSON.parse(langData);
+                return Array.isArray(parsed) ? parsed : ["en"];
+            } catch (e) {
+                return ["en"];
+            }
+        }
+        return ["en"];
+    };
+
     const toggleCreateLanguage = (code: string) => {
         if (userLanguages.includes(code)) {
             if (userLanguages.length > 1) {
@@ -74,9 +89,7 @@ export default function UserManagement() {
     };
 
     const toggleUpdateLanguage = (code: string) => {
-        const currentLangs = Array.isArray(selectedUser.languages)
-            ? selectedUser.languages
-            : ["en"];
+        const currentLangs = parseLanguages(selectedUser.languages);
         let newLangs;
         if (currentLangs.includes(code)) {
             if (currentLangs.length > 1) {
@@ -159,7 +172,7 @@ export default function UserManagement() {
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
                                                 onClick={() => {
                                                     // setSelectedUser(item);
-                                                    setSelectedUser({...item, languages: Array.isArray(item.languages) ? item.languages : ["en"],});
+                                                    setSelectedUser({...item, languages: parseLanguages(item.languages)});
                                                     setIsUserDetailsModalOpen(true);
                                                 }}
                                             >
@@ -172,7 +185,7 @@ export default function UserManagement() {
                                                 </div>
                                                 <div className="w-1/6 px-3 py-2">{item.branch}</div>
                                                 <div className="w-1/6 px-3 py-2 flex gap-1">
-                                                    {(Array.isArray(item.languages) ? item.languages : ["en"]).map((lang: string) => (
+                                                    {parseLanguages(item.languages).map((lang: string) => (
                                                         <span key={lang}
                                                               className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded uppercase">
                                                             {lang}
@@ -741,9 +754,7 @@ export default function UserManagement() {
                             <div className="text-lg font-semibold">Languages:</div>
                             <div className="flex gap-3">
                                 {languageOptions.map((lang) => {
-                                    const currentLangs = Array.isArray(selectedUser.languages)
-                                        ? selectedUser.languages
-                                        : ["en"];
+                                    const currentLangs = parseLanguages(selectedUser.languages);
                                     const isSelected = currentLangs.includes(lang.code);
                                     return (
                                         <button
