@@ -1103,13 +1103,20 @@ const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => 
 
 export default function ChatLauncher() {
     const [open, setOpen] = useState(false);
-    const [view, setView] = useState<'language' | 'type' | 'register' | 'chat'>('language');
+    const [view, setView] = useState<'language' | 'type' | 'register' | 'otp' | 'chat'>('language');
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({name: "", mobile: ""});
+
+    const [otp, setOtp] = useState("");
+    const [maskedEmail, setMaskedEmail] = useState("");
+    const [verifiedName, setVerifiedName] = useState("");
+    const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(false);
+    const [authError, setAuthError] = useState("");
+
     const [selectedType, setSelectedType] = useState<'guest' | 'registered'>('guest');
 
     const agentImageUrl = "https://placehold.co/80x80/3B82F6/FFFFFF?text=A";
@@ -1167,9 +1174,10 @@ export default function ChatLauncher() {
     }
 
     const handleTypeSelect = (type: 'guest' | 'registered') => {
-        setSelectedType(type);
+        // setSelectedType(type);
         if (type === 'registered') {
             setView('register');
+            setAuthError("");
         } else {
             startChatMutation.mutate({
                 lang: language,
@@ -1180,20 +1188,75 @@ export default function ChatLauncher() {
         }
     }
 
-    const handleRegisterSubmit = (e: React.FormEvent) => {
+    const handleVerifyCustomer = async (e: React.FormEvent) => {
         e.preventDefault();
-        startChatMutation.mutate({
-            lang: language,
-            channel: "web",
-            userType: 'registered',
-            name: formData.name,
-            mobile: formData.mobile,
-        });
-        // setView('chat');
-    }
+        setIsLoadingAuth(true);
+        setAuthError("");
+
+        try {
+            const res = await ChatService.verifyCustomer(formData.mobile);
+
+            setMaskedEmail(res.email);
+            setVerifiedName(res.customer_name);
+
+            if (res.customer_name) setFormData(prev => ({...prev, name: res.customer_name}));
+
+            setView('otp');
+        } catch (error: any) {
+            console.error(error);
+            setAuthError(error.response?.data?.message || "Verification failed");
+        } finally {
+            setIsLoadingAuth(false);
+        }
+    };
+
+    const handleOtpSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoadingAuth(true);
+        setAuthError("");
+
+        try {
+            await ChatService.validateOtp(formData.mobile, otp);
+
+            startChatMutation.mutate({
+                lang: language,
+                channel: "Web",
+                userType: 'registered',
+                name: verifiedName || formData.name,
+                mobile: formData.mobile,
+            })
+
+        } catch (error: any) {
+            console.error(error);
+            setAuthError(error.response?.data?.message || "Invalid OTP.");
+        } finally {
+            setIsLoadingAuth(false);
+        }
+    };
+
+
+    // const handleRegisterSubmit = (e: React.FormEvent) => {
+    //     e.preventDefault();
+    //     startChatMutation.mutate({
+    //         lang: language,
+    //         channel: "web",
+    //         userType: 'registered',
+    //         name: formData.name,
+    //         mobile: formData.mobile,
+    //     });
+    //     // setView('chat');
+    // }
+
+    // const handleBack = () => {
+    //     if (view === 'register') setView('type');
+    //     else if (view === 'type') setView('language');
+    // };
+
 
     const handleBack = () => {
-        if (view === 'register') setView('type');
+        setAuthError("");
+        if (view === 'otp') setView('register');
+        else if (view === 'register') setView('type');
         else if (view === 'type') setView('language');
     };
 
@@ -1431,27 +1494,57 @@ export default function ChatLauncher() {
 
                     {!chatId && view === 'register' && (
                         <div style={styles.languageContainer}>
-                            <h3 style={{color: '#333', fontWeight: 600, marginBottom: 20, textAlign: 'center'}}>Enter
-                                Your Details</h3>
-                            <form onSubmit={handleRegisterSubmit}
+                            <h3 style={{color: '#333', fontWeight: 600, marginBottom: 20, textAlign: 'center'}}>Registered User Login</h3>
+                            <p style={{fontSize: 12, color: '#666', marginBottom: 20, textAlign: 'center'}}>
+                                Enter your details to verify your account.
+                            </p>
+                            <form onSubmit={handleVerifyCustomer}
                                   style={{width: '100%', display: 'flex', flexDirection: 'column', gap: 15}}>
                                 <input
                                     placeholder="Your Name"
                                     value={formData.name}
                                     onChange={e => setFormData({...formData, name: e.target.value})}
                                     style={styles.inputSecondary}
-                                    required
                                 />
                                 <input
-                                    placeholder="Mobile Number"
+                                    placeholder="Mobile Number (e.g. 0771234567)"
                                     value={formData.mobile}
                                     onChange={e => setFormData({...formData, mobile: e.target.value})}
                                     style={styles.inputSecondary}
                                     required
                                 />
+                                {authError && <p style={{color: 'red', fontSize: 11, textAlign: 'center'}}>{authError}</p>}
+
                                 <button type="submit" style={{...styles.submitRatingButton, width: '100%'}}
-                                        disabled={isChatStarting}>
-                                    {isChatStarting ? "Starting..." : "Start Chat"}
+                                        disabled={isLoadingAuth}>
+                                    {isLoadingAuth ? "Verifying..." : "Verify & Continue"}
+                                </button>
+                            </form>
+                        </div>
+                    )}
+
+                    {!chatId && view === 'otp' && (
+                        <div style={styles.languageContainer}>
+                            <h3 style={{color: '#333', fontWeight: 600, marginBottom: 10, textAlign: 'center'}}>
+                                Enter OTP
+                            </h3>
+                            <p style={{fontSize: 12, color: '#666', marginBottom: 20, textAlign: 'center'}}>
+                                We sent a code to <b>{maskedEmail}</b>
+                            </p>
+
+                            <form onSubmit={handleOtpSubmit} style={{width: '100%', display: 'flex', flexDirection: 'column', gap: 15}}>
+                                <input
+                                    placeholder="6-Digit Code"
+                                    value={otp}
+                                    onChange={e => setOtp(e.target.value)}
+                                    style={{...styles.inputSecondary, textAlign: 'center', letterSpacing: 2, fontSize: 18}}
+                                    maxLength={6}
+                                    required
+                                />
+                                {authError && <p style={{color: 'red', fontSize: 11, textAlign: 'center'}}>{authError}</p>}
+
+                                <button type="submit" style={{...styles.submitRatingButton, width: '100%'}} disabled={isLoadingAuth || isChatStarting}>
+                                    {isLoadingAuth || isChatStarting ? "Validating..." : "Confirm & Chat"}
                                 </button>
                             </form>
                         </div>
