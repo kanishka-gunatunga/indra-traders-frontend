@@ -7,6 +7,7 @@ import React, {useEffect, useRef, useState} from "react";
 import {useChatHistory, useRatedSessions} from "@/hooks/useChat";
 import Modal from "@/components/Modal";
 import {FaStar} from "react-icons/fa";
+import {useCurrentUser} from "@/utils/auth";
 
 
 const StarDisplay = ({count}: { count: number }) => (
@@ -140,7 +141,6 @@ const SessionHistoryView = ({session}: { session: any }) => {
                                             : "bg-[#DB2727] text-white rounded-tr-none"
                                     }`}
                                 >
-                                    {/* Attachment Rendering */}
                                     {msg.attachment_url && (
                                         <div className="mb-2 mt-1">
                                             {msg.attachment_type === 'image' ? (
@@ -196,9 +196,12 @@ const SessionHistoryView = ({session}: { session: any }) => {
 export default function StartRating() {
 
     const [page, setPage] = useState(1);
+    const [filter, setFilter] = useState("all");
     const limit = 10;
 
-    const {data, isLoading, isPlaceholderData} = useRatedSessions(page, limit);
+    const user = useCurrentUser();
+
+    const {data, isLoading, isPlaceholderData} = useRatedSessions(page, limit, filter);
 
     const sessions = data?.sessions || [];
     const totalPages = Math.max(1, data?.totalPages || 0);
@@ -207,6 +210,7 @@ export default function StartRating() {
     console.log("----------  chats: ", sessions);
 
     const [selectedSession, setSelectedSession] = useState<any | null>(null);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
     const getPageNumbers = () => {
         if (totalPages <= 3) {
@@ -224,18 +228,19 @@ export default function StartRating() {
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name || "Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Customer’s Star Ratings"
                 />
 
-                {/* Star Ratings Section */}
                 <section
                     className="relative mb-5 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">Star Ratings</span>
 
-                        <button className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                        <button
+                            onClick={() => setIsFilterModalOpen(true)}
+                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition">
                             <Image
                                 src={"/images/admin/flowbite_filter-outline.svg"}
                                 width={24}
@@ -247,7 +252,6 @@ export default function StartRating() {
                     <div className="w-full mt-5 ">
                         <div className="h-[500px] overflow-x-auto overflow-y-hidden ">
                             <div className="min-w-[1000px] ">
-                                {/* Table header */}
                                 <div
                                     className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
                                     {/*<div className="w-1/5 px-3 py-2">Contact No.</div>*/}
@@ -273,7 +277,6 @@ export default function StartRating() {
                                         <div className="text-center py-10 text-gray-500">No ratings found yet.</div>
                                     ) : (
                                         sessions.map((item: any) => (
-                                            // {startRatingsData.map((item, idx) => (
                                             <div
                                                 key={item.id}
                                                 className="flex text-lg mt-2 text-black hover:bg-gray-50 transition cursor-pointer"
@@ -303,7 +306,7 @@ export default function StartRating() {
                                                 {/*</div>*/}
 
                                                 <div className="w-1/6 px-3 py-2 text-sm">
-                                                    {item.agent?.full_name || "Unassigned"}
+                                                    {item.agent?.full_name || "Automated Bot"}
                                                 </div>
 
                                                 <div className="w-1/6 px-3 py-2">
@@ -380,6 +383,58 @@ export default function StartRating() {
                     onClose={() => setSelectedSession(null)}
                 >
                     <SessionHistoryView session={selectedSession}/>
+                </Modal>
+            )}
+
+
+            {isFilterModalOpen && (
+                <Modal
+                    title="Filter Sessions"
+                    onClose={() => setIsFilterModalOpen(false)}
+                    actionButton={{
+                        label: "Close",
+                        onClick: () => setIsFilterModalOpen(false)
+                    }}
+                >
+                    <div className="w-full min-w-[300px]">
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => {
+                                    setFilter('all');
+                                    setPage(1);
+                                    setIsFilterModalOpen(false);
+                                }}
+                                className={`p-3 rounded-xl border text-left transition ${filter === 'all' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                            >
+                                <span className="font-semibold block">All Sessions</span>
+                                <span className="text-xs opacity-70">View both bot and agent chats</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setFilter('agent');
+                                    setPage(1);
+                                    setIsFilterModalOpen(false);
+                                }}
+                                className={`p-3 rounded-xl border text-left transition ${filter === 'agent' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                            >
+                                <span className="font-semibold block">Live Agent</span>
+                                <span className="text-xs opacity-70">Sessions handled by humans</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setFilter('bot');
+                                    setPage(1);
+                                    setIsFilterModalOpen(false);
+                                }}
+                                className={`p-3 rounded-xl border text-left transition ${filter === 'bot' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                            >
+                                <span className="font-semibold block">Bot Only</span>
+                                <span className="text-xs opacity-70">Automated sessions</span>
+                            </button>
+                        </div>
+                    </div>
                 </Modal>
             )}
         </div>
