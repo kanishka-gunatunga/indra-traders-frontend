@@ -74,7 +74,9 @@ export default function UserManagement() {
     };
 
     const toggleUpdateLanguage = (code: string) => {
-        const currentLangs = selectedUser.languages || ["en"];
+        const currentLangs = Array.isArray(selectedUser.languages)
+            ? selectedUser.languages
+            : ["en"];
         let newLangs;
         if (currentLangs.includes(code)) {
             if (currentLangs.length > 1) {
@@ -157,7 +159,7 @@ export default function UserManagement() {
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
                                                 onClick={() => {
                                                     // setSelectedUser(item);
-                                                    setSelectedUser({...item, languages: item.languages || ["en"]});
+                                                    setSelectedUser({...item, languages: Array.isArray(item.languages) ? item.languages : ["en"],});
                                                     setIsUserDetailsModalOpen(true);
                                                 }}
                                             >
@@ -170,7 +172,7 @@ export default function UserManagement() {
                                                 </div>
                                                 <div className="w-1/6 px-3 py-2">{item.branch}</div>
                                                 <div className="w-1/6 px-3 py-2 flex gap-1">
-                                                    {(item.languages || ["en"]).map((lang: string) => (
+                                                    {(Array.isArray(item.languages) ? item.languages : ["en"]).map((lang: string) => (
                                                         <span key={lang}
                                                               className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded uppercase">
                                                             {lang}
@@ -739,7 +741,10 @@ export default function UserManagement() {
                             <div className="text-lg font-semibold">Languages:</div>
                             <div className="flex gap-3">
                                 {languageOptions.map((lang) => {
-                                    const isSelected = (selectedUser.languages || ["en"]).includes(lang.code);
+                                    const currentLangs = Array.isArray(selectedUser.languages)
+                                        ? selectedUser.languages
+                                        : ["en"];
+                                    const isSelected = currentLangs.includes(lang.code);
                                     return (
                                         <button
                                             key={lang.code}
