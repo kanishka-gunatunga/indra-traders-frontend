@@ -82,8 +82,8 @@ export const ChatService = {
     //     return res.data;
     // },
 
-    getRatedSessions: async (page = 1, limit = 10) => {
-        const res = await axiosInstance.get(`/chat/ratings?page=${page}&limit=${limit}`);
+    getRatedSessions: async (page = 1, limit = 10, filter = 'all') => {
+        const res = await axiosInstance.get(`/chat/ratings?page=${page}&limit=${limit}&filter=${filter}`);
         return res.data;
     }
 };

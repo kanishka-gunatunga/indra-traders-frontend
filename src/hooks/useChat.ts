@@ -315,10 +315,10 @@ export function useAgentChat(agentId: number | undefined) {
 //     });
 // };
 
-export const useRatedSessions = (page: number, limit: number) => {
+export const useRatedSessions = (page: number, limit: number, filter: string) => {
     return useQuery({
-        queryKey: ["rated-sessions", page, limit],
-        queryFn: () => ChatService.getRatedSessions(page, limit),
+        queryKey: ["rated-sessions", page, limit, filter],
+        queryFn: () => ChatService.getRatedSessions(page, limit, filter),
         placeholderData: keepPreviousData,
     });
 };
