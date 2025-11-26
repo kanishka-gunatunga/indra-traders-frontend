@@ -85,5 +85,15 @@ export const ChatService = {
     getRatedSessions: async (page = 1, limit = 10, filter = 'all') => {
         const res = await axiosInstance.get(`/chat/ratings?page=${page}&limit=${limit}&filter=${filter}`);
         return res.data;
+    },
+
+    verifyCustomer: async (phoneNumber: string) => {
+        const res = await axiosInstance.post("/chat/verify-customer", {phone_number: phoneNumber});
+        return res.data;
+    },
+
+    validateOtp: async (phoneNumber: string, otp: string) => {
+        const res = await axiosInstance.post("/chat/verify-otp", {phone_number: phoneNumber, otp});
+        return res.data;
     }
 };
