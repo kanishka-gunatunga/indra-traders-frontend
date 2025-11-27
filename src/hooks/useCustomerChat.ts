@@ -130,7 +130,7 @@ export function useCustomerChat() {
 
     const startChatMutation = useMutation({
         // mutationFn: () => ChatService.startChat(language, "Web"),
-        mutationFn: (variables: { lang: string, channel: string, userType: string, name?:string, mobile?:string  }) =>
+        mutationFn: (variables: { lang: string, channel: string, userType: string, name?: string, mobile?: string }) =>
             ChatService.startChat(variables.lang, variables.channel, variables.userType, variables.name, variables.mobile),
         onSuccess: (data) => {
             setChatId(data.chat_id);
@@ -313,6 +313,17 @@ export function useCustomerChat() {
         if (chatId) socketRef.current?.emit("stop_typing", {chat_id: chatId, by: 'customer'});
     };
 
+
+    const upgradeSessionMutation = useMutation({
+        mutationFn: (variables: { chatId: string, name: string, mobile: string }) =>
+            ChatService.upgradeSession(variables.chatId, variables.name, variables.mobile),
+        onSuccess: (data) => {
+            // Optimistically update any local state if needed, or refetch
+            // Usually just succeeding is enough, the socket remains connected
+        },
+    });
+
+
     return {
         chatId,
         startChatMutation,
@@ -328,6 +339,7 @@ export function useCustomerChat() {
         sendStopTyping,
         language,
         setLanguage,
-        isChatStarting: startChatMutation.isPending
+        isChatStarting: startChatMutation.isPending,
+        upgradeSessionMutation
     };
 }

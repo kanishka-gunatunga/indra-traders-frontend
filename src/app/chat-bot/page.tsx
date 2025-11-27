@@ -297,14 +297,6 @@ const DoubleCheck = () => (
     </svg>
 );
 
-// const DocumentIcon = () => (
-//     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="text-red-500"
-//          viewBox="0 0 16 16">
-//         <path
-//             d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
-//     </svg>
-// );
-
 const CloseIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"
          stroke="currentColor">
@@ -317,6 +309,53 @@ const DocumentIcon = () => (
         <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
     </svg>
 );
+
+
+const ChatTimer = ({ startTime }: { startTime: string }) => {
+    const [duration, setDuration] = useState(0);
+
+    useEffect(() => {
+        // Calculate initial difference
+        const start = new Date(startTime).getTime();
+
+        const updateTimer = () => {
+            const now = Date.now();
+            const diff = Math.floor((now - start) / 1000); // Difference in seconds
+            setDuration(diff > 0 ? diff : 0);
+        };
+
+        updateTimer(); // Run immediately
+        const interval = setInterval(updateTimer, 1000); // Update every second
+
+        return () => clearInterval(interval);
+    }, [startTime]);
+
+    // Format seconds into MM:SS or HH:MM:SS
+    const formatTime = (totalSeconds: number) => {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 rounded-md">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" className="text-gray-600" viewBox="0 0 16 16">
+                <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+            </svg>
+            <span className="text-xs font-mono font-medium text-gray-700 min-w-[40px] text-center">
+                {formatTime(duration)}
+            </span>
+        </div>
+    );
+};
+
+
 
 const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => {
     return (
@@ -338,68 +377,6 @@ const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => 
         </div>
     );
 };
-
-
-// const renderBold = (text: string) => {
-//     const parts = text.split(/(\*\*.*?\*\*)/g);
-//     return parts.map((part, index) => {
-//         if (part.startsWith('**') && part.endsWith('**')) {
-//             return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
-//         }
-//         return part;
-//     });
-// };
-//
-// // Updated Component to handle both Text and Attachments
-// const ChatMessageContent = ({msg}: { msg: any }) => {
-//     const {message, attachment_url, attachment_type, file_name} = msg;
-//
-//     return (
-//         <div className="flex flex-col gap-1">
-//             {/* Attachment Rendering */}
-//             {attachment_type === 'image' && attachment_url && (
-//                 <div
-//                     className="mb-1 relative w-full max-w-[200px] h-auto rounded-lg overflow-hidden border border-gray-200">
-//                     <img
-//                         src={process.env.NEXT_PUBLIC_API_URL + attachment_url}
-//                         alt="attachment"
-//                         className="w-full h-auto object-cover"
-//                         loading="lazy"
-//                     />
-//                 </div>
-//             )}
-//
-//             {attachment_type === 'document' && attachment_url && (
-//                 <a
-//                     href={process.env.NEXT_PUBLIC_API_URL + attachment_url}
-//                     target="_blank"
-//                     rel="noopener noreferrer"
-//                     className="flex items-center gap-2 p-3 bg-black/5 rounded-lg hover:bg-black/10 transition mb-1 no-underline"
-//                 >
-//                     <div className="w-8 h-8 bg-red-100 text-red-500 rounded flex items-center justify-center">
-//                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-//                              viewBox="0 0 16 16">
-//                             <path
-//                                 d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
-//                         </svg>
-//                     </div>
-//                     <div className="flex flex-col overflow-hidden">
-//                         <span
-//                             className="text-xs font-medium truncate max-w-[150px] text-gray-700">{file_name || "Document"}</span>
-//                         <span className="text-[10px] text-gray-500 uppercase">Download</span>
-//                     </div>
-//                 </a>
-//             )}
-//
-//             {/* Text Rendering */}
-//             {message && (
-//                 <div className="whitespace-pre-wrap">
-//                     {renderBold(message)}
-//                 </div>
-//             )}
-//         </div>
-//     );
-// };
 
 const ChatMessageContent = ({msg, onImageClick}: { msg: any, onImageClick: (url: string) => void }) => {
     const {message, attachment_url, attachment_type, file_name} = msg;
@@ -439,7 +416,7 @@ const ChatMessageContent = ({msg, onImageClick}: { msg: any, onImageClick: (url:
 
             {message && (
                 // <div className="whitespace-pre-wrap word-break-normal overflow-wrap-anywhere">
-                <div className="">
+                <div className="whitespace-pre-wrap word-break-normal overflow-wrap-anywhere">
                     {message}
                 </div>
             )}
@@ -544,6 +521,8 @@ const ChatDashboard: React.FC = () => {
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
+
+    const currentActiveChat = assigned.find(c => c.chat_id === selectedChatId);
 
     if (!agentId) {
         return (
@@ -683,6 +662,11 @@ const ChatDashboard: React.FC = () => {
                                         <p className="text-[10px] text-gray-500">{selectedChatId}</p>
                                     </div>
                                 </div>
+
+                                {currentActiveChat && (
+                                    <ChatTimer startTime={currentActiveChat.updatedAt || currentActiveChat.last_message_at} />
+                                )}
+
                                 <button
                                     onClick={() => closeChat(selectedChatId)}
                                     className="text-red-600 hover:bg-red-50 px-3 py-1.5 rounded border border-transparent hover:border-red-200 text-xs font-medium transition"
@@ -696,69 +680,50 @@ const ChatDashboard: React.FC = () => {
 
                                     if (index > 0 && messages[index - 1].id === msg.id) return null;
 
-                                    const isAgent = msg.sender === "agent";
+                                    // const isAgent = msg.sender === "agent";
+                                    const isOutbound = msg.sender === "agent" || msg.sender === "bot";
+
+                                    const isSystem = msg.sender === "system";
+
+                                    if (isSystem) {
+                                        return (
+                                            <div key={msg.id} className="flex justify-center w-full my-2">
+                                                <div className="bg-gray-200/70 border border-gray-300 px-3 py-1 rounded-full flex items-center gap-2">
+                                                     <span className="text-[10px] font-medium text-gray-600 uppercase tracking-wide">
+                                                        {msg.message}
+                                                     </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
                                     return (
                                         <div key={msg.id}
-                                             className={`flex ${isAgent ? "justify-end" : "justify-start"}`}>
+                                             className={`flex ${isOutbound ? "justify-end" : "justify-start"}`}>
                                             <div
                                                 className={`
                                                     max-w-[65%] rounded-lg px-3 py-2 text-sm shadow-sm relative
-                                                    ${isAgent ? "bg-[#DB2727] text-white rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none"}
+                                                    ${isOutbound ? "bg-[#DB2727] text-white rounded-tr-none" : "bg-white text-gray-800 rounded-tl-none"}
                                                 `}
                                                 style={{
                                                     wordBreak: "normal",
                                                     overflowWrap: "anywhere",
-                                                    maxWidth: "100%"
+                                                    maxWidth: "70%"
                                                 }}
                                             >
 
-                                                {/*{msg.attachment_type === 'image' && msg.attachment_url && (*/}
-                                                {/*    <div className="mb-2 mt-1">*/}
-                                                {/*        /!* Using standard img for remote/dynamic URLs *!/*/}
-                                                {/*        <img*/}
-                                                {/*            src={msg.attachment_url.startsWith('http') ? msg.attachment_url : `${API_URL}${msg.attachment_url}`}*/}
-                                                {/*            alt="attachment"*/}
-                                                {/*            className="rounded-lg max-h-[250px] w-auto object-cover cursor-pointer hover:opacity-95"*/}
-                                                {/*            onClick={() => window.open(msg.attachment_url.startsWith('http') ? msg.attachment_url : `${API_URL}${msg.attachment_url}`, '_blank')}*/}
-                                                {/*        />*/}
-                                                {/*    </div>*/}
-                                                {/*)}*/}
-
-                                                {/*{msg.attachment_type === 'document' && msg.attachment_url && (*/}
-                                                {/*    <a*/}
-                                                {/*        href={msg.attachment_url.startsWith('http') ? msg.attachment_url : `${API_URL}${msg.attachment_url}`}*/}
-                                                {/*        target="_blank" rel="noreferrer"*/}
-                                                {/*        className={`flex items-center gap-3 p-3 rounded-lg mb-2 transition no-underline*/}
-                                                {/*            ${isAgent ? 'bg-red-800 bg-opacity-20 hover:bg-opacity-30' : 'bg-gray-100 hover:bg-gray-200'}*/}
-                                                {/*        `}*/}
-                                                {/*    >*/}
-                                                {/*        <div className="p-2 bg-white rounded-full shadow-sm text-red-500">*/}
-                                                {/*            <DocumentIcon />*/}
-                                                {/*        </div>*/}
-                                                {/*        <div className="flex flex-col overflow-hidden">*/}
-                                                {/*            <span className={`text-xs font-medium truncate max-w-[150px] ${isAgent ? 'text-white' : 'text-gray-700'}`}>*/}
-                                                {/*                {msg.file_name || "Document"}*/}
-                                                {/*            </span>*/}
-                                                {/*            <span className={`text-[9px] uppercase ${isAgent ? 'text-red-100' : 'text-gray-500'}`}>*/}
-                                                {/*                Click to download*/}
-                                                {/*            </span>*/}
-                                                {/*        </div>*/}
-                                                {/*    </a>*/}
-                                                {/*)}*/}
+                                                {msg.sender === "bot" && (
+                                                    <span className="block text-[10px] font-bold opacity-75 mb-1 text-red-100">
+                                                        AI Bot
+                                                     </span>
+                                                )}
 
                                                 <ChatMessageContent msg={msg} onImageClick={setLightboxUrl} />
 
-
-                                                {/*<p className="mb-1 leading-relaxed text-[13px]">{msg.message}</p>*/}
-
-                                                {/*{msg.message &&*/}
-                                                {/*    <p className="mb-1 leading-relaxed text-[13px] whitespace-pre-wrap">{msg.message}</p>}*/}
-
                                                 <div
-                                                    className={`text-[9px] flex items-center justify-end gap-1 ${isAgent ? "text-red-100" : "text-gray-400"}`}>
+                                                    className={`text-[9px] flex items-center justify-end gap-1 ${isOutbound ? "text-red-100" : "text-gray-400"}`}>
                                                     {new Date(msg.createdAt).toLocaleTimeString([], {timeStyle: "short"})}
-                                                    {/*{isAgent && msg.viewed_by_customer && <DoubleCheck/>}*/}
-                                                    {isAgent && <DoubleCheck/>}
+                                                    {isOutbound && <DoubleCheck/>}
                                                 </div>
                                             </div>
                                         </div>
