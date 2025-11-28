@@ -89,12 +89,13 @@
 
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import {useState} from "react";
+import {getSession, signIn} from "next-auth/react";
+import {useRouter} from "next/navigation";
 import Image from "next/image";
-import { Montserrat } from "next/font/google";
-import { Eye, EyeOff } from "lucide-react";
+import {Montserrat} from "next/font/google";
+import {Eye, EyeOff} from "lucide-react";
+import {ROLE_DASHBOARDS} from "@/utils/role-routes";
 
 const montserrat = Montserrat({
     subsets: ["latin"],
@@ -121,14 +122,26 @@ export default function LoginPage() {
             password,
         });
 
-        setLoading(false);
-
         if (res?.error) {
+            setLoading(false);
             setError("Invalid email or password");
             return;
         }
 
-        router.push("/");
+        const session = await getSession();
+
+        if (session?.user?.user_role) {
+            const role = session.user.user_role as keyof typeof ROLE_DASHBOARDS;
+            const destination = ROLE_DASHBOARDS[role];
+
+            if (destination) {
+                router.push(destination);
+            } else {
+                router.push("/");
+            }
+        } else {
+            router.push("/");
+        }
     };
 
     return (
@@ -142,11 +155,12 @@ export default function LoginPage() {
                     className="object-cover object-left"
                     priority
                 />
-                <div className="absolute inset-0 bg-black/10" />
+                <div className="absolute inset-0 bg-black/10"/>
             </div>
 
             <div className="absolute top-5 left-0 z-20 hidden lg:block">
-                <div className="bg-white/70 backdrop-blur-md rounded-r-[20px] px-8 py-4 flex items-center justify-center shadow-lg h-[108px] w-[161px] relative -left-4">
+                <div
+                    className="bg-white/70 backdrop-blur-md rounded-r-[20px] px-8 py-4 flex items-center justify-center shadow-lg h-[108px] w-[161px] relative -left-4">
                     <div className="relative w-[100px] h-[100px]">
                         <Image
                             src="/indra-logo.png"
@@ -158,9 +172,12 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            <div className="relative z-10 flex flex-col justify-center min-h-screen ml-auto w-full lg:w-[45%] xl:w-[45%] 2xl:w-[648px]">
-                <div className="absolute inset-0 bg-[#D9D9D9]/20 backdrop-blur-[7.5px] border-l border-white/10 shadow-2xl" />
-                <div className="relative z-20 px-8 md:px-16 lg:px-12 xl:px-20 py-12 flex flex-col h-full justify-center">
+            <div
+                className="relative z-10 flex flex-col justify-center min-h-screen ml-auto w-full lg:w-[45%] xl:w-[45%] 2xl:w-[648px]">
+                <div
+                    className="absolute inset-0 bg-[#D9D9D9]/20 backdrop-blur-[7.5px] border-l border-white/10 shadow-2xl"/>
+                <div
+                    className="relative z-20 px-8 md:px-16 lg:px-12 xl:px-20 py-12 flex flex-col h-full justify-center">
                     <div className="mb-12">
                         <h2 className="text-white text-3xl lg:text-[34px] font-normal leading-tight mb-2">
                             Welcome Back To
@@ -203,16 +220,20 @@ export default function LoginPage() {
                                 onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors"
                             >
-                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                {showPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
                             </button>
                         </div>
 
                         <p className="text-white text-sm lg:text-[16px] leading-[20px] opacity-90">
-                            By signing up, you agree to the <span className="underline cursor-pointer hover:text-gray-200">Terms of Service</span> and <span className="underline cursor-pointer hover:text-gray-200">Privacy Policy</span>, Including <span className="underline cursor-pointer hover:text-gray-200">cookie use</span>.
+                            By signing up, you agree to the <span
+                            className="underline cursor-pointer hover:text-gray-200">Terms of Service</span> and <span
+                            className="underline cursor-pointer hover:text-gray-200">Privacy Policy</span>,
+                            Including <span className="underline cursor-pointer hover:text-gray-200">cookie use</span>.
                         </p>
 
                         {error && (
-                            <div className="bg-red-500/80 border border-red-500 text-white text-sm rounded-md p-3 text-center backdrop-blur-sm">
+                            <div
+                                className="bg-red-500/80 border border-red-500 text-white text-sm rounded-md p-3 text-center backdrop-blur-sm">
                                 {error}
                             </div>
                         )}
@@ -224,7 +245,7 @@ export default function LoginPage() {
                         >
                             {loading ? (
                                 <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"/>
                   Logging in...
                 </span>
                             ) : (
