@@ -10,8 +10,17 @@ import Modal from "@/components/Modal";
 import VerificationDropdown from "@/components/VerificationDropdown";
 import {CreateComplaintInput} from "@/types/complaint.types";
 import {useCreateComplaint} from "@/hooks/useComplaint";
+import {useCurrentUser} from "@/utils/auth";
+import {usePathname, useRouter} from "next/navigation";
+import {signOut} from "next-auth/react";
 
 const SideMenu = () => {
+
+    const user = useCurrentUser();
+    const router = useRouter();
+    const pathname = usePathname();
+    const userRole = user?.user_role;
+
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
@@ -30,6 +39,27 @@ const SideMenu = () => {
     });
 
     const createComplaintMutation = useCreateComplaint();
+
+    const hasRole = (allowedRoles: string[]) => {
+        return userRole && allowedRoles.includes(userRole);
+    };
+
+
+    const getLinkClasses = (path: string) => {
+        const isActive = pathname === path || pathname.startsWith(path);
+
+        // Base classes for shape and layout
+        const baseClasses = "w-12 h-12 rounded-full flex items-center justify-center transition duration-200";
+
+        // Active: Red background, White icon/text
+        if (isActive) {
+            return `${baseClasses} bg-[#DB2727] text-white shadow-md`;
+        }
+
+        // Inactive: White/Translucent background, Dark icon, Hover effect
+        return `${baseClasses} bg-[#FFFFFF8C] bg-opacity/55 text-[#1D1D1D] hover:bg-red-100`;
+    };
+
 
     const handleSubmit = async () => {
         try {
@@ -59,6 +89,12 @@ const SideMenu = () => {
     };
 
 
+    const handleLogout = async () => {
+        await signOut({redirect: false});
+        router.push("/login");
+    };
+
+
     const complainCategories = [
         {value: "service_issue", label: "Service Issue"},
         {value: "product_quality", label: "Product Quality"},
@@ -75,6 +111,8 @@ const SideMenu = () => {
         <div>
             <aside className="fixed top-32 left-8 flex flex-col gap-6 z-40">
                 <button
+                    onClick={() => router.back()}
+                    id="back-button"
                     className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">
                     <svg
                         width="19"
@@ -106,61 +144,34 @@ const SideMenu = () => {
                         </g>
                     </svg>
                 </button>
-                {role === "user" ? (
-                    <>
-                        <button
-                            onClick={() => setIsComplainModalOpen(true)}
-                            className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">
-                            <svg
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    fillRule="evenodd"
-                                    clipRule="evenodd"
-                                    d="M21 3.99998V18H16V22L9.9 18H3V3.99998H21ZM19 6H5.00002V16H10.4973L14 18.297V16H19V6ZM12.0438 13.425C12.3641 13.425 12.6288 13.5305 12.8378 13.7414C13.0468 13.9523 13.1513 14.218 13.1512 14.5383C13.1512 14.8547 13.0468 15.1184 12.8378 15.3293C12.6288 15.5402 12.3641 15.6457 12.0438 15.6457C11.7157 15.6457 11.4481 15.5402 11.2411 15.3293C11.0341 15.1184 10.9305 14.8488 10.9305 14.5207C10.9305 14.2082 11.036 13.9475 11.247 13.7385C11.4579 13.5295 11.7235 13.425 12.0438 13.425ZM12.4774 7.05C13.368 7.05 14.0458 7.26094 14.5106 7.68281C14.9208 8.06172 15.1259 8.55391 15.1259 9.15938C15.1259 9.56953 15.0262 9.92011 14.827 10.2111C14.6527 10.4657 14.3587 10.7391 13.9452 11.0311L13.7606 11.1574C13.37 11.4191 13.1298 11.6193 13.0399 11.758C12.9501 11.8967 12.9052 12.1438 12.9052 12.4992V12.7395H11.1766V12.2238C11.1766 11.7277 11.2274 11.382 11.329 11.1867C11.3876 11.0734 11.4657 10.9728 11.5634 10.8849L11.6724 10.794C11.7172 10.7586 11.7705 10.7179 11.8322 10.6721L12.4608 10.2221C12.7262 10.0273 12.9066 9.8742 13.0019 9.76289C13.1288 9.61445 13.1923 9.44063 13.1923 9.24141C13.1923 8.99141 13.1034 8.79316 12.9257 8.64666C12.7479 8.50019 12.5067 8.42695 12.202 8.42695C11.702 8.42695 11.0985 8.62813 10.3915 9.03047L9.87 7.72969C10.7372 7.27656 11.6063 7.05 12.4774 7.05Z"
-                                    fill="#575757"
-                                />
-                            </svg>
-                        </button>
 
-                        <Link href="/chat-bot">
-                            <button
-                                className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full relative flex items-center justify-center hover:bg-red-100 transition">
+                {hasRole(["CALLAGENT"]) && (
+                    <button
+                        onClick={() => setIsComplainModalOpen(true)}
+                        className={`w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition ${isComplainModalOpen ? "bg-[#DB2727]" : ""}`}>
+                        <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                fillRule="evenodd"
+                                clipRule="evenodd"
+                                d="M21 3.99998V18H16V22L9.9 18H3V3.99998H21ZM19 6H5.00002V16H10.4973L14 18.297V16H19V6ZM12.0438 13.425C12.3641 13.425 12.6288 13.5305 12.8378 13.7414C13.0468 13.9523 13.1513 14.218 13.1512 14.5383C13.1512 14.8547 13.0468 15.1184 12.8378 15.3293C12.6288 15.5402 12.3641 15.6457 12.0438 15.6457C11.7157 15.6457 11.4481 15.5402 11.2411 15.3293C11.0341 15.1184 10.9305 14.8488 10.9305 14.5207C10.9305 14.2082 11.036 13.9475 11.247 13.7385C11.4579 13.5295 11.7235 13.425 12.0438 13.425ZM12.4774 7.05C13.368 7.05 14.0458 7.26094 14.5106 7.68281C14.9208 8.06172 15.1259 8.55391 15.1259 9.15938C15.1259 9.56953 15.0262 9.92011 14.827 10.2111C14.6527 10.4657 14.3587 10.7391 13.9452 11.0311L13.7606 11.1574C13.37 11.4191 13.1298 11.6193 13.0399 11.758C12.9501 11.8967 12.9052 12.1438 12.9052 12.4992V12.7395H11.1766V12.2238C11.1766 11.7277 11.2274 11.382 11.329 11.1867C11.3876 11.0734 11.4657 10.9728 11.5634 10.8849L11.6724 10.794C11.7172 10.7586 11.7705 10.7179 11.8322 10.6721L12.4608 10.2221C12.7262 10.0273 12.9066 9.8742 13.0019 9.76289C13.1288 9.61445 13.1923 9.44063 13.1923 9.24141C13.1923 8.99141 13.1034 8.79316 12.9257 8.64666C12.7479 8.50019 12.5067 8.42695 12.202 8.42695C11.702 8.42695 11.0985 8.62813 10.3915 9.03047L9.87 7.72969C10.7372 7.27656 11.6063 7.05 12.4774 7.05Z"
+                                fill="#575757"
+                            />
+                        </svg>
+                    </button>
+                )}
+
+                {hasRole(["CALLAGENT"]) && (
+                    <Link href="/chat-bot">
+                        <div
+                            className={`${getLinkClasses("/chat-bot")}relative flex items-center justify-center`}>
                                 <span
                                     className="absolute top-3 right-3 border border-[#FBF9F9] w-2 h-2 bg-[#DB2727] rounded-full"/>
-                                <svg
-                                    width="24"
-                                    height="24"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        d="M19 11.5H19.5C20.435 11.5 20.902 11.5 21.25 11.701C21.478 11.8326 21.6674 12.022 21.799 12.25C22 12.598 22 13.065 22 14C22 14.935 22 15.402 21.799 15.75C21.6674 15.978 21.478 16.1674 21.25 16.299C20.902 16.5 20.435 16.5 19.5 16.5H19M5 11.5H4.5C3.565 11.5 3.098 11.5 2.75 11.701C2.52199 11.8326 2.33265 12.022 2.201 12.25C2 12.598 2 13.065 2 14C2 14.935 2 15.402 2.201 15.75C2.33265 15.978 2.52199 16.1674 2.75 16.299C3.098 16.5 3.565 16.5 4.5 16.5H5M12 5C12.3978 5 12.7794 4.84196 13.0607 4.56066C13.342 4.27936 13.5 3.89782 13.5 3.5C13.5 3.10218 13.342 2.72064 13.0607 2.43934C12.7794 2.15804 12.3978 2 12 2C11.6022 2 11.2206 2.15804 10.9393 2.43934C10.658 2.72064 10.5 3.10218 10.5 3.5C10.5 3.89782 10.658 4.27936 10.9393 4.56066C11.2206 4.84196 11.6022 5 12 5ZM12 5V8M9 12V13M15 12V13M11 8H13C15.828 8 17.243 8 18.121 8.879C19 9.757 19 11.172 19 14C19 16.828 19 18.243 18.121 19.121C17.243 20 15.828 20 13 20H12C12 20 11.5 22 8 22C8 22 9 20.991 9 19.983C7.447 19.936 6.52 19.763 5.879 19.121C5 18.243 5 16.828 5 14C5 11.172 5 9.757 5.879 8.879C6.757 8 8.172 8 11 8Z"
-                                        stroke="#575757"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                    <path
-                                        d="M10 16.5C10 16.5 10.667 17 12 17C13.333 17 14 16.5 14 16.5"
-                                        stroke="#575757"
-                                        strokeWidth="1.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </button>
-                        </Link>
-
-                        <Link
-                            href="/warranty"
-                            className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition"
-                        >
                             <svg
                                 width="24"
                                 height="24"
@@ -169,20 +180,52 @@ const SideMenu = () => {
                                 xmlns="http://www.w3.org/2000/svg"
                             >
                                 <path
-                                    d="M17.25 1.5L18.4448 3.75L21 4.0605L19.125 5.75025L19.5 8.25L17.25 6.84375L15 8.25L15.375 5.75025L13.5 4.0605L16.125 3.75L17.25 1.5Z"
-                                    fill="#575757"
+                                    d="M19 11.5H19.5C20.435 11.5 20.902 11.5 21.25 11.701C21.478 11.8326 21.6674 12.022 21.799 12.25C22 12.598 22 13.065 22 14C22 14.935 22 15.402 21.799 15.75C21.6674 15.978 21.478 16.1674 21.25 16.299C20.902 16.5 20.435 16.5 19.5 16.5H19M5 11.5H4.5C3.565 11.5 3.098 11.5 2.75 11.701C2.52199 11.8326 2.33265 12.022 2.201 12.25C2 12.598 2 13.065 2 14C2 14.935 2 15.402 2.201 15.75C2.33265 15.978 2.52199 16.1674 2.75 16.299C3.098 16.5 3.565 16.5 4.5 16.5H5M12 5C12.3978 5 12.7794 4.84196 13.0607 4.56066C13.342 4.27936 13.5 3.89782 13.5 3.5C13.5 3.10218 13.342 2.72064 13.0607 2.43934C12.7794 2.15804 12.3978 2 12 2C11.6022 2 11.2206 2.15804 10.9393 2.43934C10.658 2.72064 10.5 3.10218 10.5 3.5C10.5 3.89782 10.658 4.27936 10.9393 4.56066C11.2206 4.84196 11.6022 5 12 5ZM12 5V8M9 12V13M15 12V13M11 8H13C15.828 8 17.243 8 18.121 8.879C19 9.757 19 11.172 19 14C19 16.828 19 18.243 18.121 19.121C17.243 20 15.828 20 13 20H12C12 20 11.5 22 8 22C8 22 9 20.991 9 19.983C7.447 19.936 6.52 19.763 5.879 19.121C5 18.243 5 16.828 5 14C5 11.172 5 9.757 5.879 8.879C6.757 8 8.172 8 11 8Z"
+                                    stroke="#575757"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
                                 />
                                 <path
-                                    d="M17.0378 9.93676L15.5843 9.56326C15.3237 10.5669 14.7716 11.4709 13.9975 12.1609C13.2235 12.8509 12.2623 13.296 11.2354 13.44C10.2085 13.5839 9.16194 13.4203 8.22798 12.9698C7.29403 12.5193 6.51456 11.802 5.98805 10.9087C5.46154 10.0154 5.21161 8.98602 5.26984 7.95071C5.32807 6.9154 5.69184 5.92058 6.31521 5.09192C6.93857 4.26326 7.79355 3.63795 8.77214 3.29499C9.75072 2.95202 10.809 2.90679 11.8133 3.16501L12.1875 1.71226C10.7235 1.33145 9.17398 1.45402 7.78804 2.06027C6.4021 2.66652 5.2603 3.72122 4.54621 5.05479C3.83212 6.38837 3.58723 7.92334 3.85091 9.41291C4.1146 10.9025 4.87154 12.2601 6.00003 13.2675V22.5L10.5 19.5L15 22.5V13.281C15.9962 12.3933 16.7056 11.2291 17.0378 9.93676ZM13.5 19.6973L10.5 17.697L7.50003 19.6973V14.2875C8.43074 14.7553 9.45783 14.9993 10.4995 15.0001C11.5412 15.0009 12.5686 14.7584 13.5 14.292V19.6973Z"
-                                    fill="#575757"
+                                    d="M10 16.5C10 16.5 10.667 17 12 17C13.333 17 14 16.5 14 16.5"
+                                    stroke="#575757"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
                                 />
                             </svg>
-                        </Link>
-                    </>
-                ) : (
-                    <>
-                        <button
-                            className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">
+                        </div>
+                    </Link>
+                )}
+
+
+                {hasRole(["CALLAGENT", "SALES01", "SALES02", "TELEMARKETER"]) && (
+                    <Link
+                        href="/warranty"
+                        className={getLinkClasses("/warranty")}
+                    >
+                        <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                d="M17.25 1.5L18.4448 3.75L21 4.0605L19.125 5.75025L19.5 8.25L17.25 6.84375L15 8.25L15.375 5.75025L13.5 4.0605L16.125 3.75L17.25 1.5Z"
+                                fill="#575757"
+                            />
+                            <path
+                                d="M17.0378 9.93676L15.5843 9.56326C15.3237 10.5669 14.7716 11.4709 13.9975 12.1609C13.2235 12.8509 12.2623 13.296 11.2354 13.44C10.2085 13.5839 9.16194 13.4203 8.22798 12.9698C7.29403 12.5193 6.51456 11.802 5.98805 10.9087C5.46154 10.0154 5.21161 8.98602 5.26984 7.95071C5.32807 6.9154 5.69184 5.92058 6.31521 5.09192C6.93857 4.26326 7.79355 3.63795 8.77214 3.29499C9.75072 2.95202 10.809 2.90679 11.8133 3.16501L12.1875 1.71226C10.7235 1.33145 9.17398 1.45402 7.78804 2.06027C6.4021 2.66652 5.2603 3.72122 4.54621 5.05479C3.83212 6.38837 3.58723 7.92334 3.85091 9.41291C4.1146 10.9025 4.87154 12.2601 6.00003 13.2675V22.5L10.5 19.5L15 22.5V13.281C15.9962 12.3933 16.7056 11.2291 17.0378 9.93676ZM13.5 19.6973L10.5 17.697L7.50003 19.6973V14.2875C8.43074 14.7553 9.45783 14.9993 10.4995 15.0001C11.5412 15.0009 12.5686 14.7584 13.5 14.292V19.6973Z"
+                                fill="#575757"
+                            />
+                        </svg>
+                    </Link>
+                )}
+
+                {hasRole(["ADMIN"]) && (
+                    <Link href="/admin/activity-log">
+                        <div className={getLinkClasses("/admin/activity-log")}>
                             <svg
                                 width="24"
                                 height="24"
@@ -197,19 +240,26 @@ const SideMenu = () => {
                                     fill="#575757"
                                 />
                             </svg>
-                        </button>
-                        <button
-                            className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">
-                            <Image
-                                src={"/images/Features-list.svg"}
-                                alt="List icon"
-                                width={24}
-                                height={24}
-                            />
-                        </button>
-                    </>
+                        </div>
+                    </Link>
                 )}
+
+                {hasRole(["ADMIN"]) && (
+                    <Link href="/admin/star-rating">
+                        <div className={getLinkClasses("/admin/star-rating")}>
+                        <Image
+                            src={"/images/Features-list.svg"}
+                            alt="List icon"
+                            width={24}
+                            height={24}
+                            className={pathname === "/admin/star-rating" ? "brightness-0 invert" : ""}
+                        />
+                        </div>
+                    </Link>
+                )}
+
                 <button
+                    id="setting"
                     className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">
                     <svg
                         width="24"
@@ -225,6 +275,8 @@ const SideMenu = () => {
                     </svg>
                 </button>
                 <button
+                    id="log-out"
+                    onClick={handleLogout}
                     className="fixed bottom-8 left-8 w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">
                     {/*<FiUser size={24} className="text-gray-700"/>*/}
                     <svg
