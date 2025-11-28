@@ -228,8 +228,16 @@ export function useAgentChat(agentId: number | undefined) {
     }, [agentId]);
 
     const fetchQueue = async () => {
-        const q = await ChatService.getQueue();
-        setQueue(q);
+        // const q = await ChatService.getQueue();
+        // setQueue(q);
+        if (!agentId) return;
+
+        try {
+            const q = await ChatService.getQueue(agentId);
+            setQueue(q);
+        } catch (error) {
+            console.error("Failed to fetch queue", error);
+        }
     };
 
     const fetchAssigned = async () => {

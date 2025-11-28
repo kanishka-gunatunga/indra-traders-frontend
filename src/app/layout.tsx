@@ -1,8 +1,6 @@
 import type {Metadata} from "next";
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import SideMenu from "@/components/SideMenu";
 import AppWrapper from "@/components/AppWrapper";
 import Providers from "@/utils/providers";
 import ChatLauncher from "@/components/ChatLauncher";
@@ -36,8 +34,8 @@ export default function RootLayout({
             <SessionAuthProvider>
                 <Providers>
                     <AppWrapper>
-                        <Navbar/>
-                        <SideMenu/>
+                        {/*<Navbar/>*/}
+                        {/*<SideMenu/>*/}
                         {children}
                         <ChatLauncher/>
                     </AppWrapper>

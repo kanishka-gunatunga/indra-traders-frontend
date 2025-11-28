@@ -39,8 +39,9 @@ export const ChatService = {
     },
 
     /** list queued chats (for agent dashboard) */
-    getQueue() {
-        return axiosInstance.get<ChatSession[]>("/chat/queue").then(r => r.data);
+    getQueue(agentId: number) {
+        // return axiosInstance.get<ChatSession[]>("/chat/queue").then(r => r.data);
+        return axiosInstance.get<ChatSession[]>(`/chat/queue?agent_id=${agentId}`).then(r => r.data);
     },
 
     /** agent claims chat manually */
@@ -94,6 +95,11 @@ export const ChatService = {
 
     validateOtp: async (phoneNumber: string, otp: string) => {
         const res = await axiosInstance.post("/chat/verify-otp", {phone_number: phoneNumber, otp});
+        return res.data;
+    },
+
+    upgradeSession: async (chat_id: string, name: string, mobile: string) => {
+        const res = await axiosInstance.post(`/chat/${chat_id}/upgrade`, {name, mobile});
         return res.data;
     }
 };

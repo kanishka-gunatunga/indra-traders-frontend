@@ -1101,6 +1101,70 @@ const ImageLightbox = ({src, onClose}: { src: string, onClose: () => void }) => 
     );
 };
 
+
+const ActionButtons = ({action, onRegister, onAgent}: {
+    action: string,
+    onRegister: () => void,
+    onAgent: () => void
+}) => {
+    if (action === 'offer_register') {
+        return (
+            <button
+                onClick={onRegister}
+                style={{
+                    marginTop: '8px',
+                    padding: '8px 12px',
+                    backgroundColor: '#DB2727',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    boxShadow: '0 2px 5px rgba(219, 39, 39, 0.3)'
+                }}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                    <path
+                        d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664z"/>
+                </svg>
+                Register to View Inventory
+            </button>
+        );
+    }
+
+    if (action === 'offer_agent') {
+        return (
+            <button
+                onClick={onAgent}
+                style={{
+                    marginTop: '8px',
+                    padding: '8px 12px',
+                    backgroundColor: '#ffffff',
+                    color: '#DB2727',
+                    border: '1px solid #DB2727',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                }}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                    <path
+                        d="M14 1a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4.414A2 2 0 0 0 3 11.586l-2 2V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                </svg>
+                Chat with Live Agent
+            </button>
+        );
+    }
+    return null;
+};
+
+
 export default function ChatLauncher() {
     const [open, setOpen] = useState(false);
     const [view, setView] = useState<'language' | 'type' | 'register' | 'otp' | 'chat'>('language');
@@ -1139,7 +1203,8 @@ export default function ChatLauncher() {
         sendStopTyping,
         language,
         setLanguage,
-        isChatStarting
+        isChatStarting,
+        upgradeSessionMutation
     } = useCustomerChat();
 
     const [input, setInput] = useState("");
@@ -1218,13 +1283,31 @@ export default function ChatLauncher() {
         try {
             await ChatService.validateOtp(formData.mobile, otp);
 
-            startChatMutation.mutate({
-                lang: language,
-                channel: "Web",
-                userType: 'registered',
-                name: verifiedName || formData.name,
-                mobile: formData.mobile,
-            })
+            if (chatId) {
+                await upgradeSessionMutation.mutateAsync({
+                    chatId: chatId,
+                    name: verifiedName || formData.name,
+                    mobile: formData.mobile
+                });
+
+                setView('chat');
+            } else {
+                startChatMutation.mutate({
+                    lang: language,
+                    channel: "Web",
+                    userType: 'registered',
+                    name: verifiedName || formData.name,
+                    mobile: formData.mobile,
+                });
+            }
+
+            // startChatMutation.mutate({
+            //     lang: language,
+            //     channel: "Web",
+            //     userType: 'registered',
+            //     name: verifiedName || formData.name,
+            //     mobile: formData.mobile,
+            // })
 
         } catch (error: any) {
             console.error(error);
@@ -1232,6 +1315,14 @@ export default function ChatLauncher() {
         } finally {
             setIsLoadingAuth(false);
         }
+    };
+
+
+    const handleRegisterClickInChat = () => {
+        // We set a flag or specific view mode to know we are "upgrading" not "starting"
+        // For simplicity, we reuse the 'register' view but handle the submit differently
+        setSelectedType('registered');
+        setView('register');
     };
 
 
@@ -1256,7 +1347,14 @@ export default function ChatLauncher() {
     const handleBack = () => {
         setAuthError("");
         if (view === 'otp') setView('register');
-        else if (view === 'register') setView('type');
+        // else if (view === 'register') setView('type');
+        else if (view === 'register') {
+            if (chatId) {
+                setView('chat');
+            } else {
+                setView('type');
+            }
+        }
         else if (view === 'type') setView('language');
     };
 
@@ -1492,9 +1590,14 @@ export default function ChatLauncher() {
                         </div>
                     )}
 
-                    {!chatId && view === 'register' && (
+                    {view === 'register' && (
                         <div style={styles.languageContainer}>
-                            <h3 style={{color: '#333', fontWeight: 600, marginBottom: 20, textAlign: 'center'}}>Registered User Login</h3>
+                            <h3 style={{
+                                color: '#333',
+                                fontWeight: 600,
+                                marginBottom: 20,
+                                textAlign: 'center'
+                            }}>Registered User Login</h3>
                             <p style={{fontSize: 12, color: '#666', marginBottom: 20, textAlign: 'center'}}>
                                 Enter your details to verify your account.
                             </p>
@@ -1513,7 +1616,8 @@ export default function ChatLauncher() {
                                     style={styles.inputSecondary}
                                     required
                                 />
-                                {authError && <p style={{color: 'red', fontSize: 11, textAlign: 'center'}}>{authError}</p>}
+                                {authError &&
+                                    <p style={{color: 'red', fontSize: 11, textAlign: 'center'}}>{authError}</p>}
 
                                 <button type="submit" style={{...styles.submitRatingButton, width: '100%'}}
                                         disabled={isLoadingAuth}>
@@ -1523,7 +1627,7 @@ export default function ChatLauncher() {
                         </div>
                     )}
 
-                    {!chatId && view === 'otp' && (
+                    {view === 'otp' && (
                         <div style={styles.languageContainer}>
                             <h3 style={{color: '#333', fontWeight: 600, marginBottom: 10, textAlign: 'center'}}>
                                 Enter OTP
@@ -1532,25 +1636,33 @@ export default function ChatLauncher() {
                                 We sent a code to <b>{maskedEmail}</b>
                             </p>
 
-                            <form onSubmit={handleOtpSubmit} style={{width: '100%', display: 'flex', flexDirection: 'column', gap: 15}}>
+                            <form onSubmit={handleOtpSubmit}
+                                  style={{width: '100%', display: 'flex', flexDirection: 'column', gap: 15}}>
                                 <input
                                     placeholder="6-Digit Code"
                                     value={otp}
                                     onChange={e => setOtp(e.target.value)}
-                                    style={{...styles.inputSecondary, textAlign: 'center', letterSpacing: 2, fontSize: 18}}
+                                    style={{
+                                        ...styles.inputSecondary,
+                                        textAlign: 'center',
+                                        letterSpacing: 2,
+                                        fontSize: 18
+                                    }}
                                     maxLength={6}
                                     required
                                 />
-                                {authError && <p style={{color: 'red', fontSize: 11, textAlign: 'center'}}>{authError}</p>}
+                                {authError &&
+                                    <p style={{color: 'red', fontSize: 11, textAlign: 'center'}}>{authError}</p>}
 
-                                <button type="submit" style={{...styles.submitRatingButton, width: '100%'}} disabled={isLoadingAuth || isChatStarting}>
+                                <button type="submit" style={{...styles.submitRatingButton, width: '100%'}}
+                                        disabled={isLoadingAuth || isChatStarting}>
                                     {isLoadingAuth || isChatStarting ? "Validating..." : "Confirm & Chat"}
                                 </button>
                             </form>
                         </div>
                     )}
 
-                    {(chatId || showRating || isChatStarting) && (
+                    {(chatId || showRating || isChatStarting) && view === 'chat' && (
                         <>
                             {isChatStarting ? (
                                 <div style={{
@@ -1639,9 +1751,9 @@ export default function ChatLauncher() {
                                                 if (m.sender === "system") {
                                                     return (
                                                         <div key={i} style={styles.systemMessageContainer}>
-                                        <span style={styles.systemMessage}>
-                                            {m.message}
-                                        </span>
+                                                            <span style={styles.systemMessage}>
+                                                                {m.message}
+                                                            </span>
                                                         </div>
                                                     )
                                                 }
@@ -1677,6 +1789,14 @@ export default function ChatLauncher() {
                                                                     {new Date(m.createdAt).toLocaleTimeString([], {timeStyle: 'short'})}
                                                                 </div>
                                                             </div>
+
+                                                            {m.sender === 'bot' && m.action && (
+                                                                <ActionButtons
+                                                                    action={m.action}
+                                                                    onRegister={handleRegisterClickInChat}
+                                                                    onAgent={askForAgent}
+                                                                />
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )
