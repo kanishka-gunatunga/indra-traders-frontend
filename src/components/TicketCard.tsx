@@ -1,9 +1,11 @@
 "use client";
 
-import {Draggable} from "@hello-pangea/dnd";
+// import {Draggable} from "@hello-pangea/dnd";
 import Image from "next/image";
 import {useRouter} from "next/navigation";
-import {useRef} from "react";
+// import {useRef} from "react";
+import { useDraggable } from "@dnd-kit/core";
+// import { CSS } from "@dnd-kit/utilities";
 
 export interface TicketCardProps {
     id: string;
@@ -14,6 +16,7 @@ export interface TicketCardProps {
     status: "New" | "Ongoing" | "Won" | "Lost";
     index?: number;
     route?: string;
+    isOverlay?: boolean;
 }
 
 const priorityColors = [
@@ -41,39 +44,73 @@ export const TicketCard = ({
                                phone,
                                date,
                                index = 0,
-                               route
+                               route,
+                               isOverlay = false
                            }: TicketCardProps) => {
     const router = useRouter();
-    const dragStart = useRef<{ x: number; y: number } | null>(null);
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        dragStart.current = {x: e.clientX, y: e.clientY};
-    };
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: id,
+    });
 
-    const handleMouseUp = (e: React.MouseEvent) => {
-        if (!dragStart.current) return;
+    // const style = {
+    //     transform: CSS.Translate.toString(transform),
+    //     opacity: isDragging ? 1 : 1, // Fade out original position while dragging
+    //     touchAction: 'none', // Required for PointerSensor
+    //     zIndex: isDragging ? 99999 : 'auto',
+    // };
 
-        const dx = Math.abs(e.clientX - dragStart.current.x);
-        const dy = Math.abs(e.clientY - dragStart.current.y);
+    // const dragStart = useRef<{ x: number; y: number } | null>(null);
 
-        // If mouse didn’t move much → it's a click
-        if (dx < 5 && dy < 5) {
+    // const handleMouseDown = (e: React.MouseEvent) => {
+    //     dragStart.current = {x: e.clientX, y: e.clientY};
+    // };
+
+    // const handleMouseUp = (e: React.MouseEvent) => {
+    //     if (!dragStart.current) return;
+    //
+    //     const dx = Math.abs(e.clientX - dragStart.current.x);
+    //     const dy = Math.abs(e.clientY - dragStart.current.y);
+    //
+    //     // If mouse didn’t move much → it's a click
+    //     if (dx < 5 && dy < 5) {
+    //         router.push(route ? `${route}/${id}` : `/sales-agent/sales/${id}`);
+    //     }
+    //
+    //     dragStart.current = null;
+    // };
+
+    const handleClick = () => {
+        if (!isDragging) {
             router.push(route ? `${route}/${id}` : `/sales-agent/sales/${id}`);
         }
-
-        dragStart.current = null;
     };
 
+    let containerStyle = "";
+
+    if (isOverlay) {
+        containerStyle = "rotate-3 scale-105 shadow-2xl cursor-grabbing z-50";
+    } else if (isDragging) {
+        containerStyle = "opacity-30 grayscale border-dashed border-gray-400";
+    } else {
+        containerStyle = "opacity-100 hover:shadow-md cursor-grab active:cursor-grabbing";
+    }
+
     return (
-        <Draggable draggableId={id} index={index}>
-            {(provided) => (
+        // <Draggable draggableId={id} index={index}>
+        //     {(provided, snapshot) => (
                 <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    onMouseDown={handleMouseDown}
-                    onMouseUp={handleMouseUp}
-                    className={`bg-white rounded-2xl border ${priorityBorders[priority]} p-4 shadow mb-4 cursor-pointer`}
+                    ref={!isOverlay ? setNodeRef : null}
+                    {...(!isOverlay ? listeners : {})}
+                    {...(!isOverlay ? attributes : {})}
+                    onClick={handleClick}
+                    // className={`bg-white rounded-2xl border ${priorityBorders[priority]} p-4 shadow mb-4 cursor-pointer`}
+                    // className={`bg-white rounded-2xl border ${priorityBorders[priority] || "border-gray-200"} p-4 shadow mb-4 cursor-grab active:cursor-grabbing relative`}
+                    className={`
+                bg-white rounded-2xl border p-4 mb-4 relative transition-all duration-200
+                ${priorityBorders[priority] || "border-gray-200"}
+                ${containerStyle}
+            `}
                 >
                     {/* Top Row */}
                     <div className="flex justify-between items-center mb-2">
@@ -122,7 +159,7 @@ export const TicketCard = ({
                         <span className="font-light text-sm text-[#1D1D1D]">{date}</span>
                     </div>
                 </div>
-            )}
-        </Draggable>
+        //     )}
+        // </Draggable>
     );
 };
