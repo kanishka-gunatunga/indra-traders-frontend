@@ -8,6 +8,7 @@ import Image from "next/image";
 import React, {useState} from "react";
 import {FaEye, FaEyeSlash} from "react-icons/fa";
 import {useCreateUser, useUpdateUser, useUsers} from "@/hooks/useUser";
+import {useCurrentUser} from "@/utils/auth";
 
 const userRoles = [
     "Admin",
@@ -34,6 +35,8 @@ export default function UserManagement() {
         department: "",
         branch: "",
     });
+
+    const user = useCurrentUser();
 
     const {data: users = [], isLoading} = useUsers(filters);
     const createUserMutation = useCreateUser();
@@ -109,8 +112,8 @@ export default function UserManagement() {
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name ||"Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="User Management"
                 />
 
@@ -150,13 +153,13 @@ export default function UserManagement() {
                                 {/* Table header */}
                                 <div
                                     className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
-                                    <div className="w-1/6 px-3 py-2">Full Name</div>
-                                    <div className="w-1/6 px-3 py-2">Contact No.</div>
-                                    <div className="w-1/6 px-3 py-2">Email</div>
-                                    <div className="w-1/6 px-3 py-2">User Role</div>
-                                    <div className="w-1/6 px-3 py-2">Department</div>
-                                    <div className="w-1/6 px-3 py-2">Branch</div>
-                                    <div className="w-1/6 px-3 py-2">Languages</div>
+                                    <div className="w-1/7 px-3 py-2">Full Name</div>
+                                    <div className="w-1/7 px-3 py-2">Contact No.</div>
+                                    <div className="w-1/7 px-3 py-2">Email</div>
+                                    <div className="w-1/7 px-3 py-2">User Role</div>
+                                    <div className="w-1/7 px-3 py-2">Department</div>
+                                    <div className="w-1/7 px-3 py-2">Branch</div>
+                                    <div className="w-1/7 px-3 py-2">Languages</div>
                                 </div>
 
                                 {/* Table body (scrollable vertically) */}
@@ -169,22 +172,25 @@ export default function UserManagement() {
                                         users.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
-                                                className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
+                                                className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center"
                                                 onClick={() => {
                                                     // setSelectedUser(item);
                                                     setSelectedUser({...item, languages: parseLanguages(item.languages)});
                                                     setIsUserDetailsModalOpen(true);
                                                 }}
                                             >
-                                                <div className="w-1/6 px-3 py-2">{item.full_name}</div>
-                                                <div className="w-1/6 px-3 py-2">{item.contact_no}</div>
-                                                <div className="w-1/6 px-3 py-2">{item.email}</div>
-                                                <div className="w-1/6 px-3 py-2">{item.user_role}</div>
-                                                <div className="w-1/6 px-3 py-2">
+                                                <div className="w-1/7 px-3 py-2">{item.full_name}</div>
+                                                <div className="w-1/7 px-3 py-2">{item.contact_no}</div>
+                                                <div className="w-1/7 px-3 py-2" style={{
+                                                    wordBreak: "normal",
+                                                    overflowWrap: "anywhere",
+                                                }}>{item.email}</div>
+                                                <div className="w-1/7 px-3 py-2">{item.user_role}</div>
+                                                <div className="w-1/7 px-3 py-2">
                                                     {item.department || "-"}
                                                 </div>
-                                                <div className="w-1/6 px-3 py-2">{item.branch}</div>
-                                                <div className="w-1/6 px-3 py-2 flex gap-1">
+                                                <div className="w-1/7 px-3 py-2">{item.branch}</div>
+                                                <div className="w-1/7 px-3 py-2 flex gap-1 items-center">
                                                     {parseLanguages(item.languages).map((lang: string) => (
                                                         <span key={lang}
                                                               className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded uppercase">
