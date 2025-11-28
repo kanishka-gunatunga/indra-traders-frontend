@@ -1,28 +1,67 @@
-import "next-auth";
+// import "next-auth";
+// import "next-auth/jwt";
+//
+// declare module "next-auth" {
+//     interface User {
+//         id: number | string;
+//         full_name: string;
+//         email: string;
+//         user_role: string;
+//         department: string;
+//         branch: string;
+//         accessToken: string;
+//     }
+//
+//     interface Session {
+//         user: User;
+//     }
+// }
+//
+// declare module "next-auth/jwt" {
+//     interface JWT {
+//         id: number | string;
+//         full_name: string;
+//         email: string;
+//         user_role: string;
+//         department: string;
+//         branch: string;
+//         accessToken: string;
+//     }
+// }
+
+
+import { DefaultSession } from "next-auth";
 import "next-auth/jwt";
 
 declare module "next-auth" {
+    interface Session {
+        user: {
+            id: string;
+            email: string;
+            full_name: string;
+            user_role: "SALES01" | "SALES02" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
+            department: string;
+            branch: string;
+            accessToken: string;
+        } & DefaultSession["user"];
+    }
+
     interface User {
-        id: number | string;
+        id: string;
         full_name: string;
-        email: string;
-        user_role: string;
+        user_role: "SALES01" | "SALES02" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
         department: string;
         branch: string;
         accessToken: string;
-    }
-
-    interface Session {
-        user: User;
     }
 }
 
 declare module "next-auth/jwt" {
     interface JWT {
-        id: number | string;
-        full_name: string;
+        id: string;
         email: string;
-        user_role: string;
+        full_name: string;
+        user_role: "SALES01" | "SALES02" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
         department: string;
         branch: string;
         accessToken: string;
