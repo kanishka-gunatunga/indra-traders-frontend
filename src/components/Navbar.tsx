@@ -19,7 +19,7 @@ const callAgentTabs = [
 
 const saleAgentTabs = [
     { label: "Vehicle Sales", href: "/sales-agent/sales" },
-    { label: "Service Park", href: "/sales-agent/service-park-sale" },
+    { label: "Service Park", href: "/sales-agent/service-park-sale/sale" },
     { label: "Spare Parts", href: "/sales-agent/spare-parts" },
     { label: "Fast Track", href: "/sales-agent/fast-track" },
 ];
