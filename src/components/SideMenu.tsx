@@ -167,9 +167,9 @@ const SideMenu = () => {
                 )}
 
                 {hasRole(["CALLAGENT"]) && (
-                    <Link href="/chat-bot">
+                    <Link href="/call-agent/chat-bot">
                         <div
-                            className={`${getLinkClasses("/chat-bot")}relative flex items-center justify-center`}>
+                            className={`${getLinkClasses("/chat-bot")} relative flex items-center justify-center`}>
                                 <span
                                     className="absolute top-3 right-3 border border-[#FBF9F9] w-2 h-2 bg-[#DB2727] rounded-full"/>
                             <svg
