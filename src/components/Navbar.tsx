@@ -25,7 +25,7 @@ const saleAgentTabs = [
 ];
 
 const adminTabs = [
-    { label: "User Management", href: "/admin" },
+    { label: "User Management", href: "/admin/users" },
     { label: "Customer Management", href: "/admin/customer-management" },
     { label: "All Complains", href: "/admin/complains" },
     { label: "All Leads", href: "/admin/leads" },
