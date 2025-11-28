@@ -7,13 +7,21 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import {useCurrentUser} from "@/utils/auth";
+import {usePathname} from "next/navigation";
 
-const userTabs = [
+const callAgentTabs = [
     { label: "Customer Calls", href: "/call-agent/dashboard" },
     { label: "Vehicle Sales", href: "/call-agent/vehicle-sales" },
     { label: "Service Park", href: "/call-agent/service-park" },
     { label: "Spare Parts", href: "/call-agent/spare-parts" },
     { label: "Fast Track", href: "/call-agent/fast-track" },
+];
+
+const saleAgentTabs = [
+    { label: "Vehicle Sales", href: "/sales-agent/sales" },
+    { label: "Service Park", href: "/sales-agent/service-park-sale" },
+    { label: "Spare Parts", href: "/sales-agent/spare-parts" },
+    { label: "Fast Track", href: "/sales-agent/fast-track" },
 ];
 
 const adminTabs = [
@@ -24,16 +32,21 @@ const adminTabs = [
     { label: "Unavailable Items", href: "/admin/unavailable" },
 ];
 
+const telemarketerTabs = [
+    { label: "Dashboard", href: "/tele-marketer" }
+];
+
 const Navbar = () => {
 
     const user = useCurrentUser();
+    const pathname = usePathname();
 
     // Logic for Roles
-    const [role, setRole] = useState<Role>(
-        (process.env.NEXT_PUBLIC_USER_ROLE as Role) || "admin"
-    );
-    const tabs = role === "admin" ? adminTabs : userTabs;
-    const [activeTab, setActiveTab] = useState<string>(tabs[0].href);
+    // const [role, setRole] = useState<Role>(
+    //     (process.env.NEXT_PUBLIC_USER_ROLE as Role) || "admin"
+    // );
+    // const tabs = role === "admin" ? adminTabs : callAgentTabs;
+    // const [activeTab, setActiveTab] = useState<string>(tabs[0].href);
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -52,6 +65,24 @@ const Navbar = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const getTabsForRole = (role?: string) => {
+        switch (role) {
+            case "ADMIN":
+                return adminTabs;
+            case "CALLAGENT":
+                return callAgentTabs;
+            case "SALES01":
+            case "SALES02":
+                return saleAgentTabs;
+            case "TELEMARKETER":
+                return telemarketerTabs;
+            default:
+                return []; // Or default to common links
+        }
+    };
+
+    const tabs = getTabsForRole(user?.user_role);
+
     return (
         <div>
             <header className="fixed top-0 left-0 right-0 backdrop-blur-md montserrat z-50 px-6 flex items-center h-24 max-w-[1800px] mx-auto container">
@@ -63,12 +94,13 @@ const Navbar = () => {
                     <div className="flex-1 flex justify-center">
                         <nav className="flex gap-4 overflow-x-auto no-scrollbar">
                             {tabs.map(({ label, href }) => {
-                                const isActive = href === activeTab;
+                                const isActive = pathname === href || (pathname.startsWith(href) && href !== "/" && href.length > 1);
+
                                 return (
                                     <Link
                                         key={href}
                                         href={href}
-                                        onClick={() => setActiveTab(href)}
+                                        // onClick={() => setActiveTab(href)}
                                         className={`rounded-full px-5 py-3 text-[15px] font-medium whitespace-nowrap transition-colors ${
                                             isActive ? "bg-[#DB2727] text-white" : "text-[#1D1D1D] hover:bg-gray-100"
                                         }`}
