@@ -1,5 +1,5 @@
 export const ROLE_DASHBOARDS = {
-    ADMIN: "/admin",
+    ADMIN: "/admin/users",
     CALLAGENT: "/call-agent/dashboard",
     TELEMARKETER: "/tele-marketer",
     SALES01: "/sales-agent/sales",
