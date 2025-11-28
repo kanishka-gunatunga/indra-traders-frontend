@@ -59,7 +59,11 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
     interface JWT {
         id: string;
+        email: string;
+        full_name: string;
         user_role: "SALES01" | "SALES02" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
+        department: string;
+        branch: string;
         accessToken: string;
     }
 }
