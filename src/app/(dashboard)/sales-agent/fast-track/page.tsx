@@ -243,7 +243,7 @@ export default function SalesDashboard() {
         if (currentStatus === "New" && newStatus === "Ongoing") {
             assignMutation.mutate(
                 {
-                    saleId: ticket.dbId,
+                    saleId: ticket.dbId as number,
                     userId: userId
                 },
                 {
