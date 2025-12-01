@@ -261,7 +261,7 @@ export default function SalesDashboard() {
         } else {
             updateStatusMutation.mutate(
                 {
-                    saleId: ticket.dbId,
+                    saleId: ticket.dbId as string,
                     status: mapStatusToApi(newStatus) as "WON" | "LOST"
                 },
                 {
