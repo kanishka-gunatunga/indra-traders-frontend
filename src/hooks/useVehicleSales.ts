@@ -1,10 +1,10 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {VehicleSaleService} from "@/services/vehicleSaleService";
 
-export const useVehicleSales = (status?: string) =>
+export const useVehicleSales = (status?: string, userId?: number) =>
     useQuery({
-        queryKey: ["vehicleSales", status],
-        queryFn: () => VehicleSaleService.getAll(status).then((res) => res.data),
+        queryKey: ["vehicleSales", status, userId],
+        queryFn: () => VehicleSaleService.getAll(status, userId).then((res) => res.data),
     });
 
 export const useCreateVehicleSale = () => {

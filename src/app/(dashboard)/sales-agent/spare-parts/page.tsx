@@ -29,6 +29,7 @@ import {
 } from "@dnd-kit/core";
 import {createPortal} from "react-dom";
 import Toast from "@/components/Toast";
+import {useCurrentUser} from "@/utils/auth";
 
 type OptionType = { value: string; label: string };
 
@@ -102,18 +103,23 @@ export default function SalesDashboard() {
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
+
+    const user = useCurrentUser();
+
+    const userId = Number(user?.id || 1);
+
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
-    const [isAddSaleModalOpen, setIsAddSaleModalOpen] = useState(false); // Renamed from Add Lead to Add Sale
+    const [isAddSaleModalOpen, setIsAddSaleModalOpen] = useState(false);
     const [saleDate, setSaleDate] = useState(new Date().toISOString().split("T")[0]);
-    const [customerId, setCustomerId] = useState(""); // Assume input for customer_id
-    const [callAgentId, setCallAgentId] = useState(1); // Hardcoded or select
+    const [customerId, setCustomerId] = useState("");
+    const [callAgentId, setCallAgentId] = useState(1);
     const [vehicleMake, setVehicleMake] = useState("");
     const [vehicleModel, setVehicleModel] = useState("");
     const [partNo, setPartNo] = useState("");
     const [yearOfManufacture, setYearOfManufacture] = useState("");
     const [additionalNote, setAdditionalNote] = useState("");
     const [selectedMake, setSelectedMake] = useState<OptionType | null>(null);
-    const [selectedModel, setSelectedModel] = useState<OptionType | null>(null); // Fixed typo: setSelectedModal -> setSelectedModel
+    const [selectedModel, setSelectedModel] = useState<OptionType | null>(null);
     const [selectedPartNo, setSelectedPartNo] = useState<OptionType | null>(null);
 
 
@@ -125,7 +131,7 @@ export default function SalesDashboard() {
 
 
 
-    const {data: apiSales, isLoading} = useSpareSales();
+    const {data: apiSales, isLoading} = useSpareSales(undefined, userId);
     const createSaleMutation = useSpareCreateSale();
 
     const updateStatusMutation = useUpdateSaleStatus();
@@ -140,8 +146,6 @@ export default function SalesDashboard() {
         })
     );
 
-
-    const userId = 1;
     const {data: reminderData, isLoading: reminderLoading, error: reminderError} = useNearestReminders(userId);
 
 
@@ -366,8 +370,8 @@ export default function SalesDashboard() {
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name ||"Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Indra Motor Spare Sales Dashboard"
                 />
 

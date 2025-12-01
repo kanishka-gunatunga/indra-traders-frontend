@@ -13,8 +13,15 @@ export const createAssignToSale = async (data: any) => {
     return res.data;
 };
 
-export const listVehicleSales = async () => {
-    const res = await axiosInstance.get("/service-park/sales");
+// export const listVehicleSales = async () => {
+//     const res = await axiosInstance.get("/service-park/sales");
+//     return res.data;
+// };
+
+export const listVehicleSales = async (userId?: number) => {
+    const res = await axiosInstance.get("/service-park/sales", {
+        params: userId ? { userId } : {}
+    });
     return res.data;
 };
 

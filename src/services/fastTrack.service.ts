@@ -59,8 +59,17 @@ export const FastTrackService = {
     },
 
 
-    listSales(params?: any) {
-        return axiosInstance.get("/fast-track/sales", { params }).then(r => r.data);
+    // listSales(params?: any) {
+    //     return axiosInstance.get("/fast-track/sales", { params }).then(r => r.data);
+    // },
+
+    listSales(params?: any, userId?: number) {
+        return axiosInstance.get("/fast-track/sales", {
+            params: {
+                ...params,
+                ...(userId ? { userId } : {})
+            }
+        }).then(r => r.data);
     },
 
     claimSaleLead(saleId: number, userId: number) {
