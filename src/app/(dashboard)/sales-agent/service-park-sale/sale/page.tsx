@@ -4,14 +4,26 @@
 
 import Modal from "@/components/Modal";
 import Header from "@/components/Header";
-import {TicketCardProps} from "@/components/TicketCard";
+import {TicketCard, TicketCardProps} from "@/components/TicketCard";
 import {TicketColumn} from "@/components/TicketColumn";
 import {DragDropContext, DropResult} from "@hello-pangea/dnd";
 import Image from "next/image";
 import React, {useState, useEffect} from "react";
 import Select from "react-select";
 import {Role} from "@/types/role";
-import {useNearestReminders, useVehicleSales} from "@/hooks/useServicePark";
+import {useAssignToSalesAgent, useNearestReminders, useUpdateSaleStatus, useVehicleSales} from "@/hooks/useServicePark";
+import {useToast} from "@/hooks/useToast";
+import {
+    DndContext,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+    PointerSensor,
+    useSensor,
+    useSensors
+} from "@dnd-kit/core";
+import Toast from "@/components/Toast";
+import {createPortal} from "react-dom";
 
 type OptionType = { value: string; label: string };
 
@@ -29,6 +41,7 @@ const vehicleModels = [
 
 type MappedTicket = {
     id: string;
+    dbId: number;
     priority: number;
     user: string;
     phone: string;
@@ -51,8 +64,24 @@ const mapStatus = (apiStatus: string): MappedTicket["status"] => {
     }
 };
 
+const mapStatusToApi = (uiStatus: string): string => {
+    switch (uiStatus) {
+        case "New":
+            return "NEW";
+        case "Ongoing":
+            return "ONGOING";
+        case "Won":
+            return "WON";
+        case "Lost":
+            return "LOST";
+        default:
+            return "NEW";
+    }
+};
+
 const mapApiToTicket = (apiSale: any): MappedTicket => ({
     id: apiSale.ticket_number,
+    dbId: apiSale.id,
     priority: apiSale.priority,
     user: apiSale.customer?.customer_name || "Unknown",
     phone: apiSale.customer?.phone_number || "",
@@ -80,13 +109,35 @@ export default function SalesDashboard() {
     const [selectedMake, setSelectedMake] = useState<OptionType | null>(null);
     const [selectedModel, setSelectedModal] = useState<OptionType | null>(null);
 
+    const [isMounted, setIsMounted] = useState(false);
+
+    const [activeId, setActiveId] = useState<string | null>(null);
+
+    const {toast, showToast, hideToast} = useToast();
+
+
     const {data: apiSales, isLoading, isError} = useVehicleSales();
     console.log("----- sale details: ", apiSales);
 
     const userId = 1;
     const {data: reminderData, isLoading: reminderLoading, error: reminderError} = useNearestReminders(userId);
 
+    const updateStatusMutation = useUpdateSaleStatus();
+    const assignMutation = useAssignToSalesAgent();
+
     console.log("-------- reminders : ", reminderData);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5,
+            },
+        })
+    );
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         if (apiSales) {
@@ -104,27 +155,101 @@ export default function SalesDashboard() {
         Lost: [],
     };
 
-    const onDragEnd = (result: DropResult) => {
-        const {destination, source, draggableId} = result;
-        if (!destination) return;
-        if (
-            destination.droppableId === source.droppableId &&
-            destination.index === source.index
-        )
-            return;
 
-        setTickets((prev) =>
-            prev.map((t) => {
-                if (t.id !== draggableId) return t;
-                const currentStatus = t.status;
-                const newStatus = destination.droppableId as TicketCardProps["status"];
-                if (allowedTransitions[currentStatus].includes(newStatus)) {
-                    return {...t, status: newStatus};
-                }
-                return t;
-            })
-        );
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
     };
+
+
+
+    // const onDragEnd = (result: DropResult) => {
+    //     const {destination, source, draggableId} = result;
+    //     if (!destination) return;
+    //     if (
+    //         destination.droppableId === source.droppableId &&
+    //         destination.index === source.index
+    //     )
+    //         return;
+    //
+    //     setTickets((prev) =>
+    //         prev.map((t) => {
+    //             if (t.id !== draggableId) return t;
+    //             const currentStatus = t.status;
+    //             const newStatus = destination.droppableId as TicketCardProps["status"];
+    //             if (allowedTransitions[currentStatus].includes(newStatus)) {
+    //                 return {...t, status: newStatus};
+    //             }
+    //             return t;
+    //         })
+    //     );
+    // };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const {active, over} = event;
+
+        setActiveId(null);
+
+        if (!over) return;
+
+        const ticketId = active.id as string;
+        const newStatus = over.id as MappedTicket["status"];
+
+        const ticketIndex = tickets.findIndex((t) => t.id === ticketId);
+        if (ticketIndex === -1) return;
+
+        const ticket = tickets[ticketIndex];
+        const currentStatus = ticket.status;
+
+        if (currentStatus === newStatus) return;
+
+        const isAllowed = allowedTransitions[currentStatus]?.includes(newStatus);
+
+        if (!isAllowed) {
+            console.warn(`Invalid transition: ${currentStatus} -> ${newStatus}`);
+            showToast("Invalid status transition", "error");
+            return;
+        }
+
+        const updatedTickets = [...tickets];
+        updatedTickets[ticketIndex] = {...ticket, status: newStatus};
+        setTickets(updatedTickets);
+
+        if (currentStatus === "New" && newStatus === "Ongoing") {
+            assignMutation.mutate(
+                {
+                    saleId: ticket.dbId,
+                    userId: userId
+                },
+                {
+                    onSuccess: () => {
+                        showToast("Lead assigned successfully.", "success");
+                        console.log("Lead assigned successfully");
+                    },
+                    onError: (error) => {
+                        console.error("Failed to assign lead:", error);
+                        setTickets(tickets);
+                        showToast("Failed to assign lead", "error");
+                    }
+                }
+            );
+        } else {
+            updateStatusMutation.mutate(
+                {
+                    id: ticket.dbId,
+                    status: mapStatusToApi(newStatus) as "WON" | "LOST"
+                },
+                {
+                    onError: () => {
+                        // Revert on failure
+                        setTickets(tickets);
+                        showToast("Failed to update status", "error");
+                    }
+                }
+            )
+        }
+    }
+
+    const activeTicket = tickets.find((t) => t.id === activeId);
 
     const columns: TicketCardProps["status"][] = [
         "New",
@@ -160,9 +285,19 @@ export default function SalesDashboard() {
         return <div>Loading...</div>;
     }
 
+    if (!isMounted) return null;
+
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
+
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                visible={toast.visible}
+                onClose={hideToast}
+            />
+
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
                     name="Sophie Eleanor"
@@ -188,8 +323,21 @@ export default function SalesDashboard() {
                         </button>
                     </div>
 
-                    <DragDropContext onDragEnd={onDragEnd}>
-                        <div className="w-full mt-6 flex gap-6 overflow-x-auto ">
+                    {/*<DragDropContext onDragEnd={onDragEnd}>*/}
+                    {/*    <div className="w-full mt-6 flex gap-6 overflow-x-auto ">*/}
+                    {/*        {columns.map((col) => (*/}
+                    {/*            <TicketColumn*/}
+                    {/*                key={col}*/}
+                    {/*                title={col}*/}
+                    {/*                route={"/sales-agent/service-park-sale/sale"}*/}
+                    {/*                tickets={tickets.filter((t) => t.status === col)}*/}
+                    {/*            />*/}
+                    {/*        ))}*/}
+                    {/*    </div>*/}
+                    {/*</DragDropContext>*/}
+
+                    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                        <div className="w-full mt-6 flex gap-6 overflow-x-auto pb-4 items-start">
                             {columns.map((col) => (
                                 <TicketColumn
                                     key={col}
@@ -199,7 +347,24 @@ export default function SalesDashboard() {
                                 />
                             ))}
                         </div>
-                    </DragDropContext>
+
+                        {isMounted && typeof document !== "undefined"
+                            ? createPortal(
+                                <DragOverlay>
+                                    {activeTicket ? (
+                                        <TicketCard
+                                            {...activeTicket}
+                                            isOverlay={true}
+                                        />
+                                    ) : null}
+                                </DragOverlay>,
+                                document.body
+                            )
+                            : null
+                        }
+
+                    </DndContext>
+
                 </section>
 
                 {/* Next action and Upcomming events */}
