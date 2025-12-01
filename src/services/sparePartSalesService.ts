@@ -5,8 +5,13 @@ import axiosInstance from "@/utils/axiosinstance";
 export const SparePartSalesService = {
     createSale: (data: any) => axiosInstance.post("/spare-part-sales", data),
 
-    listSales: (params?: Record<string, any>) =>
-        axiosInstance.get("/spare-part-sales", { params }),
+    listSales: (params?: Record<string, any>, userId?: number) =>
+        axiosInstance.get("/spare-part-sales", {
+            params: {
+                ...params,
+                ...(userId ? {userId} : {})
+            }
+        }),
 
     getSaleByTicket: (ticket: string) =>
         axiosInstance.get(`/spare-part-sales/ticket/${ticket}`),
@@ -32,7 +37,7 @@ export const SparePartSalesService = {
     getRemindersByTicket: (ticket: string) =>
         axiosInstance.get(`/spare-part-sales/${ticket}/reminders`),
 
-    getNearestReminders :(userId: number) =>
+    getNearestReminders: (userId: number) =>
         axiosInstance.get(`/spare-part-sales/sales-user/${userId}/reminders/nearest`),
 
     updatePriority(id: number, data: { priority: number }) {

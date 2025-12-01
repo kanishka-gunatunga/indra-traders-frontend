@@ -6,7 +6,6 @@ import Modal from "@/components/Modal";
 import Header from "@/components/Header";
 import {TicketCard, TicketCardProps} from "@/components/TicketCard";
 import {TicketColumn} from "@/components/TicketColumn";
-import {DragDropContext, DropResult} from "@hello-pangea/dnd";
 import Image from "next/image";
 import React, {useState, useEffect} from "react";
 import Select from "react-select";
@@ -24,6 +23,7 @@ import {
 } from "@dnd-kit/core";
 import Toast from "@/components/Toast";
 import {createPortal} from "react-dom";
+import {useCurrentUser} from "@/utils/auth";
 
 type OptionType = { value: string; label: string };
 
@@ -95,6 +95,10 @@ export default function SalesDashboard() {
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
 
+    const user = useCurrentUser();
+
+    const userId = Number(user?.id || 1);
+
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
 
@@ -116,10 +120,9 @@ export default function SalesDashboard() {
     const {toast, showToast, hideToast} = useToast();
 
 
-    const {data: apiSales, isLoading, isError} = useVehicleSales();
+    const {data: apiSales, isLoading, isError} = useVehicleSales(userId);
     console.log("----- sale details: ", apiSales);
 
-    const userId = 1;
     const {data: reminderData, isLoading: reminderLoading, error: reminderError} = useNearestReminders(userId);
 
     const updateStatusMutation = useUpdateSaleStatus();
@@ -300,8 +303,8 @@ export default function SalesDashboard() {
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name ||"Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Indra Service Park Sales Dashboard"
                 />
 

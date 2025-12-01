@@ -1050,6 +1050,7 @@ import {
 import {createPortal} from "react-dom";
 import {useToast} from "@/hooks/useToast";
 import Toast from "@/components/Toast";
+import {useCurrentUser} from "@/utils/auth";
 
 type OptionType = { value: string; label: string };
 
@@ -1123,6 +1124,11 @@ export default function SalesDashboard() {
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
+
+    const user = useCurrentUser();
+
+    const userId = Number(user?.id || 1);
+
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddSaleModalOpen, setIsAddSaleModalOpen] = useState(false);
     const [saleDate, setSaleDate] = useState(new Date().toISOString().split("T")[0]);
@@ -1144,7 +1150,7 @@ export default function SalesDashboard() {
 
     const {toast, showToast, hideToast} = useToast();
 
-    const {data: apiSales, isLoading, error} = useVehicleSales();
+    const {data: apiSales, isLoading, error} = useVehicleSales(undefined, userId);
     const createSaleMutation = useCreateVehicleSale();
     const updateStatusMutation = useUpdateSaleStatus();
     const assignMutation = useAssignVehicleSale();
@@ -1157,7 +1163,6 @@ export default function SalesDashboard() {
         })
     );
 
-    const userId = 1;
     const {data: reminderData, isLoading: reminderLoading, error: reminderError} = useNearestReminders(userId);
 
     useEffect(() => {
@@ -1410,8 +1415,8 @@ export default function SalesDashboard() {
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name ||"Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Indra Traders Sales Dashboard"
                 />
 

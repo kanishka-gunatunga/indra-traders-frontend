@@ -4,9 +4,12 @@ import axiosInstance from "@/utils/axiosinstance";
 export const VehicleSaleService = {
     create: (data: any) => axiosInstance.post("/vehicle-sales", data),
 
-    getAll: (status?: string) =>
+    getAll: (status?: string, userId?: number) =>
         axiosInstance.get("/vehicle-sales", {
-            params: status ? {status} : {},
+            params: {
+                ...(status ? { status } : {}),
+                ...(userId ? { userId } : {})
+            },
         }),
 
     getByStatus: (status: string) =>

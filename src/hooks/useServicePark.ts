@@ -15,11 +15,11 @@ export const useVehicleHistories = () =>
         queryFn: listVehicleHistories,
     });
 
-export const useVehicleSales = () =>
+export const useVehicleSales = (userId?: number) =>
     useQuery({
-        queryKey: ["servicePark", "saleDetails"],
+        queryKey: ["servicePark", "saleDetails", userId],
         queryFn: async () => {
-            const res = await listVehicleSales();
+            const res = await listVehicleSales(userId);
             return res.data;
         },
     });

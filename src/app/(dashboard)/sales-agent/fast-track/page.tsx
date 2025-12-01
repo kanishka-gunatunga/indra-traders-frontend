@@ -24,6 +24,7 @@ import {
 } from "@dnd-kit/core";
 import Toast from "@/components/Toast";
 import {createPortal} from "react-dom";
+import {useCurrentUser} from "@/utils/auth";
 
 type OptionType = { value: string; label: string };
 
@@ -82,7 +83,7 @@ const mapStatusToApi = (uiStatus: string): string => {
 const mapApiToTicket = (apiSale: any): MappedTicket => ({
     id: apiSale.ticket_number,
     dbId: apiSale.id,
-    priority: apiSale.priority || 0, // Assuming priority is optional in API response
+    priority: apiSale.priority || 0,
     user: apiSale.customer?.customer_name || "Unknown",
     phone: apiSale.customer?.phone_number || "",
     date: new Date(apiSale.createdAt).toLocaleDateString("en-GB", {
@@ -97,6 +98,10 @@ export default function SalesDashboard() {
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
+
+    const user = useCurrentUser();
+
+    const userId = Number(user?.id || 1);
 
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
@@ -125,7 +130,7 @@ export default function SalesDashboard() {
     const {toast, showToast, hideToast} = useToast();
 
 
-    const {data: apiSales, isLoading} = useSales();
+    const {data: apiSales, isLoading} = useSales(undefined,userId);
     const createDirectRequestMutation = useCreateDirectRequest();
     // const updateSaleStatusMutation = useUpdateSaleStatus();
 
@@ -140,7 +145,6 @@ export default function SalesDashboard() {
         })
     );
 
-    const userId = 1;
     const {data: reminderData, isLoading: reminderLoading, error: reminderError} = useNearestReminders(userId);
 
     useEffect(() => {
@@ -266,7 +270,6 @@ export default function SalesDashboard() {
                 },
                 {
                     onError: () => {
-                        // Revert on failure
                         setTickets(tickets);
                         showToast("Failed to update status", "error");
                     }
@@ -381,8 +384,8 @@ export default function SalesDashboard() {
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name ||"Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Indra Fast Track Sales Dashboard"
                 />
 
