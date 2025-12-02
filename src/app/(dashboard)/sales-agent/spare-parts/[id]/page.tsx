@@ -17,6 +17,7 @@ import {
     useUpdateSaleStatus, useUpdatePriority
 } from "@/hooks/useSparePartSales";
 import {message} from "antd";
+import {useCurrentUser} from "@/utils/auth";
 
 
 const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
@@ -42,7 +43,9 @@ export default function SalesDetailsPage() {
 
     const params = useParams();
     const ticketNumber = params?.id as string;
-    const userId = 1;
+
+    const user = useCurrentUser();
+    const userId = Number(user?.id) || 1;
 
     const {data: sale, isLoading, error} = useSpareSaleByTicket(ticketNumber);
     const assignToMeMutation = useAssignToMe();
@@ -150,7 +153,7 @@ export default function SalesDetailsPage() {
         if (!sale?.id) return;
 
         updatePriorityMutation.mutate(
-            { id: sale.id, priority: newPriority },
+            {id: sale.id, priority: newPriority},
             {
                 onSuccess: () => {
                     message.success("Priority updated");
@@ -182,8 +185,8 @@ export default function SalesDetailsPage() {
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name || "Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Indra Motor Spare Sales Dashboard"
                 />
 
@@ -240,53 +243,51 @@ export default function SalesDetailsPage() {
                         />
                     </div>
 
-                    {/* Assign + Sales Level */}
-                    {role === "user" ? (
-                        <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
-                            <button
-                                onClick={handleAssignClick}
-                                className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
-                                    status === "New"
-                                        ? "bg-[#DB2727] text-white"
-                                        : "bg-[#EBD4FF] text-[#1D1D1D]"
-                                }`}
-                                disabled={status !== "New" || assignToMeMutation.isPending}
-                            >
-                                {assignToMeMutation.isPending ? "Assigning..." : buttonText}
-                            </button>
-                            {status !== "New" && (
-                                <div
-                                    className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
-                                    <select
-                                        className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
-                                        style={{textAlignLast: "center"}}
-                                    >
-                                        <option value="S0">Sales Level 1</option>
-                                        <option value="S1">Sales Level 2</option>
-                                        <option value="S2">Sales Level 3</option>
-                                        <option value="S3">Sales Level 4</option>
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
-                            <span>Assign to:</span>
+                    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
+                        <button
+                            onClick={handleAssignClick}
+                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
+                                status === "New"
+                                    ? "bg-[#DB2727] text-white"
+                                    : "bg-[#EBD4FF] text-[#1D1D1D]"
+                            }`}
+                            disabled={status !== "New" || assignToMeMutation.isPending}
+                        >
+                            {assignToMeMutation.isPending ? "Assigning..." : buttonText}
+                        </button>
+                        {status !== "New" && (
                             <div
                                 className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
                                 <select
                                     className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
                                     style={{textAlignLast: "center"}}
-                                    onChange={(e) => {
-                                        console.log("Assign to sales user:", e.target.value);
-                                    }}
                                 >
                                     <option value="S0">Sales Level 1</option>
                                     <option value="S1">Sales Level 2</option>
+                                    <option value="S2">Sales Level 3</option>
+                                    <option value="S3">Sales Level 4</option>
                                 </select>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+                    {/*) : (*/}
+                    {/*    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">*/}
+                    {/*        <span>Assign to:</span>*/}
+                    {/*        <div*/}
+                    {/*            className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
+                    {/*            <select*/}
+                    {/*                className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
+                    {/*                style={{textAlignLast: "center"}}*/}
+                    {/*                onChange={(e) => {*/}
+                    {/*                    console.log("Assign to sales user:", e.target.value);*/}
+                    {/*                }}*/}
+                    {/*            >*/}
+                    {/*                <option value="S0">Sales Level 1</option>*/}
+                    {/*                <option value="S1">Sales Level 2</option>*/}
+                    {/*            </select>*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
 
                     {/* Tabs */}
                     <div className="w-full flex">
@@ -324,14 +325,13 @@ export default function SalesDetailsPage() {
                                 followups={sale.followups || []}
                                 reminders={sale.reminders || []}
                             />
-                            {role === "admin" ? null : (
-                                <div className="mt-6 flex w-full justify-end">
-                                    <button
-                                        className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
-                                        Save
-                                    </button>
-                                </div>
-                            )}
+
+                            <div className="mt-6 flex w-full justify-end">
+                                <button
+                                    className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
+                                    Save
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
