@@ -42,5 +42,11 @@ export const SparePartSalesService = {
 
     updatePriority(id: number, data: { priority: number }) {
         return axiosInstance.put(`/spare-part-sales/priority/${id}`, data);
-    }
+    },
+
+    promote: (id: number, userId: number) =>
+        axiosInstance.put(`/spare-part-sales/${id}/promote`, { userId }),
+
+    getHistory: (id: number) =>
+        axiosInstance.get(`/spare-part-sales/${id}/history`),
 };

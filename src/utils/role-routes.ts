@@ -1,9 +1,16 @@
+export const SALES_DEPT_CONFIG: Record<string, { allowedPath: string, dashboard: string }> = {
+    "ITPL": { allowedPath: "/sales-agent/sales", dashboard: "/sales-agent/sales" },
+    "ISP":  { allowedPath: "/sales-agent/service-park-sale", dashboard: "/sales-agent/service-park-sale/sale" },
+    "IMS":  { allowedPath: "/sales-agent/spare-parts", dashboard: "/sales-agent/spare-parts" },
+    "IFT":  { allowedPath: "/sales-agent/fast-track", dashboard: "/sales-agent/fast-track" },
+};
+
 export const ROLE_DASHBOARDS = {
     ADMIN: "/admin/users",
     CALLAGENT: "/call-agent/dashboard",
     TELEMARKETER: "/tele-marketer",
-    SALES01: "/sales-agent/sales",
-    SALES02: "/sales-agent/sales",
+    SALES01: "/sales-agent",
+    SALES02: "/sales-agent",
 };
 
 export const ROLE_PERMISSIONS = {

@@ -77,3 +77,12 @@ export const getNearestReminders = async (userId: number) => {
 export const updatePriority = async (id: number, data: { priority: number }) => {
     return await axiosInstance.put(`/service-park/priority/${id}`, data);
 }
+
+export const promote = async (id: number, userId: number) => {
+    return await axiosInstance.put(`/spare-part-sales/${id}/promote`, { userId });
+}
+
+export const getHistory = async (id: number) => {
+    return await axiosInstance.get(`/spare-part-sales/${id}/history`);
+}
+

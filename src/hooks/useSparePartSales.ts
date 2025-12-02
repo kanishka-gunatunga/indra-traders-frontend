@@ -121,3 +121,25 @@ export const useUpdatePriority = () => {
         },
     });
 };
+
+
+export const usePromoteSale = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({id, userId}: { id: number; userId: number }) =>
+            SparePartSalesService.promote(id, userId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["spareSales"]});
+            queryClient.invalidateQueries({queryKey: ["spareSale"]});
+            queryClient.invalidateQueries({queryKey: ["saleHistory"]});
+        },
+    });
+};
+
+export const useSaleHistory = (saleId: number) =>
+    useQuery({
+        queryKey: ["saleHistory", saleId],
+        queryFn: () => SparePartSalesService.getHistory(saleId).then(res => res.data),
+        enabled: !!saleId
+    });
+

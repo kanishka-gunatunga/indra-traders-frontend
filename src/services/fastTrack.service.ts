@@ -102,5 +102,11 @@ export const FastTrackService = {
 
     getSaleReminders(saleId: number) {
         return axiosInstance.get(`/fast-track/sales/${saleId}/reminders`).then(r => r.data);
-    }
+    },
+
+    promote: (id: number, userId: number) =>
+        axiosInstance.put(`/vehicle-sales/${id}/promote`, { userId }),
+
+    getHistory: (id: number) =>
+        axiosInstance.get(`/vehicle-sales/${id}/history`),
 };

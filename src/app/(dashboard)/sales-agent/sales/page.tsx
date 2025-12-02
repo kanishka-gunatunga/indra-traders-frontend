@@ -1128,6 +1128,7 @@ export default function SalesDashboard() {
     const user = useCurrentUser();
 
     const userId = Number(user?.id || 1);
+    const userRole = user?.user_role;
 
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddSaleModalOpen, setIsAddSaleModalOpen] = useState(false);
@@ -1150,7 +1151,7 @@ export default function SalesDashboard() {
 
     const {toast, showToast, hideToast} = useToast();
 
-    const {data: apiSales, isLoading, error} = useVehicleSales(undefined, userId);
+    const {data: apiSales, isLoading, error} = useVehicleSales(undefined, userId, userRole);
     const createSaleMutation = useCreateVehicleSale();
     const updateStatusMutation = useUpdateSaleStatus();
     const assignMutation = useAssignVehicleSale();
@@ -1178,8 +1179,8 @@ export default function SalesDashboard() {
     const allowedTransitions: Record<MappedTicket["status"], MappedTicket["status"][]> = {
         New: ["Ongoing"],
         Ongoing: ["Won", "Lost"],
-        Won: [],
-        Lost: [],
+        Won: ["Ongoing"],
+        Lost: ["Ongoing"],
     };
 
     // const onDragEnd = (result: DropResult) => {
@@ -1415,7 +1416,7 @@ export default function SalesDashboard() {
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name={user?.full_name ||"Sophie Eleanor"}
+                    name={user?.full_name || "Sophie Eleanor"}
                     location={user?.branch || "Bambalapitiya"}
                     title="Indra Traders Sales Dashboard"
                 />

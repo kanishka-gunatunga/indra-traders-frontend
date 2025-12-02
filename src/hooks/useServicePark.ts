@@ -1,12 +1,13 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {
     assignToSalesAgent,
-    createAssignToSale, createFollowup, createReminder, getNearestReminders,
+    createAssignToSale, createFollowup, createReminder, getHistory, getNearestReminders,
     getSaleDetails, getSaleDetailsByTicket,
     getVehicleHistoryByNumber,
     handleServiceIntake,
-    listVehicleHistories, listVehicleSales, updatePriority, updateStatus
+    listVehicleHistories, listVehicleSales, promote, updatePriority, updateStatus
 } from "@/services/serviceParkService";
+import {SparePartSalesService} from "@/services/sparePartSalesService";
 
 
 export const useVehicleHistories = () =>
@@ -139,5 +140,26 @@ export const useUpdatePriority = () => {
         },
     });
 };
+
+
+export const usePromoteSale = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({id, userId}: { id: number; userId: number }) =>
+            promote(id, userId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["serviceParks"]});
+            queryClient.invalidateQueries({queryKey: ["servicePark"]});
+            queryClient.invalidateQueries({queryKey: ["saleHistory"]});
+        },
+    });
+};
+
+export const useSaleHistory = (saleId: number) =>
+    useQuery({
+        queryKey: ["saleHistory", saleId],
+        queryFn: () => getHistory(saleId).then(res => res.data),
+        enabled: !!saleId
+    });
 
 

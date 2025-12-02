@@ -34,17 +34,17 @@
 
 import {NextResponse} from "next/server";
 import {getToken} from "next-auth/jwt";
-import {ROLE_DASHBOARDS, ROLE_PERMISSIONS} from "@/utils/role-routes";
+import {ROLE_DASHBOARDS, ROLE_PERMISSIONS, SALES_DEPT_CONFIG,} from "@/utils/role-routes";
 
 export async function middleware(req: any) {
     // const publicRoutes = ["/login", "/", "/admin", "/admin/star-rating", "/chat-bot"];
 
-    const { pathname } = req.nextUrl;
+    const {pathname} = req.nextUrl;
 
     const publicRoutes = ["/login", "/api/auth"];
     const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith("/api/auth"));
 
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({req, secret: process.env.NEXTAUTH_SECRET});
     const isAuth = !!token;
 
     if (!isAuth) {
@@ -55,9 +55,16 @@ export async function middleware(req: any) {
     }
 
     const userRole = token?.user_role as keyof typeof ROLE_DASHBOARDS;
+    const userDept = token?.department as string;
 
     if (pathname === "/login") {
-        const destination = ROLE_DASHBOARDS[userRole] || "/";
+        let destination = ROLE_DASHBOARDS[userRole] || "/";
+
+        if ((userRole === "SALES01" || userRole === "SALES02") && SALES_DEPT_CONFIG[userDept]) {
+            destination = SALES_DEPT_CONFIG[userDept].dashboard;
+        }
+
+        // const destination = ROLE_DASHBOARDS[userRole] || "/";
         return NextResponse.redirect(new URL(destination, req.url));
     }
 
@@ -66,12 +73,25 @@ export async function middleware(req: any) {
     }
 
     const allowedPrefixes = ROLE_PERMISSIONS[userRole] || [];
-    const isAllowed = allowedPrefixes.some(prefix => pathname.startsWith(prefix));
+    const isAllowedRole = allowedPrefixes.some(prefix => pathname.startsWith(prefix));
 
 
-    if (!isAllowed) {
-        const destination = ROLE_DASHBOARDS[userRole] || "/";
+    if (!isAllowedRole) {
+        let destination = ROLE_DASHBOARDS[userRole] || "/";
+        if ((userRole === "SALES01" || userRole === "SALES02") && SALES_DEPT_CONFIG[userDept]) {
+            destination = SALES_DEPT_CONFIG[userDept].dashboard;
+        }
         return NextResponse.redirect(new URL(destination, req.url));
+    }
+
+    if (userRole === "SALES01" || userRole === "SALES02") {
+        const config = SALES_DEPT_CONFIG[userDept];
+
+        if (config) {
+            if (!pathname.startsWith(config.allowedPath)) {
+                return NextResponse.redirect(new URL(config.dashboard, req.url));
+            }
+        }
     }
 
     // const {pathname} = req.nextUrl;

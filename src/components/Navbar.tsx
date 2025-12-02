@@ -18,10 +18,10 @@ const callAgentTabs = [
 ];
 
 const saleAgentTabs = [
-    { label: "Vehicle Sales", href: "/sales-agent/sales" },
-    { label: "Service Park", href: "/sales-agent/service-park-sale/sale" },
-    { label: "Spare Parts", href: "/sales-agent/spare-parts" },
-    { label: "Fast Track", href: "/sales-agent/fast-track" },
+    { label: "Vehicle Sales", href: "/sales-agent/sales", allowedDept: "ITPL" },
+    { label: "Service Park", href: "/sales-agent/service-park-sale/sale", allowedDept: "ISP" },
+    { label: "Spare Parts", href: "/sales-agent/spare-parts", allowedDept: "IMS" },
+    { label: "Fast Track", href: "/sales-agent/fast-track", allowedDept: "IFT" },
 ];
 
 const adminTabs = [
@@ -41,13 +41,6 @@ const Navbar = () => {
     const user = useCurrentUser();
     const pathname = usePathname();
 
-    // Logic for Roles
-    // const [role, setRole] = useState<Role>(
-    //     (process.env.NEXT_PUBLIC_USER_ROLE as Role) || "admin"
-    // );
-    // const tabs = role === "admin" ? adminTabs : callAgentTabs;
-    // const [activeTab, setActiveTab] = useState<string>(tabs[0].href);
-
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +58,7 @@ const Navbar = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const getTabsForRole = (role?: string) => {
+    const getTabsForRole = (role?: string, department?: string) => {
         switch (role) {
             case "ADMIN":
                 return adminTabs;
@@ -73,15 +66,17 @@ const Navbar = () => {
                 return callAgentTabs;
             case "SALES01":
             case "SALES02":
-                return saleAgentTabs;
+                if (!department) return [];
+                return saleAgentTabs.filter(tab => tab.allowedDept === department);
             case "TELEMARKETER":
                 return telemarketerTabs;
             default:
-                return []; // Or default to common links
+                return [];
         }
     };
 
-    const tabs = getTabsForRole(user?.user_role);
+    // const tabs = getTabsForRole(user?.user_role);
+    const tabs = getTabsForRole(user?.user_role, user?.department);
 
     return (
         <div>
@@ -92,6 +87,7 @@ const Navbar = () => {
 
                     {/* Navigation Tabs */}
                     <div className="flex-1 flex justify-center">
+                        {tabs.length > 1 && (
                         <nav className="flex gap-4 overflow-x-auto no-scrollbar">
                             {tabs.map(({ label, href }) => {
                                 const isActive = pathname === href || (pathname.startsWith(href) && href !== "/" && href.length > 1);
@@ -110,6 +106,7 @@ const Navbar = () => {
                                 );
                             })}
                         </nav>
+                        )}
                     </div>
 
                     {/* Right controls */}
@@ -145,7 +142,7 @@ const Navbar = () => {
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center justify-center focus:outline-none ring-2 ring-transparent focus:ring-gray-200 rounded-full transition"
+                                className="flex items-center justify-center focus:outline-none ring-2 ring-transparent focus:ring-gray-200 rounded-full transition cursor-pointer"
                             >
                                 <Image
                                     width={200}
@@ -171,7 +168,7 @@ const Navbar = () => {
                                             setIsDropdownOpen(false);
                                             signOut({ callbackUrl: "/login" });
                                         }}
-                                        className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                                        className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium cursor-pointer"
                                     >
                                         Sign Out
                                     </button>

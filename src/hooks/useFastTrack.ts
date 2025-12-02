@@ -173,3 +173,24 @@ export const useSaleReminders = (saleId: number) => {
         enabled: !!saleId
     });
 };
+
+
+export const usePromoteSale = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({id, userId}: { id: number; userId: number }) =>
+            FastTrackService.promote(id, userId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["FastTracks"]});
+            queryClient.invalidateQueries({queryKey: ["FastTrack"]});
+            queryClient.invalidateQueries({queryKey: ["saleHistory"]});
+        },
+    });
+};
+
+export const useSaleHistory = (saleId: number) =>
+    useQuery({
+        queryKey: ["saleHistory", saleId],
+        queryFn: () => FastTrackService.getHistory(saleId).then(res => res.data),
+        enabled: !!saleId
+    });

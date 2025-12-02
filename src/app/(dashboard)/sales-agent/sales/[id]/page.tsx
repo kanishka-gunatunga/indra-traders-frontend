@@ -16,12 +16,13 @@ import {
     useUpdateSaleStatus,
     useVehicleSaleByTicket,
     useUpdatePriority,
-    useCreateReminder
+    useCreateReminder, useSaleHistory, usePromoteSale
 } from "@/hooks/useVehicleSales";
 // import {useCreateReminder} from "@/hooks/useReminder";
 import {message} from "antd";
 import {useCurrentUser} from "@/utils/auth";
 import Image from "next/image";
+import HistoryTimeline from "@/components/HistoryTimeline";
 
 export default function SalesDetailsPage() {
     const [role, setRole] = useState<Role>(
@@ -42,12 +43,16 @@ export default function SalesDetailsPage() {
     const createFollowupMutation = useCreateFollowup();
     const createReminderMutation = useCreateReminder();
 
+    const {data: history} = useSaleHistory(sale?.id);
+    const promoteMutation = usePromoteSale();
+
     const updatePriorityMutation = useUpdatePriority();
 
     const [status, setStatus] = useState<SalesStatus>("New");
 
     const [isActivityModalOpen, setActivityModalOpen] = useState(false);
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+    const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
 
     const [activityText, setActivityText] = useState("");
     const [reminderTitle, setReminderTitle] = useState("");
@@ -137,6 +142,35 @@ export default function SalesDetailsPage() {
                 }
             }
         );
+    };
+
+    const userRole = user?.user_role || "SALES01";
+    const isLevel1 = userRole === "SALES01";
+    const isLevel2 = userRole === "SALES02";
+
+    const showHistoryButton = !isLevel1;
+
+    const canPromote =
+        (isLevel1 && sale?.current_level === 1 && status === "Ongoing") ||
+        (isLevel2 && sale?.current_level === 2 && status === "Ongoing");
+
+    const getPromoteLabel = () => {
+        if (isLevel1) return "Escalate to Sales Lv 2";
+        if (isLevel2) return "Escalate to Sales Lv 3";
+        return "Escalate";
+    };
+
+    const handlePromote = async () => {
+        if (!confirm("Are you sure you want to pass this lead to the next sales level? You will lose access.")) return;
+
+        try {
+            await promoteMutation.mutateAsync({id: sale.id, userId: Number(userId)});
+            alert("Lead promoted successfully!");
+            window.location.href = "/sales-agent/sales";
+        } catch (e) {
+            console.error(e);
+            alert("Failed to promote lead.");
+        }
     };
 
     if (isLoading) {
@@ -239,19 +273,46 @@ export default function SalesDetailsPage() {
                         >
                             {assignMutation.isPending ? "Assigning..." : buttonText}
                         </button>
-                        {status !== "New" && (
-                            <div
-                                className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
-                                <select
-                                    className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
-                                    style={{textAlignLast: "center"}}
-                                >
-                                    <option value="S0">Sales Level 1</option>
-                                    <option value="S1">Sales Level 2</option>
-                                    <option value="S2">Sales Level 3</option>
-                                    <option value="S3">Sales Level 4</option>
-                                </select>
-                            </div>
+
+                        {canPromote && (
+                            <button
+                                onClick={handlePromote}
+                                className="h-[40px] rounded-[22.98px] px-5 font-medium text-sm bg-[#DB2727] text-white hover:bg-blue-700 transition shadow-md flex items-center gap-2"
+                                disabled={promoteMutation.isPending}
+                            >
+                                {promoteMutation.isPending ? "Processing..." : getPromoteLabel()}
+                                {/*<Image src="/icons/arrow-right.svg" width={16} height={16} alt="arrow"/>*/}
+                            </button>
+                        )}
+
+                        {/*{status !== "New" && (*/}
+                        {/*    <div*/}
+                        {/*        className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
+                        {/*        <select*/}
+                        {/*            className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
+                        {/*            style={{textAlignLast: "center"}}*/}
+                        {/*        >*/}
+                        {/*            <option value="S0">Sales Level 1</option>*/}
+                        {/*            <option value="S1">Sales Level 2</option>*/}
+                        {/*            <option value="S2">Sales Level 3</option>*/}
+                        {/*            <option value="S3">Sales Level 4</option>*/}
+                        {/*        </select>*/}
+                        {/*    </div>*/}
+                        {/*)}*/}
+
+                        <div
+                            className="h-[40px] px-6 rounded-[22.98px] bg-[#FFEDD8] border border-orange-200 flex items-center justify-center font-semibold text-[#8a5b28]">
+                            Current Level: Sales {sale?.current_level || 1}
+                        </div>
+
+                        {showHistoryButton && (
+                            <button
+                                onClick={() => setHistoryModalOpen(true)}
+                                className="ml-auto h-[40px] px-5 rounded-[22.98px] border border-gray-400 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                                {/*<Image src="/dashboard/time.svg" width={20} height={20} alt="history" />*/}
+                                View History
+                            </button>
                         )}
                     </div>
                     {/*) : (*/}
@@ -337,6 +398,18 @@ export default function SalesDetailsPage() {
                     </div>
                 </section>
             </main>
+
+            {isHistoryModalOpen && (
+                <Modal
+                    title="Lead History Journey"
+                    onClose={() => setHistoryModalOpen(false)}
+                    isPriorityAvailable={false}
+                >
+                    <div className="w-full px-4 pb-4">
+                        <HistoryTimeline history={history}/>
+                    </div>
+                </Modal>
+            )}
 
             {/* Activity Modal */}
             {isActivityModalOpen && (
