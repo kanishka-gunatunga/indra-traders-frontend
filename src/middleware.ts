@@ -41,7 +41,7 @@ export async function middleware(req: any) {
 
     const { pathname } = req.nextUrl;
 
-    const publicRoutes = ["/login", "/", "/api/auth"];
+    const publicRoutes = ["/login", "/api/auth"];
     const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith("/api/auth"));
 
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });

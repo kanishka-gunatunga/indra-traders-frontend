@@ -123,7 +123,7 @@ export default function UserManagement() {
 
     const resetAddForm = () => {
         setFullName("");
-        setContactNumber();
+        setContactNumber("");
         setEmail("");
         setDepartment("");
         setBranch("");
@@ -724,7 +724,7 @@ export default function UserManagement() {
                                 });
                                 showToast("User updated successfully!", "success");
                                 setIsUserDetailsModalOpen(false);
-                            } catch (error) {
+                            } catch (error: any) {
                                 console.error("Error updating user:", error);
                                 const msg = error.response?.data?.message || "Failed to update user";
                                 showToast(msg, "error");
