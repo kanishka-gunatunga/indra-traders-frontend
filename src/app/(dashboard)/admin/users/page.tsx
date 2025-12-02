@@ -9,15 +9,25 @@ import React, {useState} from "react";
 import {FaEye, FaEyeSlash} from "react-icons/fa";
 import {useCreateUser, useUpdateUser, useUsers} from "@/hooks/useUser";
 import {useCurrentUser} from "@/utils/auth";
+import {useToast} from "@/hooks/useToast";
+import Toast from "@/components/Toast";
 
-const userRoles = [
-    "Admin",
-    "Sales Lv 1",
-    "Sales Lv 2",
-    "Sales Lv 3",
-    "Call Agent",
-    "Telemarketer",
-];
+// const userRoles = [
+//     "Admin",
+//     "Sales Lv 1",
+//     "Sales Lv 2",
+//     "Call Agent",
+//     "Telemarketer",
+// ];
+
+const ROLES = {
+    ADMIN: "ADMIN",
+    SALES_LV1: "SALES01",
+    SALES_LV2: "SALES02",
+    CALL_AGENT: "CALLAGENT",
+    TELEMARKETER: "TELEMARKETER",
+};
+
 const departments = ["ITPL", "ISP", "IMS", "IFT"];
 const branches = ["Bambalapitiya", "Kandy", "Jaffna", "Galle", "Negombo"];
 
@@ -41,6 +51,8 @@ export default function UserManagement() {
     const {data: users = [], isLoading} = useUsers(filters);
     const createUserMutation = useCreateUser();
     const updateUserMutation = useUpdateUser();
+
+    const { toast, showToast, hideToast } = useToast();
 
     const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
@@ -106,13 +118,36 @@ export default function UserManagement() {
         setSelectedUser({...selectedUser, languages: newLangs});
     };
 
+    const shouldShowLanguages = (role: string) => role === ROLES.CALL_AGENT;
+    const shouldShowBranch = (role: string) => role !== ROLES.ADMIN;
+
+    const resetAddForm = () => {
+        setFullName("");
+        setContactNumber("");
+        setEmail("");
+        setDepartment("");
+        setBranch("");
+        setUserRole("");
+        setPassword("");
+        setConfirmPassword("");
+        setUserLanguages(["en"]);
+    }
+
 
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
+
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                visible={toast.visible}
+                onClose={hideToast}
+            />
+
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name={user?.full_name ||"Sophie Eleanor"}
+                    name={user?.full_name || "Sophie Eleanor"}
                     location={user?.branch || "Bambalapitiya"}
                     title="User Management"
                 />
@@ -172,10 +207,13 @@ export default function UserManagement() {
                                         users.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
-                                                className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center"
+                                                className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer"
                                                 onClick={() => {
                                                     // setSelectedUser(item);
-                                                    setSelectedUser({...item, languages: parseLanguages(item.languages)});
+                                                    setSelectedUser({
+                                                        ...item,
+                                                        languages: parseLanguages(item.languages)
+                                                    });
                                                     setIsUserDetailsModalOpen(true);
                                                 }}
                                             >
@@ -242,32 +280,31 @@ export default function UserManagement() {
                     actionButton={{
                         label: "Add",
                         onClick: async () => {
+                            if(password !== confirmPassword) {
+                                showToast("Passwords do not match!", "error");
+                                return;
+                            }
                             try {
-                                await createUserMutation.mutateAsync({
+                                const payload = {
                                     full_name: fullName,
                                     contact_no: contactNumber,
                                     email,
                                     user_role: userRole,
                                     department,
-                                    branch,
                                     password,
                                     confirm_password: confirmPassword,
-                                    languages: userLanguages,
-                                });
+                                    branch: shouldShowBranch(userRole) ? branch : null,
+                                    languages: shouldShowLanguages(userRole) ? userLanguages : ["en"],
+                                };
+
+                                await createUserMutation.mutateAsync(payload);
+                                showToast("User created successfully!", "success");
                                 setIsAddNewUserModalOpen(false);
-                                // Reset form
-                                setFullName("");
-                                setContactNumber("");
-                                setEmail("");
-                                setDepartment("");
-                                setBranch("");
-                                setUserRole("");
-                                setPassword("");
-                                setConfirmPassword("");
-                                setUserLanguages(["en"]);
+                                resetAddForm();
                             } catch (error: any) {
                                 console.error("Error creating user:", error);
-                                alert(`Failed to create user: ${error.response?.data?.message || error.message}`);
+                                const msg = error.response?.data?.message || "Failed to create user";
+                                showToast(msg, "error");
                             }
                         },
                     }}
@@ -311,16 +348,19 @@ export default function UserManagement() {
                                     className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
                                     <select
                                         value={userRole}
-                                        onChange={(e) => setUserRole(e.target.value)}
+                                        onChange={(e) => {
+                                            setUserRole(e.target.value);
+                                            if (e.target.value !== ROLES.CALL_AGENT) setUserLanguages(["en"]);
+                                            if (e.target.value === ROLES.ADMIN) setBranch("");
+                                        }}
                                         className="w-full bg-transparent outline-none appearance-none"
                                     >
-                                        <option value="">User Role</option>
-                                        <option value="Admin">Admin</option>
-                                        <option value="Sales Lv 1">Sales Lv 1</option>
-                                        <option value="Sales Lv 2">Sales Lv 2</option>
-                                        <option value="Sales Lv 3">Sales Lv 3</option>
-                                        <option value="Call Agent">Call Agent</option>
-                                        <option value="Telemarketer">Telemarketer</option>
+                                        <option value="" disabled>User Role</option>
+                                        <option value={ROLES.ADMIN}>Admin</option>
+                                        <option value={ROLES.SALES_LV1}>Sales Lv 1</option>
+                                        <option value={ROLES.SALES_LV2}>Sales Lv 2</option>
+                                        <option value={ROLES.CALL_AGENT}>Call Agent</option>
+                                        <option value={ROLES.TELEMARKETER}>Telemarketer</option>
                                     </select>
                                     <span className="absolute right-4 pointer-events-none">
                                         <Image
@@ -345,11 +385,14 @@ export default function UserManagement() {
                                     onChange={(e) => setDepartment(e.target.value)}
                                     className="w-full bg-transparent outline-none appearance-none"
                                 >
-                                    <option value="">Select Department</option>
-                                    <option value="ITPL">ITPL</option>
-                                    <option value="ISP">ISP</option>
-                                    <option value="IMS">IMS</option>
-                                    <option value="IFT">IFT</option>
+                                    <option value="" disabled>Select Department</option>
+                                    {/*<option value="ITPL">ITPL</option>*/}
+                                    {/*<option value="ISP">ISP</option>*/}
+                                    {/*<option value="IMS">IMS</option>*/}
+                                    {/*<option value="IFT">IFT</option>*/}
+                                    {departments.map((d) => (
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
                                 </select>
                                 <span className="absolute right-4 pointer-events-none">
                                   <Image
@@ -362,23 +405,27 @@ export default function UserManagement() {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="block mb-2 font-medium">Branch</label>
-                            <div
-                                className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
-                                <select
-                                    value={branch}
-                                    onChange={(e) => setBranch(e.target.value)}
-                                    className="w-full bg-transparent outline-none appearance-none"
-                                >
-                                    <option disabled value="">Select Branch</option>
-                                    <option value="BAMBALAPITIYA">Bambalapitiya</option>
-                                    <option value="KANDY">Kandy</option>
-                                    <option value="JAFFNA">Jaffna</option>
-                                    <option value="GALLE">Galle</option>
-                                    <option value="NEGOMBO">Negombo</option>
-                                </select>
-                                <span className="absolute right-4 pointer-events-none">
+                        {shouldShowBranch(userRole) && (
+                            <div>
+                                <label className="block mb-2 font-medium">Branch</label>
+                                <div
+                                    className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+                                    <select
+                                        value={branch}
+                                        onChange={(e) => setBranch(e.target.value)}
+                                        className="w-full bg-transparent outline-none appearance-none"
+                                    >
+                                        <option disabled value="">Select Branch</option>
+                                        {/*<option value="BAMBALAPITIYA">Bambalapitiya</option>*/}
+                                        {/*<option value="KANDY">Kandy</option>*/}
+                                        {/*<option value="JAFFNA">Jaffna</option>*/}
+                                        {/*<option value="GALLE">Galle</option>*/}
+                                        {/*<option value="NEGOMBO">Negombo</option>*/}
+                                        {branches.map((b) => (
+                                            <option key={b} value={b.toUpperCase()}>{b}</option>
+                                        ))}
+                                    </select>
+                                    <span className="absolute right-4 pointer-events-none">
                                   <Image
                                       src={"/images/sales/icon-park-solid_down-one.svg"}
                                       width={19}
@@ -386,8 +433,11 @@ export default function UserManagement() {
                                       alt="Arrow"
                                   />
                                 </span>
+                                </div>
                             </div>
-                        </div>
+                        // ) : (
+                        //     <div></div>
+                        )}
 
                         {/* Password */}
                         <div className="mb-4">
@@ -430,29 +480,31 @@ export default function UserManagement() {
                         </div>
                     </div>
 
-                    <div className="w-full mt-5">
-                        <label className="block mb-2 font-medium">Languages</label>
-                        <div className="flex gap-3">
-                            {languageOptions.map((lang) => {
-                                const isSelected = userLanguages.includes(lang.code);
-                                return (
-                                    <button
-                                        key={lang.code}
-                                        type="button"
-                                        onClick={() => toggleCreateLanguage(lang.code)}
-                                        className={`px-4 py-2 rounded-full border text-sm font-medium transition
+                    {shouldShowLanguages(userRole) && (
+                        <div className="w-full mt-5">
+                            <label className="block mb-2 font-medium">Languages</label>
+                            <div className="flex gap-3">
+                                {languageOptions.map((lang) => {
+                                    const isSelected = userLanguages.includes(lang.code);
+                                    return (
+                                        <button
+                                            key={lang.code}
+                                            type="button"
+                                            onClick={() => toggleCreateLanguage(lang.code)}
+                                            className={`px-4 py-2 rounded-full cursor-pointer border text-sm font-medium transition
                                 ${isSelected
-                                            ? "bg-blue-600 text-white border-blue-600"
-                                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                        }
+                                                ? "bg-blue-600 text-white border-blue-600"
+                                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            }
                             `}
-                                    >
-                                        {lang.label}
-                                    </button>
-                                )
-                            })}
+                                        >
+                                            {lang.label}
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </Modal>
             )}
 
@@ -479,24 +531,25 @@ export default function UserManagement() {
                           User Role
                         </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
-                            {userRoles.map((role) => {
-                                const isSelected = selectedRoles.includes(role);
+                            {Object.values(ROLES).map((roleVal) => {
+                                const isSelected = selectedRoles.includes(roleVal);
                                 return (
                                     <div
-                                        key={role}
+                                        key={roleVal}
                                         className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
                                             ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
                                         onClick={() => {
                                             if (isSelected) {
-                                                setSelectedRoles(
-                                                    selectedRoles.filter((r) => r !== role)
-                                                );
+                                                setSelectedRoles(selectedRoles.filter((r) => r !== roleVal));
                                             } else {
-                                                setSelectedRoles([...selectedRoles, role]);
+                                                setSelectedRoles([roleVal]);
                                             }
                                         }}
                                     >
-                                        {role}
+                                        {roleVal === ROLES.SALES_LV1 ? "Sales Lv 1" :
+                                            roleVal === ROLES.SALES_LV2 ? "Sales Lv 2" :
+                                                roleVal === ROLES.CALL_AGENT ? "Call Agent" :
+                                                    roleVal.charAt(0).toUpperCase() + roleVal.slice(1).toLowerCase()}
                                     </div>
                                 );
                             })}
@@ -518,11 +571,9 @@ export default function UserManagement() {
                                             ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
                                         onClick={() => {
                                             if (isSelected) {
-                                                setSelectedDepartments(
-                                                    selectedDepartments.filter((d) => d !== dept)
-                                                );
+                                                setSelectedDepartments(selectedDepartments.filter((d) => d !== dept));
                                             } else {
-                                                setSelectedDepartments([...selectedDepartments, dept]);
+                                                setSelectedDepartments([dept]);
                                             }
                                         }}
                                     >
@@ -547,12 +598,11 @@ export default function UserManagement() {
                                         className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
                                         ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
                                         onClick={() => {
+                                            const val = branch.toUpperCase();
                                             if (isSelected) {
-                                                setSelectedBranches(
-                                                    selectedBranches.filter((b) => b !== branch)
-                                                );
+                                                setSelectedBranches(selectedBranches.filter((b) => b !== val));
                                             } else {
-                                                setSelectedBranches([...selectedBranches, branch]);
+                                                setSelectedBranches([val]);
                                             }
                                         }}
                                     >
@@ -653,6 +703,7 @@ export default function UserManagement() {
                         label: "Update",
                         onClick: async () => {
                             try {
+                                const role = selectedUser.user_role;
                                 await updateUserMutation.mutateAsync({
                                     id: selectedUser.id,
                                     // full_name: selectedUser.full_name,
@@ -667,13 +718,16 @@ export default function UserManagement() {
                                         email: selectedUser.email,
                                         user_role: selectedUser.user_role,
                                         department: selectedUser.department,
-                                        branch: selectedUser.branch,
-                                        languages: selectedUser.languages,
+                                        branch: shouldShowBranch(role) ? selectedUser.branch : null,
+                                        languages: shouldShowLanguages(role) ? selectedUser.languages : ["en"],
                                     },
                                 });
+                                showToast("User updated successfully!", "success");
                                 setIsUserDetailsModalOpen(false);
-                            } catch (error) {
+                            } catch (error: any) {
                                 console.error("Error updating user:", error);
+                                const msg = error.response?.data?.message || "Failed to update user";
+                                showToast(msg, "error");
                             }
                         },
                     }}
@@ -692,16 +746,21 @@ export default function UserManagement() {
                             <div className="text-lg font-semibold">User Role:</div>
                             <select
                                 value={selectedUser.user_role}
-                                onChange={(e) =>
-                                    setSelectedUser({...selectedUser, user_role: e.target.value})
-                                }
+                                onChange={(e) => {
+                                    const newRole = e.target.value;
+                                    const updates: any = {user_role: newRole};
+                                    if (newRole === ROLES.ADMIN) updates.branch = "";
+                                    if (newRole !== ROLES.CALL_AGENT) updates.languages = ["en"];
+
+                                    setSelectedUser({...selectedUser, ...updates});
+                                }}
                                 className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
                             >
-                                <option>SALES01</option>
-                                <option>SALES02</option>
-                                <option>CALLAGENT</option>
-                                <option>ADMIN</option>
-                                <option>TELEMARKETER</option>
+                                <option value={ROLES.SALES_LV1}>Sales Lv 1</option>
+                                <option value={ROLES.SALES_LV2}>Sales Lv 2</option>
+                                <option value={ROLES.CALL_AGENT}>Call Agent</option>
+                                <option value={ROLES.ADMIN}>Admin</option>
+                                <option value={ROLES.TELEMARKETER}>Telemarketer</option>
                             </select>
                         </div>
 
@@ -723,10 +782,9 @@ export default function UserManagement() {
                                 }
                                 className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
                             >
-                                <option>ITPL</option>
-                                <option>ISP</option>
-                                <option>IMS</option>
-                                <option>IFT</option>
+                                {departments.map((d) => (
+                                    <option key={d} value={d}>{d}</option>
+                                ))}
                             </select>
                         </div>
 
@@ -740,46 +798,56 @@ export default function UserManagement() {
                                 }
                                 className="text-lg text-[#575757] bg-transparent border-b border-gray-400 focus:outline-none"
                             />
-                            <div className="text-lg font-semibold">Branch:</div>
-                            <select
-                                value={selectedUser.branch}
-                                onChange={(e) =>
-                                    setSelectedUser({...selectedUser, branch: e.target.value})
-                                }
-                                className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
-                            >
-                                <option>BAMBALAPITIYA</option>
-                                <option>KANDY</option>
-                                <option>JAFFNA</option>
-                                <option>GALLE</option>
-                                <option>NEGOMBO</option>
-                            </select>
+                            {shouldShowBranch(selectedUser.user_role) ? (
+                                <>
+                                    <div className="text-lg font-semibold">Branch:</div>
+                                    <select
+                                        value={selectedUser.branch}
+                                        onChange={(e) =>
+                                            setSelectedUser({...selectedUser, branch: e.target.value})
+                                        }
+                                        className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
+                                    >
+                                        {branches.map((b) => (
+                                            <option key={b} value={b.toUpperCase()}>{b}</option>
+                                        ))}
+                                    </select>
+                                </>
+                            ) : (
+                                <>
+                                    <div></div>
+                                    <div></div>
+                                </>
+                            )}
+
                         </div>
 
-                        <div className="grid grid-cols-[150px_1fr] gap-4 items-start pt-2">
-                            <div className="text-lg font-semibold">Languages:</div>
-                            <div className="flex gap-3">
-                                {languageOptions.map((lang) => {
-                                    const currentLangs = parseLanguages(selectedUser.languages);
-                                    const isSelected = currentLangs.includes(lang.code);
-                                    return (
-                                        <button
-                                            key={lang.code}
-                                            type="button"
-                                            onClick={() => toggleUpdateLanguage(lang.code)}
-                                            className={`px-4 py-1 rounded-full border text-sm font-medium transition
+                        {shouldShowLanguages(selectedUser.user_role) && (
+                            <div className="grid grid-cols-[150px_1fr] gap-4 items-start pt-2">
+                                <div className="text-lg font-semibold">Languages:</div>
+                                <div className="flex gap-3">
+                                    {languageOptions.map((lang) => {
+                                        const currentLangs = parseLanguages(selectedUser.languages);
+                                        const isSelected = currentLangs.includes(lang.code);
+                                        return (
+                                            <button
+                                                key={lang.code}
+                                                type="button"
+                                                onClick={() => toggleUpdateLanguage(lang.code)}
+                                                className={`px-4 py-1 rounded-full border text-sm font-medium transition
                                   ${isSelected
-                                                ? "bg-blue-600 text-white border-blue-600"
-                                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                            }
+                                                    ? "bg-blue-600 text-white border-blue-600"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                }
                               `}
-                                        >
-                                            {lang.label}
-                                        </button>
-                                    )
-                                })}
+                                            >
+                                                {lang.label}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </Modal>
             )}

@@ -15,10 +15,13 @@ import {
     useCreateFollowup,
     useUpdateSaleStatus,
     useVehicleSaleByTicket,
-    useUpdatePriority
+    useUpdatePriority,
+    useCreateReminder
 } from "@/hooks/useVehicleSales";
-import {useCreateReminder} from "@/hooks/useReminder";
+// import {useCreateReminder} from "@/hooks/useReminder";
 import {message} from "antd";
+import {useCurrentUser} from "@/utils/auth";
+import Image from "next/image";
 
 export default function SalesDetailsPage() {
     const [role, setRole] = useState<Role>(
@@ -27,6 +30,9 @@ export default function SalesDetailsPage() {
 
     const params = useParams();
     const ticketNumber = params?.id as string;
+
+    const user = useCurrentUser();
+    const userId = Number(user?.id) || 2;
 
     console.log(ticketNumber);
 
@@ -59,7 +65,7 @@ export default function SalesDetailsPage() {
     const handleAssignClick = async () => {
         if (!sale || status !== "New") return;
         try {
-            await assignMutation.mutateAsync({id: sale.id, salesUserId: 2}); // Assign to user id 2
+            await assignMutation.mutateAsync({id: sale.id, salesUserId: userId});
             setStatus("Ongoing");
         } catch (error: any) {
             console.error("Error assigning sale:", error);
@@ -70,10 +76,8 @@ export default function SalesDetailsPage() {
     const handleStatusChange = async (newStatus: SalesStatus) => {
         if (!sale) return;
         let backendStatus = newStatus === "New" ? "NEW" : newStatus === "Ongoing" ? "ONGOING" : "COMPLETED";
-        // For Won/Lost, you might need to set additional_note; adjust as needed
         if (newStatus === "Won" || newStatus === "Lost") {
             backendStatus = "COMPLETED";
-            // Optionally update additional_note via separate mutation if needed
         }
         try {
             await updateStatusMutation.mutateAsync({id: sale.id, status: backendStatus});
@@ -152,36 +156,54 @@ export default function SalesDetailsPage() {
     }
 
     const buttonText =
-        status === "New" ? "Assign to me" : "Sales person: Robert Fox";
+        status === "New" ? "Assign to me" : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
+
+    const source = sale?.lead_source?.toLowerCase();
+
+    let imageSrc = "";
+
+    switch (source) {
+        case "call agent":
+            imageSrc = "/call.svg";
+            break;
+        case "website":
+            imageSrc = "/icons/website.png";
+            break;
+        case "whatsapp":
+            imageSrc = "/icons/whatsapp.png";
+            break;
+        case "facebook":
+            imageSrc = "/icons/facebook.png";
+            break;
+        default:
+            imageSrc = "/call.svg";
+    }
 
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
-                    title={
-                        role === "admin"
-                            ? "All Leads"
-                            : role === "tele-marketer"
-                                ? "Indra Fast Track Sales Dashboard"
-                                : "Indra Traders Sales Dashboard"
-                    }
+                    name={user?.full_name || "Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
+                    title="Indra Traders Sales Dashboard"
                 />
 
                 <section
                     className="relative bg-[#FFFFFF4D] mb-5 bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-9 py-10 flex flex-col justify-center items-center">
-                    {/* Header */}
                     <div className="flex w-full justify-between items-center">
                         <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
-              <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-                {sale.ticket_number}
-              </span>
+                          <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
+                            {sale.ticket_number}
+                          </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                ITPL
-              </span>
+                                    <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20}/>
+                            </span>
+                            <span
+                                className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
+                            ITPL
+                          </span>
                             <div
                                 className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
                                 <select
@@ -205,38 +227,19 @@ export default function SalesDetailsPage() {
                         />
                     </div>
 
-                    {/* Assign + Sales Level */}
-                    {role === "user" ? (
-                        <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
-                            <button
-                                onClick={handleAssignClick}
-                                className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
-                                    status === "New"
-                                        ? "bg-[#DB2727] text-white"
-                                        : "bg-[#EBD4FF] text-[#1D1D1D]"
-                                }`}
-                                disabled={status !== "New" || assignMutation.isPending}
-                            >
-                                {assignMutation.isPending ? "Assigning..." : buttonText}
-                            </button>
-                            {status !== "New" && (
-                                <div
-                                    className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
-                                    <select
-                                        className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
-                                        style={{textAlignLast: "center"}}
-                                    >
-                                        <option value="S0">Sales Level 1</option>
-                                        <option value="S1">Sales Level 2</option>
-                                        <option value="S2">Sales Level 3</option>
-                                        <option value="S3">Sales Level 4</option>
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
-                            <span>Assign to:</span>
+                    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
+                        <button
+                            onClick={handleAssignClick}
+                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
+                                status === "New"
+                                    ? "bg-[#DB2727] text-white"
+                                    : "bg-[#EBD4FF] text-[#1D1D1D]"
+                            }`}
+                            disabled={status !== "New" || assignMutation.isPending}
+                        >
+                            {assignMutation.isPending ? "Assigning..." : buttonText}
+                        </button>
+                        {status !== "New" && (
                             <div
                                 className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
                                 <select
@@ -249,8 +252,25 @@ export default function SalesDetailsPage() {
                                     <option value="S3">Sales Level 4</option>
                                 </select>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+                    {/*) : (*/}
+                    {/*    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">*/}
+                    {/*        <span>Assign to:</span>*/}
+                    {/*        <div*/}
+                    {/*            className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
+                    {/*            <select*/}
+                    {/*                className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
+                    {/*                style={{textAlignLast: "center"}}*/}
+                    {/*            >*/}
+                    {/*                <option value="S0">Sales Level 1</option>*/}
+                    {/*                <option value="S1">Sales Level 2</option>*/}
+                    {/*                <option value="S2">Sales Level 3</option>*/}
+                    {/*                <option value="S3">Sales Level 4</option>*/}
+                    {/*            </select>*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
 
                     {/* Tabs */}
                     <div className="w-full flex">
@@ -263,39 +283,37 @@ export default function SalesDetailsPage() {
                             <InfoRow label="Email:" value={sale.customer?.email || "N/A"}/>
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
-                                {role === "admin" ? "Spare Part Details" : "Vehicle Details"}
+                                Vehicle Details
                             </div>
                             <InfoRow label="Vehicle Made:" value={sale.vehicle_make || "N/A"}/>
                             <InfoRow label="Vehicle Model:" value={sale.vehicle_model || "N/A"}/>
-                            {role === "admin" ? (
-                                <>
-                                    <InfoRow label="Part No:" value="BF-DOT4"/>
-                                    <InfoRow label="YOM:" value="2024"/>
-                                    <InfoRow
-                                        label="Additional Note:"
-                                        value="hydraulic brake systems"
-                                    />
-                                </>
-                            ) : role === "tele-marketer" ? (
-                                <>
-                                    <InfoRow label="Manufacture Year:" value="2019"/>
-                                    <InfoRow label="Capacity:" value="2800cc"/>
-                                    <InfoRow label="Transmission:" value="Auto"/>
-                                    <InfoRow label="Fuel Type:" value="Petrol"/>
-                                    <InfoRow label="Price Range:" value="6,000,000 - 8,000,000"/>
-                                    <InfoRow label="Additional Note:" value="White color"/>
-                                </>
-                            ) : (
-                                <>
-                                    <InfoRow label="Manufacture Year:" value={sale.manufacture_year || "N/A"}/>
-                                    <InfoRow label="Transmission:" value={sale.transmission || "N/A"}/>
-                                    <InfoRow label="Fuel Type:" value={sale.fuel_type || "N/A"}/>
-                                    <InfoRow label="Down Payment:" value={`${sale.down_payment || 0}LKR`}/>
-                                    <InfoRow label="Price Range:"
-                                             value={`${sale.price_from || 0} - ${sale.price_to || 0}`}/>
-                                    <InfoRow label="Additional Note:" value={sale.additional_note || "N/A"}/>
-                                </>
-                            )}
+                            {/*{role === "admin" ? (*/}
+                            {/*    <>*/}
+                            {/*        <InfoRow label="Part No:" value="BF-DOT4"/>*/}
+                            {/*        <InfoRow label="YOM:" value="2024"/>*/}
+                            {/*        <InfoRow*/}
+                            {/*            label="Additional Note:"*/}
+                            {/*            value="hydraulic brake systems"*/}
+                            {/*        />*/}
+                            {/*    </>*/}
+                            {/*) : role === "tele-marketer" ? (*/}
+                            {/*    <>*/}
+                            {/*        <InfoRow label="Manufacture Year:" value="2019"/>*/}
+                            {/*        <InfoRow label="Capacity:" value="2800cc"/>*/}
+                            {/*        <InfoRow label="Transmission:" value="Auto"/>*/}
+                            {/*        <InfoRow label="Fuel Type:" value="Petrol"/>*/}
+                            {/*        <InfoRow label="Price Range:" value="6,000,000 - 8,000,000"/>*/}
+                            {/*        <InfoRow label="Additional Note:" value="White color"/>*/}
+                            {/*    </>*/}
+                            {/*) : (*/}
+                            <InfoRow label="Manufacture Year:" value={sale.manufacture_year || "N/A"}/>
+                            <InfoRow label="Transmission:" value={sale.transmission || "N/A"}/>
+                            <InfoRow label="Fuel Type:" value={sale.fuel_type || "N/A"}/>
+                            <InfoRow label="Down Payment:" value={`${sale.down_payment || 0}LKR`}/>
+                            <InfoRow label="Price Range:"
+                                     value={`${sale.price_from || 0} - ${sale.price_to || 0}`}/>
+                            <InfoRow label="Additional Note:" value={sale.additional_note || "N/A"}/>
+                            {/*)}*/}
                         </div>
 
                         <div className="w-3/5 flex flex-col min-h-[400px]">
