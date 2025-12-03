@@ -1055,7 +1055,7 @@ import {useForm} from "react-hook-form";
 import {setPriority} from "node:os";
 import FormField from "@/components/FormField";
 import {z} from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
+import {zodResolver} from "@hookform/resolvers/zod";
 
 type OptionType = { value: string; label: string };
 
@@ -1096,7 +1096,7 @@ export const selfAssignSaleSchema = z.object({
     vehicle_make: z.string().min(1, "Make is required"),
     vehicle_model: z.string().min(1, "Model is required"),
     remark: z.string().optional(),
-    priority: z.number().default(0),
+    priority: z.number().optional(),
 });
 
 export type SelfAssignSaleFormData = z.infer<typeof selfAssignSaleSchema>;
@@ -1150,6 +1150,7 @@ export default function SalesDashboard() {
 
     const userId = Number(user?.id || 1);
     const userRole = user?.user_role;
+    const isLevel1 = userRole === "SALES01";
 
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddSaleModalOpen, setIsAddSaleModalOpen] = useState(false);
@@ -1364,9 +1365,14 @@ export default function SalesDashboard() {
         register,
         handleSubmit,
         reset,
-        formState: { errors, isSubmitting },
+        formState: {errors, isSubmitting},
     } = useForm<SelfAssignSaleFormData>({
-        resolver: zodResolver(selfAssignSaleSchema)
+        resolver: zodResolver(selfAssignSaleSchema),
+        defaultValues: {
+            vehicle_type: "",
+            remark: "",
+            email: ""
+        }
     });
 
 
@@ -1376,7 +1382,7 @@ export default function SalesDashboard() {
             sales_user_id: userId,
             is_self_assigned: true,
             date: new Date().toISOString(),
-            priority: parseInt(priority.replace('P', '')) || 0,
+            priority: data.priority || parseInt(priority.replace('P', '')) || 0,
         };
 
         createSaleMutation.mutate(payload, {
@@ -1484,17 +1490,19 @@ export default function SalesDashboard() {
                     className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">Leads</span>
-                        <button
-                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
-                            onClick={() => setIsAddSaleModalOpen(true)}
-                        >
-                            <Image
-                                src={"/images/sales/plus.svg"}
-                                width={24}
-                                height={24}
-                                alt="Plus icon"
-                            />
-                        </button>
+                        {isLevel1 && (
+                            <button
+                                className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
+                                onClick={() => setIsAddSaleModalOpen(true)}
+                            >
+                                <Image
+                                    src={"/images/sales/plus.svg"}
+                                    width={24}
+                                    height={24}
+                                    alt="Plus icon"
+                                />
+                            </button>
+                        )}
                     </div>
 
                     {/*{isMounted && (*/}
@@ -1819,24 +1827,29 @@ export default function SalesDashboard() {
                     isPriorityAvailable={true}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
-                        <FormField label="Customer Name" placeholder="Customer Name" register={register("customer_name")} error={errors.customer_name} />
-                        <FormField label="Contact No" placeholder="Contact No" register={register("contact_number")} error={errors.contact_number} />
-                        <FormField label="Email" placeholder="Email" register={register("email")} error={errors.email} />
-                        <FormField label="City" placeholder="City" register={register("city")} error={errors.city} />
+                        <FormField label="Customer Name" placeholder="Customer Name"
+                                   register={register("customer_name")} error={errors.customer_name}/>
+                        <FormField label="Contact No" placeholder="Contact No" register={register("contact_number")}
+                                   error={errors.contact_number}/>
+                        <FormField label="Email" placeholder="Email" register={register("email")} error={errors.email}/>
+                        <FormField label="City" placeholder="City" register={register("city")} error={errors.city}/>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
                         <FormField
                             label="Lead Source"
                             type="select"
-                            options={[{value:"Direct Call", label:"Direct Call"}, {value:"Walk In", label:"Walk In"}]}
+                            options={[{value: "Direct Call", label: "Direct Call"}, {
+                                value: "Walk In",
+                                label: "Walk In"
+                            }]}
                             register={register("lead_source")}
                             error={errors.lead_source}
                         />
                         <FormField
                             label="Vehicle Type"
                             type="select"
-                            options={[{value:"SUV", label:"SUV"}, {value:"Sedan", label:"Sedan"}]}
+                            options={[{value: "SUV", label: "SUV"}, {value: "Sedan", label: "Sedan"}]}
                             register={register("vehicle_type")}
                             error={errors.vehicle_type}
                         />

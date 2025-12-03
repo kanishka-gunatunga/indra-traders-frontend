@@ -299,10 +299,10 @@ export default function SalesDetailsPage() {
                         {/*    </div>*/}
                         {/*)}*/}
 
-                        <div
-                            className="h-[40px] px-6 rounded-[22.98px] bg-[#FFEDD8] border border-orange-200 flex items-center justify-center font-semibold text-[#8a5b28]">
-                            Current Level: Sales {sale?.current_level || 1}
-                        </div>
+                        {/*<div*/}
+                        {/*    className="h-[40px] px-6 rounded-[22.98px] bg-[#FFEDD8] border border-orange-200 flex items-center justify-center font-semibold text-[#8a5b28]">*/}
+                        {/*    Current Level: Sales {sale?.current_level || 1}*/}
+                        {/*</div>*/}
 
                         {showHistoryButton && (
                             <button
