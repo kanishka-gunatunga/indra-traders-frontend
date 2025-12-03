@@ -4,11 +4,12 @@ import axiosInstance from "@/utils/axiosinstance";
 export const VehicleSaleService = {
     create: (data: any) => axiosInstance.post("/vehicle-sales", data),
 
-    getAll: (status?: string, userId?: number) =>
+    getAll: (status?: string, userId?: number, userRole?: string) =>
         axiosInstance.get("/vehicle-sales", {
             params: {
                 ...(status ? { status } : {}),
-                ...(userId ? { userId } : {})
+                ...(userId ? { userId } : {}),
+                ...(userRole ? { userRole } : {})
             },
         }),
 
@@ -53,5 +54,11 @@ export const VehicleSaleService = {
 
     updatePriority(id: number, data: { priority: number }) {
         return axiosInstance.put(`/vehicle-sales/priority/${id}`, data);
-    }
+    },
+
+    promote: (id: number, userId: number) =>
+        axiosInstance.put(`/vehicle-sales/${id}/promote`, { userId }),
+
+    getHistory: (id: number) =>
+        axiosInstance.get(`/vehicle-sales/${id}/history`),
 };

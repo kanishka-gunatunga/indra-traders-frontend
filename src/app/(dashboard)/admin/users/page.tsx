@@ -24,6 +24,7 @@ const ROLES = {
     ADMIN: "ADMIN",
     SALES_LV1: "SALES01",
     SALES_LV2: "SALES02",
+    SALES_LV3: "SALES03",
     CALL_AGENT: "CALLAGENT",
     TELEMARKETER: "TELEMARKETER",
 };
@@ -52,7 +53,7 @@ export default function UserManagement() {
     const createUserMutation = useCreateUser();
     const updateUserMutation = useUpdateUser();
 
-    const { toast, showToast, hideToast } = useToast();
+    const {toast, showToast, hideToast} = useToast();
 
     const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
@@ -280,7 +281,7 @@ export default function UserManagement() {
                     actionButton={{
                         label: "Add",
                         onClick: async () => {
-                            if(password !== confirmPassword) {
+                            if (password !== confirmPassword) {
                                 showToast("Passwords do not match!", "error");
                                 return;
                             }
@@ -359,6 +360,7 @@ export default function UserManagement() {
                                         <option value={ROLES.ADMIN}>Admin</option>
                                         <option value={ROLES.SALES_LV1}>Sales Lv 1</option>
                                         <option value={ROLES.SALES_LV2}>Sales Lv 2</option>
+                                        <option value={ROLES.SALES_LV3}>Sales Lv 3</option>
                                         <option value={ROLES.CALL_AGENT}>Call Agent</option>
                                         <option value={ROLES.TELEMARKETER}>Telemarketer</option>
                                     </select>
@@ -435,8 +437,8 @@ export default function UserManagement() {
                                 </span>
                                 </div>
                             </div>
-                        // ) : (
-                        //     <div></div>
+                            // ) : (
+                            //     <div></div>
                         )}
 
                         {/* Password */}
@@ -548,6 +550,7 @@ export default function UserManagement() {
                                     >
                                         {roleVal === ROLES.SALES_LV1 ? "Sales Lv 1" :
                                             roleVal === ROLES.SALES_LV2 ? "Sales Lv 2" :
+                                            roleVal === ROLES.SALES_LV3 ? "Sales Lv 3" :
                                                 roleVal === ROLES.CALL_AGENT ? "Call Agent" :
                                                     roleVal.charAt(0).toUpperCase() + roleVal.slice(1).toLowerCase()}
                                     </div>
@@ -758,6 +761,7 @@ export default function UserManagement() {
                             >
                                 <option value={ROLES.SALES_LV1}>Sales Lv 1</option>
                                 <option value={ROLES.SALES_LV2}>Sales Lv 2</option>
+                                <option value={ROLES.SALES_LV3}>Sales Lv 3</option>
                                 <option value={ROLES.CALL_AGENT}>Call Agent</option>
                                 <option value={ROLES.ADMIN}>Admin</option>
                                 <option value={ROLES.TELEMARKETER}>Telemarketer</option>

@@ -102,6 +102,7 @@ export default function SalesDashboard() {
     const user = useCurrentUser();
 
     const userId = Number(user?.id || 1);
+    const userRole = user?.user_role;
 
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
@@ -130,7 +131,7 @@ export default function SalesDashboard() {
     const {toast, showToast, hideToast} = useToast();
 
 
-    const {data: apiSales, isLoading} = useSales(undefined,userId);
+    const {data: apiSales, isLoading} = useSales(undefined, userId, userRole);
     const createDirectRequestMutation = useCreateDirectRequest();
     // const updateSaleStatusMutation = useUpdateSaleStatus();
 
@@ -163,8 +164,8 @@ export default function SalesDashboard() {
     > = {
         New: ["Ongoing"],
         Ongoing: ["Won", "Lost"],
-        Won: [],
-        Lost: [],
+        Won: ["Ongoing"],
+        Lost: ["Ongoing"],
     };
 
 
@@ -384,7 +385,7 @@ export default function SalesDashboard() {
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name={user?.full_name ||"Sophie Eleanor"}
+                    name={user?.full_name || "Sophie Eleanor"}
                     location={user?.branch || "Bambalapitiya"}
                     title="Indra Fast Track Sales Dashboard"
                 />

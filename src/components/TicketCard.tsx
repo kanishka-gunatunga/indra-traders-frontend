@@ -19,22 +19,36 @@ export interface TicketCardProps {
     isOverlay?: boolean;
 }
 
+// const priorityColors = [
+//     "bg-[#FFA7A7]",
+//     "bg-[#FFCBA4]",
+//     "bg-[#D6B3FF]",
+//     "bg-green-300",
+//     // "bg-blue-300",
+//     "bg-[#D6B3FF]",
+// ];
+
 const priorityColors = [
-    "bg-[#FFA7A7]",
-    "bg-[#FFCBA4]",
-    "bg-[#D6B3FF]",
-    "bg-green-300",
-    "bg-blue-300",
-    "bg-[#D6B3FF]",
+    "bg-[#E0E0E0]",
+    "bg-[#FCA5A5]",
+    "bg-[#FDE047]",
+    "bg-[#86EFAC]",
 ];
 
+// const priorityBorders = [
+//     "border-[#FFA7A7]",
+//     "border-[#FFCBA4]",
+//     "border-[#D6B3FF]",
+//     "border-green-300",
+//     // "border-blue-300",
+//     "border-[#D6B3FF]",
+// ];
+
 const priorityBorders = [
-    "border-[#FFA7A7]",
-    "border-[#FFCBA4]",
-    "border-[#D6B3FF]",
-    "border-green-300",
-    "border-blue-300",
-    "border-[#D6B3FF]",
+    "border-[#E0E0E0]",
+    "border-[#FCA5A5]",
+    "border-[#FDE047]",
+    "border-[#86EFAC]",
 ];
 
 export const TicketCard = ({

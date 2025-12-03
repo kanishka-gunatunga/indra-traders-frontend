@@ -14,11 +14,13 @@ import {
     useUpdateSaleStatus,
     useCreateFollowup,
     useCreateReminder,
-    useUpdatePriority
+    useUpdatePriority, useSaleHistory, usePromoteSale
 } from "@/hooks/useServicePark";
 import {useParams} from "next/navigation";
 import Image from "next/image";
 import {message} from "antd";
+import {useCurrentUser} from "@/utils/auth";
+import HistoryTimeline from "@/components/HistoryTimeline";
 
 
 const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
@@ -46,6 +48,7 @@ export default function SalesDetailsPage() {
 
     const [isActivityModalOpen, setActivityModalOpen] = useState(false);
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+    const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
 
     const [activityText, setActivityText] = useState("");
     const [reminderTitle, setReminderTitle] = useState("");
@@ -54,7 +57,9 @@ export default function SalesDetailsPage() {
 
     const params = useParams();
     const ticketNumber = params?.id as string;
-    const userId = 1;
+
+    const user = useCurrentUser();
+    const userId = Number(user?.id) || 1;
 
     console.log("------- number:", ticketNumber);
 
@@ -63,6 +68,10 @@ export default function SalesDetailsPage() {
     const updateSaleStatusMutation = useUpdateSaleStatus();
     const createFollowupMutation = useCreateFollowup();
     const createReminderMutation = useCreateReminder();
+
+
+    const {data: history} = useSaleHistory(saleDetails?.id);
+    const promoteMutation = usePromoteSale();
 
     const updatePriorityMutation = useUpdatePriority();
 
@@ -174,6 +183,37 @@ export default function SalesDetailsPage() {
         );
     };
 
+
+    const userRole = user?.user_role || "SALES01";
+    const isLevel1 = userRole === "SALES01";
+    const isLevel2 = userRole === "SALES02";
+
+    const showHistoryButton = !isLevel1;
+
+    const canPromote =
+        (isLevel1 && saleDetails?.current_level === 1 && status === "Ongoing") ||
+        (isLevel2 && saleDetails?.current_level === 2 && status === "Ongoing");
+
+    const getPromoteLabel = () => {
+        if (isLevel1) return "Escalate to Sales Lv 2";
+        if (isLevel2) return "Escalate to Sales Lv 3";
+        return "Escalate";
+    };
+
+    const handlePromote = async () => {
+        if (!confirm("Are you sure you want to pass this lead to the next sales level? You will lose access.")) return;
+
+        try {
+            await promoteMutation.mutateAsync({id: saleDetails.id, userId: Number(userId)});
+            alert("Lead promoted successfully!");
+            window.location.href = "/sales-agent/service-park-sale/sale";
+        } catch (e) {
+            console.error(e);
+            alert("Failed to promote lead.");
+        }
+    };
+
+
     const source = saleDetails?.lead_source?.toLowerCase();
 
     let imageSrc = "";
@@ -196,7 +236,9 @@ export default function SalesDetailsPage() {
     }
 
     if (isLoading) {
-        return <div className="text-center mt-10">Loading...</div>;
+        return <div className="text-center mt-10">
+            <p>Loading sale details...</p>
+        </div>;
     }
 
     if (error || !saleDetails) {
@@ -245,7 +287,6 @@ export default function SalesDetailsPage() {
                                     <option value={1}>P1</option>
                                     <option value={2}>P2</option>
                                     <option value={3}>P3</option>
-                                    <option value={4}>P4</option>
                                 </select>
                             </div>
                         </div>
@@ -275,51 +316,78 @@ export default function SalesDetailsPage() {
                     </div>
 
                     {/* Assign + Sales Level */}
-                    {role === "user" ? (
-                        <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
+                    {/*{role === "user" ? (*/}
+                    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
+                        <button
+                            onClick={handleAssignClick}
+                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
+                                status === "New"
+                                    ? "bg-[#DB2727] text-white"
+                                    : "bg-[#EBD4FF] text-[#1D1D1D]"
+                            }`}
+                            disabled={status !== "New" || assignToMeMutation.isPending}
+                        >
+                            {assignToMeMutation.isPending ? "Assigning..." : buttonText}
+                        </button>
+
+                        {canPromote && (
                             <button
-                                onClick={handleAssignClick}
-                                className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
-                                    status === "New"
-                                        ? "bg-[#DB2727] text-white"
-                                        : "bg-[#EBD4FF] text-[#1D1D1D]"
-                                }`}
-                                disabled={status !== "New" || assignToMeMutation.isPending}
+                                onClick={handlePromote}
+                                className="h-[40px] rounded-[22.98px] px-5 font-medium text-sm bg-[#DB2727] text-white hover:bg-red-500 transition shadow-md flex items-center gap-2"
+                                disabled={promoteMutation.isPending}
                             >
-                                {assignToMeMutation.isPending ? "Assigning..." : buttonText}
+                                {promoteMutation.isPending ? "Processing..." : getPromoteLabel()}
+                                {/*<Image src="/icons/arrow-right.svg" width={16} height={16} alt="arrow"/>*/}
                             </button>
-                            {status !== "New" && (
-                                <div
-                                    className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
-                                    <select
-                                        className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
-                                        style={{textAlignLast: "center"}}
-                                    >
-                                        <option value="S0">Sales Level 1</option>
-                                        <option value="S1">Sales Level 2</option>
-                                        <option value="S2">Sales Level 3</option>
-                                        <option value="S3">Sales Level 4</option>
-                                    </select>
-                                </div>
-                            )}
+                        )}
+
+                        {/*{status !== "New" && (*/}
+                        {/*    <div*/}
+                        {/*        className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
+                        {/*        <select*/}
+                        {/*            className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
+                        {/*            style={{textAlignLast: "center"}}*/}
+                        {/*        >*/}
+                        {/*            <option value="S0">Sales Level 1</option>*/}
+                        {/*            <option value="S1">Sales Level 2</option>*/}
+                        {/*            <option value="S2">Sales Level 3</option>*/}
+                        {/*            <option value="S3">Sales Level 4</option>*/}
+                        {/*        </select>*/}
+                        {/*    </div>*/}
+                        {/*)}*/}
+
+                        <div
+                            className="h-[40px] px-6 rounded-[22.98px] bg-[#FFEDD8] border border-orange-200 flex items-center justify-center font-semibold text-[#8a5b28]">
+                            Current Level: Sales {saleDetails?.current_level || 1}
                         </div>
-                    ) : (
-                        <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
-                            <span>Assign to:</span>
-                            <div
-                                className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
-                                <select
-                                    className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
-                                    style={{textAlignLast: "center"}}
-                                >
-                                    <option value="S0">Sales Level 1</option>
-                                    <option value="S1">Sales Level 2</option>
-                                    <option value="S2">Sales Level 3</option>
-                                    <option value="S3">Sales Level 4</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
+
+                        {showHistoryButton && (
+                            <button
+                                onClick={() => setHistoryModalOpen(true)}
+                                className="ml-auto h-[40px] px-5 rounded-[22.98px] border border-gray-400 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                                {/*<Image src="/dashboard/time.svg" width={20} height={20} alt="history" />*/}
+                                View History
+                            </button>
+                        )}
+                    </div>
+                    {/*) : (*/}
+                    {/*    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">*/}
+                    {/*        <span>Assign to:</span>*/}
+                    {/*        <div*/}
+                    {/*            className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
+                    {/*            <select*/}
+                    {/*                className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
+                    {/*                style={{textAlignLast: "center"}}*/}
+                    {/*            >*/}
+                    {/*                <option value="S0">Sales Level 1</option>*/}
+                    {/*                <option value="S1">Sales Level 2</option>*/}
+                    {/*                <option value="S2">Sales Level 3</option>*/}
+                    {/*                <option value="S3">Sales Level 4</option>*/}
+                    {/*            </select>*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
 
                     {/* Tabs */}
                     <div className="w-full flex">
@@ -353,18 +421,30 @@ export default function SalesDetailsPage() {
                                 followups={saleDetails.followups || []}
                                 reminders={saleDetails.reminders || []}
                             />
-                            {role === "admin" ? null : (
-                                <div className="mt-6 flex w-full justify-end">
-                                    <button
-                                        className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
-                                        Save
-                                    </button>
-                                </div>
-                            )}
+                            {/*{role === "admin" ? null : (*/}
+                            <div className="mt-6 flex w-full justify-end">
+                                <button
+                                    className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
+                                    Save
+                                </button>
+                            </div>
+                            {/*)}*/}
                         </div>
                     </div>
                 </section>
             </main>
+
+            {isHistoryModalOpen && (
+                <Modal
+                    title="Lead History Journey"
+                    onClose={() => setHistoryModalOpen(false)}
+                    isPriorityAvailable={false}
+                >
+                    <div className="w-full px-4 pb-4">
+                        <HistoryTimeline history={history}/>
+                    </div>
+                </Modal>
+            )}
 
             {/* Activity Modal */}
             {isActivityModalOpen && (

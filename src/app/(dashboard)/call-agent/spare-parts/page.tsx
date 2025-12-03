@@ -12,6 +12,7 @@ import FormField from "@/components/FormField";
 import {useCreateUnavailableSparePart} from "@/hooks/useUnavailable";
 import Toast from "@/components/Toast";
 import {useToast} from "@/hooks/useToast";
+import {useCurrentUser} from "@/utils/auth";
 
 
 export const spareSaleSchema = z.object({
@@ -63,6 +64,9 @@ const SpareParts = () => {
         },
     });
 
+    const user = useCurrentUser();
+    const userId = Number(user?.id) || 1;
+
     console.log("Form errors:", errors);
 
     const createSaleMutation = useSpareCreateSale();
@@ -76,7 +80,7 @@ const SpareParts = () => {
             ...data,
             date: new Date().toISOString().split("T")[0],
             customer_id: "CUS1760981191036",
-            call_agent_id: 1,
+            call_agent_id: userId,
         };
 
         console.log("----------payload: ", payload);
@@ -97,7 +101,7 @@ const SpareParts = () => {
 
     const onUnavailableSubmit = (data: UnavailableSparePartFormData) => {
         const payload = {
-            call_agent_id: 1,
+            call_agent_id: userId,
             ...data,
             year_of_manufacture: parseInt(data.year_of_manufacture, 10),
         };

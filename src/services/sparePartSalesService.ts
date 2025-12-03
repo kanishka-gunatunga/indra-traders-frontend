@@ -5,12 +5,13 @@ import axiosInstance from "@/utils/axiosinstance";
 export const SparePartSalesService = {
     createSale: (data: any) => axiosInstance.post("/spare-part-sales", data),
 
-    listSales: (params?: Record<string, any>, userId?: number) =>
+    listSales: (status?: string, userId?: number, userRole?: string) =>
         axiosInstance.get("/spare-part-sales", {
             params: {
-                ...params,
-                ...(userId ? {userId} : {})
-            }
+                ...(status ? { status } : {}),
+                ...(userId ? { userId } : {}),
+                ...(userRole ? { userRole } : {})
+            },
         }),
 
     getSaleByTicket: (ticket: string) =>
@@ -42,5 +43,11 @@ export const SparePartSalesService = {
 
     updatePriority(id: number, data: { priority: number }) {
         return axiosInstance.put(`/spare-part-sales/priority/${id}`, data);
-    }
+    },
+
+    promote: (id: number, userId: number) =>
+        axiosInstance.put(`/spare-part-sales/${id}/promote`, { userId }),
+
+    getHistory: (id: number) =>
+        axiosInstance.get(`/spare-part-sales/${id}/history`),
 };

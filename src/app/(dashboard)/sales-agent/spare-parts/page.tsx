@@ -106,7 +106,8 @@ export default function SalesDashboard() {
 
     const user = useCurrentUser();
 
-    const userId = Number(user?.id || 1);
+    const userId = Number(user?.id) || 1;
+    const userRole = user?.user_role;
 
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddSaleModalOpen, setIsAddSaleModalOpen] = useState(false);
@@ -130,8 +131,7 @@ export default function SalesDashboard() {
     const {toast, showToast, hideToast} = useToast();
 
 
-
-    const {data: apiSales, isLoading} = useSpareSales(undefined, userId);
+    const {data: apiSales, isLoading} = useSpareSales(undefined, userId, userRole);
     const createSaleMutation = useSpareCreateSale();
 
     const updateStatusMutation = useUpdateSaleStatus();
@@ -370,7 +370,7 @@ export default function SalesDashboard() {
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name={user?.full_name ||"Sophie Eleanor"}
+                    name={user?.full_name || "Sophie Eleanor"}
                     location={user?.branch || "Bambalapitiya"}
                     title="Indra Motor Spare Sales Dashboard"
                 />
@@ -467,7 +467,7 @@ export default function SalesDashboard() {
                                 {/*    </div>*/}
                                 {/*))}*/}
 
-                                {reminderData?.data.map((item:any, idx: number) => (
+                                {reminderData?.data.map((item: any, idx: number) => (
                                     <div
                                         key={idx}
                                         className={`flex ${

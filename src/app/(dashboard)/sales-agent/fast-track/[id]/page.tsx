@@ -14,9 +14,12 @@ import {
     useCreateSaleFollowup,
     useCreateSaleReminder,
     useSaleByTicket, useUpdateSalePriority,
-    useUpdateSaleStatus
+    useUpdateSaleStatus, useSaleHistory, usePromoteSale
 } from "@/hooks/useFastTrack";
 import {useParams} from "next/navigation";
+import {useCurrentUser} from "@/utils/auth";
+import Image from "next/image";
+import HistoryTimeline from "@/components/HistoryTimeline";
 
 const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
     switch (apiStatus) {
@@ -40,7 +43,8 @@ export default function SalesDetailsPage() {
 
     const params = useParams();
     const ticketNumber = params?.id as string;
-    const userId = 1; // Replace with actual user ID from auth context
+    const user = useCurrentUser();
+    const userId = Number(user?.id) || 1;
 
     const {data: sale, isLoading, error} = useSaleByTicket(ticketNumber);
     const assignToMeMutation = useClaimSaleLead();
@@ -49,6 +53,9 @@ export default function SalesDetailsPage() {
     const updateSaleStatusMutation = useUpdateSaleStatus();
     const updateSalePriorityMutation = useUpdateSalePriority();
 
+    const {data: history} = useSaleHistory(sale?.id);
+    const promoteMutation = usePromoteSale();
+
     const [status, setStatus] = useState<SalesStatus>("New");
     const [isActivityModalOpen, setActivityModalOpen] = useState(false);
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
@@ -56,6 +63,7 @@ export default function SalesDetailsPage() {
     const [reminderTitle, setReminderTitle] = useState("");
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
+    const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
 
     useEffect(() => {
         if (sale) {
@@ -150,11 +158,42 @@ export default function SalesDetailsPage() {
         }
     };
 
+
+    const userRole = user?.user_role || "SALES01";
+    const isLevel1 = userRole === "SALES01";
+    const isLevel2 = userRole === "SALES02";
+
+    const showHistoryButton = !isLevel1;
+
+    const canPromote =
+        (isLevel1 && sale?.current_level === 1 && status === "Ongoing") ||
+        (isLevel2 && sale?.current_level === 2 && status === "Ongoing");
+
+    const getPromoteLabel = () => {
+        if (isLevel1) return "Escalate to Sales Lv 2";
+        if (isLevel2) return "Escalate to Sales Lv 3";
+        return "Escalate";
+    };
+
+    const handlePromote = async () => {
+        if (!confirm("Are you sure you want to pass this lead to the next sales level? You will lose access.")) return;
+
+        try {
+            await promoteMutation.mutateAsync({id: sale.id, userId: Number(userId)});
+            alert("Lead promoted successfully!");
+            window.location.href = "/sales-agent/sales";
+        } catch (e) {
+            console.error(e);
+            alert("Failed to promote lead.");
+        }
+    };
+
+
     const buttonText =
         status === "New" ? "Assign to me" : `Sales person: ${sale?.salesUser?.full_name || "Unknown"}`;
 
     if (isLoading) {
-        return <div className="text-center mt-10">Loading...</div>;
+        return <div className="text-center mt-10"><p>Loading sale details...</p></div>;
     }
 
     if (error || !sale) {
@@ -165,13 +204,34 @@ export default function SalesDetailsPage() {
         );
     }
 
+    const source = sale?.lead_source?.toLowerCase();
+
+    let imageSrc = "";
+
+    switch (source) {
+        case "call agent":
+            imageSrc = "/call.svg";
+            break;
+        case "website":
+            imageSrc = "/icons/website.png";
+            break;
+        case "whatsapp":
+            imageSrc = "/icons/whatsapp.png";
+            break;
+        case "facebook":
+            imageSrc = "/icons/facebook.png";
+            break;
+        default:
+            imageSrc = "/call.svg";
+    }
+
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name || "Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Indra Fast Track Sales Dashboard"
                 />
 
@@ -183,6 +243,10 @@ export default function SalesDetailsPage() {
               <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
                {sale.ticket_number}
               </span>
+                            <span
+                                className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
+                                    <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20}/>
+                            </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
                 ITPL
@@ -198,7 +262,6 @@ export default function SalesDetailsPage() {
                                     <option value={1}>P1</option>
                                     <option value={2}>P2</option>
                                     <option value={3}>P3</option>
-                                    <option value={4}>P4</option>
                                 </select>
                             </div>
                         </div>
@@ -226,51 +289,78 @@ export default function SalesDetailsPage() {
                     </div>
 
                     {/* Assign + Sales Level */}
-                    {role === "user" ? (
-                        <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
+                    {/*{role === "user" ? (*/}
+                    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
+                        <button
+                            onClick={handleAssignClick}
+                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
+                                status === "New"
+                                    ? "bg-[#DB2727] text-white"
+                                    : "bg-[#EBD4FF] text-[#1D1D1D]"
+                            }`}
+                            disabled={status !== "New"}
+                        >
+                            {buttonText}
+                        </button>
+
+                        {canPromote && (
                             <button
-                                onClick={handleAssignClick}
-                                className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
-                                    status === "New"
-                                        ? "bg-[#DB2727] text-white"
-                                        : "bg-[#EBD4FF] text-[#1D1D1D]"
-                                }`}
-                                disabled={status !== "New"}
+                                onClick={handlePromote}
+                                className="h-[40px] rounded-[22.98px] px-5 font-medium text-sm bg-[#DB2727] text-white hover:bg-red-500 transition shadow-md flex items-center gap-2"
+                                disabled={promoteMutation.isPending}
                             >
-                                {buttonText}
+                                {promoteMutation.isPending ? "Processing..." : getPromoteLabel()}
+                                {/*<Image src="/icons/arrow-right.svg" width={16} height={16} alt="arrow"/>*/}
                             </button>
-                            {status !== "New" && (
-                                <div
-                                    className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
-                                    <select
-                                        className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
-                                        style={{textAlignLast: "center"}}
-                                    >
-                                        <option value="S0">Sales Level 1</option>
-                                        <option value="S1">Sales Level 2</option>
-                                        <option value="S2">Sales Level 3</option>
-                                        <option value="S3">Sales Level 4</option>
-                                    </select>
-                                </div>
-                            )}
+                        )}
+
+                        {/*{status !== "New" && (*/}
+                        {/*    <div*/}
+                        {/*        className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
+                        {/*        <select*/}
+                        {/*            className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
+                        {/*            style={{textAlignLast: "center"}}*/}
+                        {/*        >*/}
+                        {/*            <option value="S0">Sales Level 1</option>*/}
+                        {/*            <option value="S1">Sales Level 2</option>*/}
+                        {/*            <option value="S2">Sales Level 3</option>*/}
+                        {/*            <option value="S3">Sales Level 4</option>*/}
+                        {/*        </select>*/}
+                        {/*    </div>*/}
+                        {/*)}*/}
+
+                        <div
+                            className="h-[40px] px-6 rounded-[22.98px] bg-[#FFEDD8] border border-orange-200 flex items-center justify-center font-semibold text-[#8a5b28]">
+                            Current Level: Sales {sale?.current_level || 1}
                         </div>
-                    ) : (
-                        <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
-                            <span>Assign to:</span>
-                            <div
-                                className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
-                                <select
-                                    className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
-                                    style={{textAlignLast: "center"}}
-                                >
-                                    <option value="S0">Sales Level 1</option>
-                                    <option value="S1">Sales Level 2</option>
-                                    <option value="S2">Sales Level 3</option>
-                                    <option value="S3">Sales Level 4</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
+
+                        {showHistoryButton && (
+                            <button
+                                onClick={() => setHistoryModalOpen(true)}
+                                className="ml-auto h-[40px] px-5 rounded-[22.98px] border border-gray-400 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                                {/*<Image src="/dashboard/time.svg" width={20} height={20} alt="history" />*/}
+                                View History
+                            </button>
+                        )}
+                    </div>
+                    {/*) : (*/}
+                    {/*    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">*/}
+                    {/*        <span>Assign to:</span>*/}
+                    {/*        <div*/}
+                    {/*            className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
+                    {/*            <select*/}
+                    {/*                className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
+                    {/*                style={{textAlignLast: "center"}}*/}
+                    {/*            >*/}
+                    {/*                <option value="S0">Sales Level 1</option>*/}
+                    {/*                <option value="S1">Sales Level 2</option>*/}
+                    {/*                <option value="S2">Sales Level 3</option>*/}
+                    {/*                <option value="S3">Sales Level 4</option>*/}
+                    {/*            </select>*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
 
                     {/* Tabs */}
                     <div className="w-full flex">
@@ -305,18 +395,30 @@ export default function SalesDetailsPage() {
                                 onOpenActivity={() => setActivityModalOpen(true)}
                                 onOpenReminder={() => setReminderModalOpen(true)}
                             />
-                            {role === "admin" ? null : (
-                                <div className="mt-6 flex w-full justify-end">
-                                    <button
-                                        className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
-                                        Save
-                                    </button>
-                                </div>
-                            )}
+                            {/*{role === "admin" ? null : (*/}
+                            <div className="mt-6 flex w-full justify-end">
+                                <button
+                                    className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
+                                    Save
+                                </button>
+                            </div>
+                            {/*)}*/}
                         </div>
                     </div>
                 </section>
             </main>
+
+            {isHistoryModalOpen && (
+                <Modal
+                    title="Lead History Journey"
+                    onClose={() => setHistoryModalOpen(false)}
+                    isPriorityAvailable={false}
+                >
+                    <div className="w-full px-4 pb-4">
+                        <HistoryTimeline history={history}/>
+                    </div>
+                </Modal>
+            )}
 
             {/* Activity Modal */}
             {isActivityModalOpen && (

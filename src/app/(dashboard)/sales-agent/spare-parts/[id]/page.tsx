@@ -14,10 +14,12 @@ import {
     useCreateFollowup,
     useSpareSaleByTicket,
     useCreateReminder,
-    useUpdateSaleStatus, useUpdatePriority
+    useUpdateSaleStatus, useUpdatePriority, useSaleHistory, usePromoteSale
 } from "@/hooks/useSparePartSales";
 import {message} from "antd";
 import {useCurrentUser} from "@/utils/auth";
+import Image from "next/image";
+import HistoryTimeline from "@/components/HistoryTimeline";
 
 
 const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
@@ -54,11 +56,14 @@ export default function SalesDetailsPage() {
     const updateSaleStatusMutation = useUpdateSaleStatus();
     const updatePriorityMutation = useUpdatePriority();
 
+    const {data: history} = useSaleHistory(sale?.id);
+    const promoteMutation = usePromoteSale();
 
     const [status, setStatus] = useState<SalesStatus>("New");
 
     const [isActivityModalOpen, setActivityModalOpen] = useState(false);
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+    const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
 
     const [activityText, setActivityText] = useState("");
     const [reminderTitle, setReminderTitle] = useState("");
@@ -165,6 +170,36 @@ export default function SalesDetailsPage() {
         );
     };
 
+    const userRole = user?.user_role || "SALES01";
+    const isLevel1 = userRole === "SALES01";
+    const isLevel2 = userRole === "SALES02";
+
+    const showHistoryButton = !isLevel1;
+
+    const canPromote =
+        (isLevel1 && sale?.current_level === 1 && status === "Ongoing") ||
+        (isLevel2 && sale?.current_level === 2 && status === "Ongoing");
+
+    const getPromoteLabel = () => {
+        if (isLevel1) return "Escalate to Sales Lv 2";
+        if (isLevel2) return "Escalate to Sales Lv 3";
+        return "Escalate";
+    };
+
+    const handlePromote = async () => {
+        if (!confirm("Are you sure you want to pass this lead to the next sales level? You will lose access.")) return;
+
+        try {
+            await promoteMutation.mutateAsync({id: sale.id, userId: Number(userId)});
+            alert("Lead promoted successfully!");
+            window.location.href = "/sales-agent/spare-parts";
+        } catch (e) {
+            console.error(e);
+            alert("Failed to promote lead.");
+        }
+    };
+
+
     const buttonText =
         status === "New" ? "Assign to me" : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
 
@@ -178,6 +213,26 @@ export default function SalesDetailsPage() {
                 Error: {error?.message || "Sale not found!"}
             </div>
         )
+    }
+
+    const source = sale?.lead_source?.toLowerCase();
+    let imageSrc = "";
+
+    switch (source) {
+        case "call agent":
+            imageSrc = "/call.svg";
+            break;
+        case "website":
+            imageSrc = "/icons/website.png";
+            break;
+        case "whatsapp":
+            imageSrc = "/icons/whatsapp.png";
+            break;
+        case "facebook":
+            imageSrc = "/icons/facebook.png";
+            break;
+        default:
+            imageSrc = "/call.svg";
     }
 
     return (
@@ -200,6 +255,10 @@ export default function SalesDetailsPage() {
               </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
+                                    <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20}/>
+                            </span>
+                            <span
+                                className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
                 IMS
               </span>
                             <div
@@ -214,7 +273,6 @@ export default function SalesDetailsPage() {
                                     <option value={1}>P1</option>
                                     <option value={2}>P2</option>
                                     <option value={3}>P3</option>
-                                    <option value={4}>P4</option>
                                 </select>
                             </div>
                         </div>
@@ -255,20 +313,48 @@ export default function SalesDetailsPage() {
                         >
                             {assignToMeMutation.isPending ? "Assigning..." : buttonText}
                         </button>
-                        {status !== "New" && (
-                            <div
-                                className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">
-                                <select
-                                    className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"
-                                    style={{textAlignLast: "center"}}
-                                >
-                                    <option value="S0">Sales Level 1</option>
-                                    <option value="S1">Sales Level 2</option>
-                                    <option value="S2">Sales Level 3</option>
-                                    <option value="S3">Sales Level 4</option>
-                                </select>
-                            </div>
+
+                        {canPromote && (
+                            <button
+                                onClick={handlePromote}
+                                className="h-[40px] rounded-[22.98px] px-5 font-medium text-sm bg-[#DB2727] text-white hover:bg-red-500 transition shadow-md flex items-center gap-2"
+                                disabled={promoteMutation.isPending}
+                            >
+                                {promoteMutation.isPending ? "Processing..." : getPromoteLabel()}
+                                {/*<Image src="/icons/arrow-right.svg" width={16} height={16} alt="arrow"/>*/}
+                            </button>
                         )}
+
+                        {/*{status !== "New" && (*/}
+                        {/*    <div*/}
+                        {/*        className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
+                        {/*        <select*/}
+                        {/*            className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
+                        {/*            style={{textAlignLast: "center"}}*/}
+                        {/*        >*/}
+                        {/*            <option value="S0">Sales Level 1</option>*/}
+                        {/*            <option value="S1">Sales Level 2</option>*/}
+                        {/*            <option value="S2">Sales Level 3</option>*/}
+                        {/*            <option value="S3">Sales Level 4</option>*/}
+                        {/*        </select>*/}
+                        {/*    </div>*/}
+                        {/*)}*/}
+
+                        <div
+                            className="h-[40px] px-6 rounded-[22.98px] bg-[#FFEDD8] border border-orange-200 flex items-center justify-center font-semibold text-[#8a5b28]">
+                            Current Level: Sales {sale?.current_level || 1}
+                        </div>
+
+                        {showHistoryButton && (
+                            <button
+                                onClick={() => setHistoryModalOpen(true)}
+                                className="ml-auto h-[40px] px-5 rounded-[22.98px] border border-gray-400 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                                {/*<Image src="/dashboard/time.svg" width={20} height={20} alt="history" />*/}
+                                View History
+                            </button>
+                        )}
+
                     </div>
                     {/*) : (*/}
                     {/*    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">*/}
@@ -336,6 +422,18 @@ export default function SalesDetailsPage() {
                     </div>
                 </section>
             </main>
+
+            {isHistoryModalOpen && (
+                <Modal
+                    title="Lead History Journey"
+                    onClose={() => setHistoryModalOpen(false)}
+                    isPriorityAvailable={false}
+                >
+                    <div className="w-full px-4 pb-4">
+                        <HistoryTimeline history={history}/>
+                    </div>
+                </Modal>
+            )}
 
             {/* Activity Modal */}
             {isActivityModalOpen && (
