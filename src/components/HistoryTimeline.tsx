@@ -15,12 +15,12 @@ const HistoryTimeline = ({history}: { history: any[] }) => {
                         {/* Dot */}
                         <span
                             className={`absolute -left-[33px] flex items-center justify-center w-4 h-4 rounded-full ring-4 ring-white ${
-                                item.action_type === 'PROMOTED_LEVEL' ? 'bg-green-500' : 'bg-blue-500'
+                                item.action_type === 'PROMOTED_LEVEL' ? 'bg-[#DB2727]' : 'bg-blue-500'
                             }`}>
                         </span>
 
-                        <div className="p-4 bg-white/50 rounded-lg border border-gray-100 shadow-sm">
-                            <div className="flex justify-between items-start">
+                        <div className="py-4 px-8 bg-white/50 rounded-lg border border-gray-100 shadow-sm">
+                            <div className="flex justify-between items-center gap-10">
                                 <h4 className="font-semibold text-gray-900">{item.action_type.replace('_', ' ')}</h4>
                                 <span className="text-xs text-gray-500">
                                     {dayjs(item.timestamp).format("MMM D, YYYY HH:mm")}

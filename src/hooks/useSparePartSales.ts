@@ -3,10 +3,10 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {SparePartSalesService} from "@/services/sparePartSalesService";
 
-export const useSpareSales = (filters?: Record<string, any>, userId?: number) =>
+export const useSpareSales = (status?: string, userId?: number, userRole?: string) =>
     useQuery({
-        queryKey: ["spareSales", filters, userId],
-        queryFn: () => SparePartSalesService.listSales(filters, userId).then((res) => res.data),
+        queryKey: ["spareSales", status, userId, userRole],
+        queryFn: () => SparePartSalesService.listSales(status, userId, userRole).then((res) => res.data),
     });
 
 export const useSpareCreateSale = () => {

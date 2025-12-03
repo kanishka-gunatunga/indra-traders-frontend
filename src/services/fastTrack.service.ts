@@ -63,12 +63,13 @@ export const FastTrackService = {
     //     return axiosInstance.get("/fast-track/sales", { params }).then(r => r.data);
     // },
 
-    listSales(params?: any, userId?: number) {
+    listSales(status?: string, userId?: number, userRole?: string) {
         return axiosInstance.get("/fast-track/sales", {
             params: {
-                ...params,
-                ...(userId ? { userId } : {})
-            }
+                ...(status ? { status } : {}),
+                ...(userId ? { userId } : {}),
+                ...(userRole ? { userRole } : {})
+            },
         }).then(r => r.data);
     },
 
@@ -105,8 +106,8 @@ export const FastTrackService = {
     },
 
     promote: (id: number, userId: number) =>
-        axiosInstance.put(`/vehicle-sales/${id}/promote`, { userId }),
+        axiosInstance.put(`/fast-track/sales/${id}/promote`, { userId }),
 
     getHistory: (id: number) =>
-        axiosInstance.get(`/vehicle-sales/${id}/history`),
+        axiosInstance.get(`/fast-track/sales/${id}/history`),
 };

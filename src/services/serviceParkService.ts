@@ -18,9 +18,13 @@ export const createAssignToSale = async (data: any) => {
 //     return res.data;
 // };
 
-export const listVehicleSales = async (userId?: number) => {
+export const listVehicleSales = async (status?: string, userId?: number, userRole?: string) => {
     const res = await axiosInstance.get("/service-park/sales", {
-        params: userId ? { userId } : {}
+        params: {
+            ...(status ? { status } : {}),
+            ...(userId ? { userId } : {}),
+            ...(userRole ? { userRole } : {})
+        },
     });
     return res.data;
 };
@@ -79,10 +83,10 @@ export const updatePriority = async (id: number, data: { priority: number }) => 
 }
 
 export const promote = async (id: number, userId: number) => {
-    return await axiosInstance.put(`/spare-part-sales/${id}/promote`, { userId });
+    return await axiosInstance.put(`/service-park/${id}/promote`, { userId });
 }
 
 export const getHistory = async (id: number) => {
-    return await axiosInstance.get(`/spare-part-sales/${id}/history`);
+    return await axiosInstance.get(`/service-park/${id}/history`);
 }
 

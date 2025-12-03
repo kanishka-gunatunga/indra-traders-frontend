@@ -89,10 +89,10 @@ export const useAssignBestMatchToSale = () => {
 };
 
 
-export const useSales = (params?: any, userId?: number) => {
+export const useSales = (status?: string, userId?: number, userRole?: string) => {
     return useQuery({
-        queryKey: ["sales", params, userId],
-        queryFn: () => FastTrackService.listSales(params, userId)
+        queryKey: ["sales", status, userId, userRole],
+        queryFn: () => FastTrackService.listSales(status, userId, userRole)
     });
 };
 

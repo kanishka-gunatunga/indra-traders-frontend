@@ -98,6 +98,7 @@ export default function SalesDashboard() {
     const user = useCurrentUser();
 
     const userId = Number(user?.id || 1);
+    const userRole = user?.user_role;
 
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
@@ -120,7 +121,7 @@ export default function SalesDashboard() {
     const {toast, showToast, hideToast} = useToast();
 
 
-    const {data: apiSales, isLoading, isError} = useVehicleSales(userId);
+    const {data: apiSales, isLoading, isError} = useVehicleSales(undefined, userId, userRole);
     console.log("----- sale details: ", apiSales);
 
     const {data: reminderData, isLoading: reminderLoading, error: reminderError} = useNearestReminders(userId);
@@ -154,8 +155,8 @@ export default function SalesDashboard() {
     > = {
         New: ["Ongoing"],
         Ongoing: ["Won", "Lost"],
-        Won: [],
-        Lost: [],
+        Won: ["Ongoing"],
+        Lost: ["Ongoing"],
     };
 
 

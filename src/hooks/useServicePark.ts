@@ -16,11 +16,11 @@ export const useVehicleHistories = () =>
         queryFn: listVehicleHistories,
     });
 
-export const useVehicleSales = (userId?: number) =>
+export const useVehicleSales = (status?: string, userId?: number, userRole?: string) =>
     useQuery({
-        queryKey: ["servicePark", "saleDetails", userId],
+        queryKey: ["servicePark", "saleDetails", status, userId, userRole],
         queryFn: async () => {
-            const res = await listVehicleSales(userId);
+            const res = await listVehicleSales(status, userId, userRole);
             return res.data;
         },
     });

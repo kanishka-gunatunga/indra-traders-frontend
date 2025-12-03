@@ -250,7 +250,6 @@ export default function SalesDetailsPage() {
                                     <option value={1}>P1</option>
                                     <option value={2}>P2</option>
                                     <option value={3}>P3</option>
-                                    <option value={4}>P4</option>
                                 </select>
                             </div>
                         </div>
@@ -277,7 +276,7 @@ export default function SalesDetailsPage() {
                         {canPromote && (
                             <button
                                 onClick={handlePromote}
-                                className="h-[40px] rounded-[22.98px] px-5 font-medium text-sm bg-[#DB2727] text-white hover:bg-blue-700 transition shadow-md flex items-center gap-2"
+                                className="h-[40px] rounded-[22.98px] px-5 font-medium text-sm bg-[#DB2727] text-white hover:bg-red-500 transition shadow-md flex items-center gap-2"
                                 disabled={promoteMutation.isPending}
                             >
                                 {promoteMutation.isPending ? "Processing..." : getPromoteLabel()}
@@ -386,14 +385,14 @@ export default function SalesDetailsPage() {
                                 followups={sale.followups || []}
                                 reminders={sale.reminders || []}
                             />
-                            {role === "admin" ? null : (
+                            {/*{role === "admin" ? null : (*/}
                                 <div className="mt-6 flex w-full justify-end">
                                     <button
                                         className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
                                         Save
                                     </button>
                                 </div>
-                            )}
+                            {/*)}*/}
                         </div>
                     </div>
                 </section>
