@@ -1051,6 +1051,11 @@ import {createPortal} from "react-dom";
 import {useToast} from "@/hooks/useToast";
 import Toast from "@/components/Toast";
 import {useCurrentUser} from "@/utils/auth";
+import {useForm} from "react-hook-form";
+import {setPriority} from "node:os";
+import FormField from "@/components/FormField";
+import {z} from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 type OptionType = { value: string; label: string };
 
@@ -1079,6 +1084,22 @@ type MappedTicket = {
     date: string;
     status: "New" | "Ongoing" | "Won" | "Lost";
 };
+
+
+export const selfAssignSaleSchema = z.object({
+    customer_name: z.string().min(1, "Customer Name is required"),
+    contact_number: z.string().min(10, "Valid Contact Number is required"),
+    email: z.string().email("Invalid email").optional().or(z.literal("")),
+    city: z.string().min(1, "City is required"),
+    lead_source: z.string().min(1, "Lead Source is required"),
+    vehicle_type: z.string().optional(),
+    vehicle_make: z.string().min(1, "Make is required"),
+    vehicle_model: z.string().min(1, "Model is required"),
+    remark: z.string().optional(),
+    priority: z.number().default(0),
+});
+
+export type SelfAssignSaleFormData = z.infer<typeof selfAssignSaleSchema>;
 
 const mapStatus = (apiStatus: string): MappedTicket["status"] => {
     switch (apiStatus) {
@@ -1143,6 +1164,8 @@ export default function SalesDashboard() {
     const [selectedMake, setSelectedMake] = useState<OptionType | null>(null);
     const [selectedModel, setSelectedModel] = useState<OptionType | null>(null);
     const [selectedPartNo, setSelectedPartNo] = useState<OptionType | null>(null);
+
+    const [priority, setPriority] = useState("P0");
 
 
     const [isMounted, setIsMounted] = useState(false);
@@ -1335,6 +1358,41 @@ export default function SalesDashboard() {
         "Won",
         "Lost",
     ];
+
+
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors, isSubmitting },
+    } = useForm<SelfAssignSaleFormData>({
+        resolver: zodResolver(selfAssignSaleSchema)
+    });
+
+
+    const handleSelfAssignSubmit = (data: SelfAssignSaleFormData) => {
+        const payload = {
+            ...data,
+            sales_user_id: userId,
+            is_self_assigned: true,
+            date: new Date().toISOString(),
+            priority: parseInt(priority.replace('P', '')) || 0,
+        };
+
+        createSaleMutation.mutate(payload, {
+            onSuccess: () => {
+                showToast("Lead created and assigned successfully!", "success");
+                setIsAddSaleModalOpen(false);
+                setPriority("P0");
+                reset();
+            },
+            onError: (err) => {
+                console.error(err);
+                showToast("Failed to create lead", "error");
+            }
+        });
+    }
+
 
     const handleCreateSale = () => {
         if (!customerId || !vehicleMake || !vehicleModel || !partNo || !yearOfManufacture) {
@@ -1600,154 +1658,218 @@ export default function SalesDashboard() {
             {/*    </Modal>*/}
             {/*)}*/}
 
+            {/*{isAddSaleModalOpen && (*/}
+            {/*    <Modal*/}
+            {/*        title="Add New Sale"*/}
+            {/*        onClose={() => setIsAddSaleModalOpen(false)}*/}
+            {/*        actionButton={{*/}
+            {/*            label: "Add",*/}
+            {/*            onClick: handleCreateSale,*/}
+            {/*            // disabled: createSaleMutation.isPending,*/}
+            {/*        }}*/}
+            {/*        isPriorityAvailable={false} // Not used for sales*/}
+            {/*    >*/}
+            {/*        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">*/}
+            {/*            <div>*/}
+            {/*                <label className="block mb-2 font-medium">Sale Date</label>*/}
+            {/*                <input*/}
+            {/*                    type="date"*/}
+            {/*                    value={saleDate}*/}
+            {/*                    onChange={(e) => setSaleDate(e.target.value)}*/}
+            {/*                    className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*            <div>*/}
+            {/*                <label className="block mb-2 font-medium">Customer ID</label>*/}
+            {/*                <input*/}
+            {/*                    type="text"*/}
+            {/*                    value={customerId}*/}
+            {/*                    onChange={(e) => setCustomerId(e.target.value)}*/}
+            {/*                    className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"*/}
+            {/*                    placeholder="e.g., CUS123"*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*            <div>*/}
+            {/*                <label className="block mb-2 font-medium">Call Agent ID</label>*/}
+            {/*                <input*/}
+            {/*                    type="number"*/}
+            {/*                    value={callAgentId}*/}
+            {/*                    onChange={(e) => setCallAgentId(parseInt(e.target.value))}*/}
+            {/*                    className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"*/}
+            {/*                    placeholder="e.g., 1"*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*            /!* Spacer *!/*/}
+            {/*            <div></div>*/}
+            {/*        </div>*/}
+            {/*        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">*/}
+            {/*            <div>*/}
+            {/*                <label className="block mb-2 font-medium">Vehicle Make</label>*/}
+            {/*                <Select*/}
+            {/*                    options={vehicleMakes}*/}
+            {/*                    placeholder="Select Vehicle Make"*/}
+            {/*                    isSearchable*/}
+            {/*                    value={selectedMake}*/}
+            {/*                    onChange={(option) => {*/}
+            {/*                        setSelectedMake(option);*/}
+            {/*                        setVehicleMake(option?.value || "");*/}
+            {/*                    }}*/}
+            {/*                    className="w-full"*/}
+            {/*                    styles={{*/}
+            {/*                        control: (base) => ({*/}
+            {/*                            ...base,*/}
+            {/*                            height: "51px",*/}
+            {/*                            borderRadius: "30px",*/}
+            {/*                            backgroundColor: "rgba(255,255,255,0.5)",*/}
+            {/*                            backdropFilter: "blur(50px)",*/}
+            {/*                            borderColor: "rgba(0,0,0,0.5)",*/}
+            {/*                            paddingLeft: "10px",*/}
+            {/*                        }),*/}
+            {/*                    }}*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*            <div>*/}
+            {/*                <label className="block mb-2 font-medium">Vehicle Model</label>*/}
+            {/*                <Select*/}
+            {/*                    options={vehicleModels}*/}
+            {/*                    placeholder="Select Vehicle Model"*/}
+            {/*                    isSearchable*/}
+            {/*                    value={selectedModel}*/}
+            {/*                    onChange={(option) => {*/}
+            {/*                        setSelectedModel(option);*/}
+            {/*                        setVehicleModel(option?.value || "");*/}
+            {/*                    }}*/}
+            {/*                    className="w-full"*/}
+            {/*                    styles={{*/}
+            {/*                        control: (base) => ({*/}
+            {/*                            ...base,*/}
+            {/*                            height: "51px",*/}
+            {/*                            borderRadius: "30px",*/}
+            {/*                            backgroundColor: "rgba(255,255,255,0.5)",*/}
+            {/*                            backdropFilter: "blur(50px)",*/}
+            {/*                            borderColor: "rgba(0,0,0,0.5)",*/}
+            {/*                            paddingLeft: "10px",*/}
+            {/*                        }),*/}
+            {/*                    }}*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*            <div>*/}
+            {/*                <label className="block mb-2 font-medium">Part No.</label>*/}
+            {/*                <Select*/}
+            {/*                    options={partNos}*/}
+            {/*                    placeholder="Select Part No."*/}
+            {/*                    isSearchable*/}
+            {/*                    value={selectedPartNo}*/}
+            {/*                    onChange={(option) => {*/}
+            {/*                        setSelectedPartNo(option);*/}
+            {/*                        setPartNo(option?.value || "");*/}
+            {/*                    }}*/}
+            {/*                    className="w-full"*/}
+            {/*                    styles={{*/}
+            {/*                        control: (base) => ({*/}
+            {/*                            ...base,*/}
+            {/*                            height: "51px",*/}
+            {/*                            borderRadius: "30px",*/}
+            {/*                            backgroundColor: "rgba(255,255,255,0.5)",*/}
+            {/*                            backdropFilter: "blur(50px)",*/}
+            {/*                            borderColor: "rgba(0,0,0,0.5)",*/}
+            {/*                            paddingLeft: "10px",*/}
+            {/*                        }),*/}
+            {/*                    }}*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*            <div>*/}
+            {/*                <label className="block mb-2 font-medium">Year of Manufacture</label>*/}
+            {/*                <input*/}
+            {/*                    type="number"*/}
+            {/*                    value={yearOfManufacture}*/}
+            {/*                    onChange={(e) => setYearOfManufacture(e.target.value)}*/}
+            {/*                    className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"*/}
+            {/*                    placeholder="e.g., 2020"*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*        /!* Additional Note *!/*/}
+            {/*        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">*/}
+            {/*            <div className="md:col-span-4">*/}
+            {/*                <label className="block mb-2 font-medium">Additional Note</label>*/}
+            {/*                <textarea*/}
+            {/*                    value={additionalNote}*/}
+            {/*                    onChange={(e) => setAdditionalNote(e.target.value)}*/}
+            {/*                    className="w-full h-[120px] rounded-[20px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 py-2"*/}
+            {/*                    placeholder="Enter additional notes here..."*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*    </Modal>*/}
+            {/*)}*/}
+
+
             {isAddSaleModalOpen && (
                 <Modal
                     title="Add New Sale"
                     onClose={() => setIsAddSaleModalOpen(false)}
                     actionButton={{
-                        label: "Add",
-                        onClick: handleCreateSale,
+                        label: isSubmitting ? "Adding..." : "Add",
+                        onClick: handleSubmit(handleSelfAssignSubmit),
                         // disabled: createSaleMutation.isPending,
                     }}
-                    isPriorityAvailable={false} // Not used for sales
+                    priority={priority}
+                    onPriorityChange={setPriority}
+                    isPriorityAvailable={true}
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
-                        <div>
-                            <label className="block mb-2 font-medium">Sale Date</label>
-                            <input
-                                type="date"
-                                value={saleDate}
-                                onChange={(e) => setSaleDate(e.target.value)}
-                                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                            />
-                        </div>
-                        <div>
-                            <label className="block mb-2 font-medium">Customer ID</label>
-                            <input
-                                type="text"
-                                value={customerId}
-                                onChange={(e) => setCustomerId(e.target.value)}
-                                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                                placeholder="e.g., CUS123"
-                            />
-                        </div>
-                        <div>
-                            <label className="block mb-2 font-medium">Call Agent ID</label>
-                            <input
-                                type="number"
-                                value={callAgentId}
-                                onChange={(e) => setCallAgentId(parseInt(e.target.value))}
-                                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                                placeholder="e.g., 1"
-                            />
-                        </div>
-                        {/* Spacer */}
-                        <div></div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
+                        <FormField label="Customer Name" placeholder="Customer Name" register={register("customer_name")} error={errors.customer_name} />
+                        <FormField label="Contact No" placeholder="Contact No" register={register("contact_number")} error={errors.contact_number} />
+                        <FormField label="Email" placeholder="Email" register={register("email")} error={errors.email} />
+                        <FormField label="City" placeholder="City" register={register("city")} error={errors.city} />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">
-                        <div>
-                            <label className="block mb-2 font-medium">Vehicle Make</label>
-                            <Select
-                                options={vehicleMakes}
-                                placeholder="Select Vehicle Make"
-                                isSearchable
-                                value={selectedMake}
-                                onChange={(option) => {
-                                    setSelectedMake(option);
-                                    setVehicleMake(option?.value || "");
-                                }}
-                                className="w-full"
-                                styles={{
-                                    control: (base) => ({
-                                        ...base,
-                                        height: "51px",
-                                        borderRadius: "30px",
-                                        backgroundColor: "rgba(255,255,255,0.5)",
-                                        backdropFilter: "blur(50px)",
-                                        borderColor: "rgba(0,0,0,0.5)",
-                                        paddingLeft: "10px",
-                                    }),
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <label className="block mb-2 font-medium">Vehicle Model</label>
-                            <Select
-                                options={vehicleModels}
-                                placeholder="Select Vehicle Model"
-                                isSearchable
-                                value={selectedModel}
-                                onChange={(option) => {
-                                    setSelectedModel(option);
-                                    setVehicleModel(option?.value || "");
-                                }}
-                                className="w-full"
-                                styles={{
-                                    control: (base) => ({
-                                        ...base,
-                                        height: "51px",
-                                        borderRadius: "30px",
-                                        backgroundColor: "rgba(255,255,255,0.5)",
-                                        backdropFilter: "blur(50px)",
-                                        borderColor: "rgba(0,0,0,0.5)",
-                                        paddingLeft: "10px",
-                                    }),
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <label className="block mb-2 font-medium">Part No.</label>
-                            <Select
-                                options={partNos}
-                                placeholder="Select Part No."
-                                isSearchable
-                                value={selectedPartNo}
-                                onChange={(option) => {
-                                    setSelectedPartNo(option);
-                                    setPartNo(option?.value || "");
-                                }}
-                                className="w-full"
-                                styles={{
-                                    control: (base) => ({
-                                        ...base,
-                                        height: "51px",
-                                        borderRadius: "30px",
-                                        backgroundColor: "rgba(255,255,255,0.5)",
-                                        backdropFilter: "blur(50px)",
-                                        borderColor: "rgba(0,0,0,0.5)",
-                                        paddingLeft: "10px",
-                                    }),
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <label className="block mb-2 font-medium">Year of Manufacture</label>
-                            <input
-                                type="number"
-                                value={yearOfManufacture}
-                                onChange={(e) => setYearOfManufacture(e.target.value)}
-                                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                                placeholder="e.g., 2020"
-                            />
-                        </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
+                        <FormField
+                            label="Lead Source"
+                            type="select"
+                            options={[{value:"Direct Call", label:"Direct Call"}, {value:"Walk In", label:"Walk In"}]}
+                            register={register("lead_source")}
+                            error={errors.lead_source}
+                        />
+                        <FormField
+                            label="Vehicle Type"
+                            type="select"
+                            options={[{value:"SUV", label:"SUV"}, {value:"Sedan", label:"Sedan"}]}
+                            register={register("vehicle_type")}
+                            error={errors.vehicle_type}
+                        />
+                        {/* Make & Model */}
+                        <FormField
+                            label="Vehicle Make"
+                            type="select"
+                            isIcon={true} // Magnifying glass icon
+                            options={vehicleMakes}
+                            register={register("vehicle_make")}
+                            error={errors.vehicle_make}
+                        />
+                        <FormField
+                            label="Vehicle Model"
+                            type="select"
+                            isIcon={true}
+                            options={vehicleModels}
+                            register={register("vehicle_model")}
+                            error={errors.vehicle_model}
+                        />
                     </div>
                     {/* Additional Note */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">
-                        <div className="md:col-span-4">
-                            <label className="block mb-2 font-medium">Additional Note</label>
-                            <textarea
-                                value={additionalNote}
-                                onChange={(e) => setAdditionalNote(e.target.value)}
-                                className="w-full h-[120px] rounded-[20px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 py-2"
-                                placeholder="Enter additional notes here..."
-                            />
-                        </div>
+                    <div className="w-full">
+                        <label className="block mb-2 font-medium text-gray-700">Remark</label>
+                        <textarea
+                            {...register("remark")}
+                            className="w-full h-[100px] rounded-[20px] bg-[#FFFFFF80] border border-gray-300 p-4 focus:outline-none"
+                            placeholder="Remark"
+                        />
                     </div>
                 </Modal>
             )}
         </div>
     );
 }
-
-
 
