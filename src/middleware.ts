@@ -60,7 +60,7 @@ export async function middleware(req: any) {
     if (pathname === "/login") {
         let destination = ROLE_DASHBOARDS[userRole] || "/";
 
-        if ((userRole === "SALES01" || userRole === "SALES02") && SALES_DEPT_CONFIG[userDept]) {
+        if ((userRole === "SALES01" || userRole === "SALES02" || userRole === "SALES03") && SALES_DEPT_CONFIG[userDept]) {
             destination = SALES_DEPT_CONFIG[userDept].dashboard;
         }
 
@@ -78,13 +78,13 @@ export async function middleware(req: any) {
 
     if (!isAllowedRole) {
         let destination = ROLE_DASHBOARDS[userRole] || "/";
-        if ((userRole === "SALES01" || userRole === "SALES02") && SALES_DEPT_CONFIG[userDept]) {
+        if ((userRole === "SALES01" || userRole === "SALES02" || userRole === "SALES03") && SALES_DEPT_CONFIG[userDept]) {
             destination = SALES_DEPT_CONFIG[userDept].dashboard;
         }
         return NextResponse.redirect(new URL(destination, req.url));
     }
 
-    if (userRole === "SALES01" || userRole === "SALES02") {
+    if (userRole === "SALES01" || userRole === "SALES02" || userRole === "SALES03") {
         const config = SALES_DEPT_CONFIG[userDept];
 
         if (config) {

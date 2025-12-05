@@ -11,6 +11,7 @@ export const ROLE_DASHBOARDS = {
     TELEMARKETER: "/tele-marketer",
     SALES01: "/sales-agent",
     SALES02: "/sales-agent",
+    SALES03: "/sales-agent",
 };
 
 export const ROLE_PERMISSIONS = {
@@ -19,4 +20,5 @@ export const ROLE_PERMISSIONS = {
     TELEMARKETER: ["/tele-marketer"],
     SALES01: ["/sales-agent"],
     SALES02: ["/sales-agent"],
+    SALES03: ["/sales-agent"],
 };
