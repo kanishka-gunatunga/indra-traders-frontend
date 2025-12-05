@@ -196,27 +196,6 @@ export default function SalesDashboard() {
         setActiveId(event.active.id as string);
     };
 
-    // const onDragEnd = (result: DropResult) => {
-    //     const {destination, source, draggableId} = result;
-    //     if (!destination) return;
-    //     if (
-    //         destination.droppableId === source.droppableId &&
-    //         destination.index === source.index
-    //     )
-    //         return;
-    //     setTickets((prev) =>
-    //         prev.map((t) => {
-    //             if (t.id !== draggableId) return t;
-    //             const currentStatus = t.status;
-    //             const newStatus = destination.droppableId as MappedTicket["status"];
-    //             if (allowedTransitions[currentStatus].includes(newStatus)) {
-    //                 return {...t, status: newStatus};
-    //             }
-    //             return t;
-    //         })
-    //     );
-    // };
-
     const handleDragEnd = (event: DragEndEvent) => {
         const {active, over} = event;
 

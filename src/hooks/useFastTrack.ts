@@ -194,3 +194,15 @@ export const useSaleHistory = (saleId: number) =>
         queryFn: () => FastTrackService.getHistory(saleId).then(res => res.data),
         enabled: !!saleId
     });
+
+
+
+export const useCreateFastTrackSaleDirect = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: FastTrackService.createSaleDirect,
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["sales"] });
+        },
+    });
+};
