@@ -39,7 +39,7 @@ declare module "next-auth" {
             id: string;
             email: string;
             full_name: string;
-            user_role: "SALES01" | "SALES02" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
+            user_role: "SALES01" | "SALES02" | "SALES03" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
             department: string;
             branch: string;
             accessToken: string;
@@ -49,7 +49,7 @@ declare module "next-auth" {
     interface User {
         id: string;
         full_name: string;
-        user_role: "SALES01" | "SALES02" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
+        user_role: "SALES01" | "SALES02" | "SALES03" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
         department: string;
         branch: string;
         accessToken: string;
@@ -61,7 +61,7 @@ declare module "next-auth/jwt" {
         id: string;
         email: string;
         full_name: string;
-        user_role: "SALES01" | "SALES02" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
+        user_role: "SALES01" | "SALES02" | "SALES03" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
         department: string;
         branch: string;
         accessToken: string;
