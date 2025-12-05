@@ -110,4 +110,7 @@ export const FastTrackService = {
 
     getHistory: (id: number) =>
         axiosInstance.get(`/fast-track/sales/${id}/history`),
+
+    createSaleDirect: (data: any) =>
+        axiosInstance.post("/fast-track/sales/create-direct", data).then(r => r.data),
 };
