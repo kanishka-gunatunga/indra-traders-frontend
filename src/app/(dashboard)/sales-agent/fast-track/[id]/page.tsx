@@ -93,6 +93,7 @@ export default function SalesDetailsPage() {
                     sale_id: sale.id,
                     activity: activityText,
                     activity_date: new Date().toISOString(),
+                    userId: userId
                 },
                 {
                     onSuccess: () => {
@@ -119,6 +120,7 @@ export default function SalesDetailsPage() {
                     task_date: new Date(reminderDate).toISOString(),
                     note: reminderNote || undefined,
                     sale_id: sale.id,
+                    userId: userId
                 },
                 {
                     onSuccess: () => {

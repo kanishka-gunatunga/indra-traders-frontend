@@ -100,6 +100,7 @@ export default function SalesDetailsPage() {
                 activity: activityText,
                 activity_date: new Date().toISOString().split('T')[0],
                 vehicleSaleId: sale.id,
+                userId: userId
             });
             setActivityText("");
             setActivityModalOpen(false);
@@ -117,6 +118,7 @@ export default function SalesDetailsPage() {
                 task_date: reminderDate,
                 note: reminderNote,
                 vehicleSaleId: sale.id,
+                userId: userId
             });
             setReminderTitle("");
             setReminderDate("");

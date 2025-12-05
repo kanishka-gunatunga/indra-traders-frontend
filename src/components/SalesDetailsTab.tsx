@@ -12,6 +12,7 @@ interface Followup {
     activity: string;
     activity_date: string;
     spare_part_sale_id: number;
+    creator: {full_name: string};
     createdAt: string;
     updatedAt: string;
 }
@@ -22,6 +23,7 @@ interface Reminder {
     task_date: string;
     note: string | null;
     spare_part_sale_id: number;
+    creator: {full_name: string};
     createdAt: string;
     updatedAt: string;
 }
@@ -97,8 +99,9 @@ export default function SalesDetailsTab({
                             <div className="h-full pr-2">
                                 {/* Table header */}
                                 <div className="flex font-medium text-[#575757] min-w-[400px]">
-                                    <div className="w-1/2 px-2">Activity</div>
-                                    <div className="w-1/2 px-2">Date</div>
+                                    <div className="w-1/3 px-2">Activity</div>
+                                    <div className="w-1/3 px-2">Date</div>
+                                    <div className="w-1/3 px-2">Created By</div>
                                 </div>
                                 <hr className="border-gray-300 my-4"/>
 
@@ -114,8 +117,9 @@ export default function SalesDetailsTab({
                                                     idx > 0 ? "mt-3" : ""
                                                 } font-medium text-black min-w-[400px]`}
                                             >
-                                                <div className="w-1/2 px-2">{item.activity}</div>
-                                                <div className="w-1/2 px-2">{formatDate(item?.activity_date)}</div>
+                                                <div className="w-1/3 px-2">{item.activity}</div>
+                                                <div className="w-1/3 px-2">{formatDate(item?.activity_date)}</div>
+                                                <div className="w-1/3 px-2">{item.creator?.full_name || "System"}</div>
                                             </div>
                                         ))
                                     )}
@@ -144,9 +148,10 @@ export default function SalesDetailsTab({
                         <div className="h-full overflow-y-auto no-scrollbar pr-2">
                             {/* Table header */}
                             <div className="flex font-medium text-[#575757] min-w-[400px]">
-                                <div className="w-1/3 px-2">Task Title</div>
-                                <div className="w-1/3 px-2">Task Date</div>
-                                <div className="w-1/3 px-2">Note</div>
+                                <div className="w-1/4 px-2">Task Title</div>
+                                <div className="w-1/4 px-2">Task Date</div>
+                                <div className="w-1/4 px-2">Note</div>
+                                <div className="w-1/4 px-2">Created By</div>
                             </div>
                             <hr className="border-gray-300 my-4"/>
 
@@ -162,9 +167,10 @@ export default function SalesDetailsTab({
                                                 idx > 0 ? "mt-3" : ""
                                             } font-medium text-black min-w-[400px]`}
                                         >
-                                            <div className="w-1/3 px-2">{item.task_title}</div>
-                                            <div className="w-1/3 px-2">{formatDate(item.task_date)}</div>
-                                            <div className="w-1/3 px-2">{item.note}</div>
+                                            <div className="w-1/4 px-2">{item.task_title}</div>
+                                            <div className="w-1/4 px-2">{formatDate(item.task_date)}</div>
+                                            <div className="w-1/4 px-2">{item.note}</div>
+                                            <div className="w-1/4 px-2">{item.creator?.full_name || "System"}</div>
                                         </div>
                                     ))
                                 )}

@@ -92,7 +92,8 @@ export const useAssignBestMatchToSale = () => {
 export const useSales = (status?: string, userId?: number, userRole?: string) => {
     return useQuery({
         queryKey: ["sales", status, userId, userRole],
-        queryFn: () => FastTrackService.listSales(status, userId, userRole)
+        queryFn: () => FastTrackService.listSales(status, userId, userRole),
+        refetchInterval: 1000,
     });
 };
 
@@ -130,7 +131,8 @@ export const useSaleByTicket = (ticket: string) => {
     return useQuery({
         queryKey: ["saleByTicket", ticket],
         queryFn: () => FastTrackService.getSaleByTicket(ticket),
-        enabled: !!ticket
+        enabled: !!ticket,
+        refetchInterval: 1000,
     });
 };
 

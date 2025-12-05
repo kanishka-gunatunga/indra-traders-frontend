@@ -5,6 +5,7 @@ export const useVehicleSales = (status?: string, userId?: number, userRole?: str
     useQuery({
         queryKey: ["vehicleSales", status, userId, userRole],
         queryFn: () => VehicleSaleService.getAll(status, userId, userRole).then((res) => res.data),
+        refetchInterval: 1000,
     });
 
 export const useCreateVehicleSale = () => {
@@ -24,6 +25,7 @@ export const useVehicleSaleByTicket = (ticketNumber?: string) =>
         queryFn: () =>
             VehicleSaleService.getByTicket(ticketNumber!).then((res) => res.data),
         enabled: !!ticketNumber,
+        refetchInterval: 1000,
     });
 
 export const useVehicleSalesByStatus = (status: string) =>

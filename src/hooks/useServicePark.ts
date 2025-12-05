@@ -22,6 +22,7 @@ export const useVehicleSales = (status?: string, userId?: number, userRole?: str
             const res = await listVehicleSales(status, userId, userRole);
             return res.data;
         },
+        refetchInterval: 1000,
     });
 
 export const useSaleDetailsByTicketNumber = (ticketNumber: string) =>
@@ -32,6 +33,7 @@ export const useSaleDetailsByTicketNumber = (ticketNumber: string) =>
             return data ?? {};
         },
         enabled: !!ticketNumber,
+        refetchInterval: 1000,
     });
 
 export const useVehicleHistoryByNumber = (vehicleNo: string) =>
