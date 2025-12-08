@@ -56,8 +56,7 @@ export default function SalesDetailsTab({
 
     // const isAddDisabled =
     //     status === "New" && role !== "admin" && role !== "tele-marketer";
-    const isAddDisabled =
-        status === "New" && role !== "admin" && role !== "tele-marketer";
+    const isAddDisabled = status === "New";
 
     const formatDate = (isoDate: string) => {
         if (!isoDate) return "N/A";

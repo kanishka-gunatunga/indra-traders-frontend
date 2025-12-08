@@ -80,10 +80,31 @@ export default function SalesDetailsPage() {
 
     const handleStatusChange = async (newStatus: SalesStatus) => {
         if (!sale) return;
-        let backendStatus = newStatus === "New" ? "NEW" : newStatus === "Ongoing" ? "ONGOING" : "COMPLETED";
-        if (newStatus === "Won" || newStatus === "Lost") {
-            backendStatus = "COMPLETED";
+        // let backendStatus = newStatus === "New" ? "NEW" : newStatus === "Ongoing" ? "ONGOING" : "COMPLETED";
+        // if (newStatus === "Won" || newStatus === "Lost") {
+        //     backendStatus = "COMPLETED";
+        // }
+
+        let backendStatus = "";
+
+        switch (newStatus) {
+            case "New":
+                backendStatus = "NEW";
+                break;
+            case "Ongoing":
+                backendStatus = "ONGOING";
+                break;
+            case "Won":
+                backendStatus = "WON";
+                break;
+            case "Lost":
+                backendStatus = "LOST";
+                break;
+            default:
+                console.error("Unknown status selected");
+                return;
         }
+
         try {
             await updateStatusMutation.mutateAsync({id: sale.id, status: backendStatus});
             setStatus(newStatus);
@@ -240,20 +261,22 @@ export default function SalesDetailsPage() {
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
                             ITPL
                           </span>
-                            <div
-                                className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
-                                <select
-                                    value={sale.priority}
-                                    onChange={(e) => handlePriorityChange(Number(e.target.value))}
-                                    className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
-                                    style={{textAlignLast: "center"}}
-                                >
-                                    <option value={0}>P0</option>
-                                    <option value={1}>P1</option>
-                                    <option value={2}>P2</option>
-                                    <option value={3}>P3</option>
-                                </select>
-                            </div>
+                            {status !== "New" && (
+                                <div
+                                    className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
+                                    <select
+                                        value={sale.priority}
+                                        onChange={(e) => handlePriorityChange(Number(e.target.value))}
+                                        className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
+                                        style={{textAlignLast: "center"}}
+                                    >
+                                        <option value={0}>P0</option>
+                                        <option value={1}>P1</option>
+                                        <option value={2}>P2</option>
+                                        <option value={3}>P3</option>
+                                    </select>
+                                </div>
+                            )}
                         </div>
                         <FlowBar<SalesStatus>
                             variant="sales"
@@ -306,15 +329,15 @@ export default function SalesDetailsPage() {
                         {/*    Current Level: Sales {sale?.current_level || 1}*/}
                         {/*</div>*/}
 
-                        {showHistoryButton && (
-                            <button
-                                onClick={() => setHistoryModalOpen(true)}
-                                className="ml-auto h-[40px] px-5 rounded-[22.98px] border border-gray-400 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                            >
-                                {/*<Image src="/dashboard/time.svg" width={20} height={20} alt="history" />*/}
-                                View History
-                            </button>
-                        )}
+                        {/*{showHistoryButton && (*/}
+                        <button
+                            onClick={() => setHistoryModalOpen(true)}
+                            className="ml-auto h-[40px] px-5 rounded-[22.98px] border border-gray-400 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                            {/*<Image src="/dashboard/time.svg" width={20} height={20} alt="history" />*/}
+                            View History
+                        </button>
+                        {/*)}*/}
                     </div>
                     {/*) : (*/}
                     {/*    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">*/}
@@ -388,12 +411,12 @@ export default function SalesDetailsPage() {
                                 reminders={sale.reminders || []}
                             />
                             {/*{role === "admin" ? null : (*/}
-                                <div className="mt-6 flex w-full justify-end">
-                                    <button
-                                        className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
-                                        Save
-                                    </button>
-                                </div>
+                            <div className="mt-6 flex w-full justify-end">
+                                <button
+                                    className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
+                                    Save
+                                </button>
+                            </div>
                             {/*)}*/}
                         </div>
                     </div>

@@ -29,6 +29,11 @@ export const userService = {
         return res.data;
     },
 
+    handoverCheck: async (userId: string) => {
+        const res = await axiosInstance.get(`/users/${userId}/handover-check`);
+        return res.data;
+    },
+
     updateUser: async (id: string, data: any) => {
         const res = await axiosInstance.put(`/users/${id}`, data);
         return res.data;
