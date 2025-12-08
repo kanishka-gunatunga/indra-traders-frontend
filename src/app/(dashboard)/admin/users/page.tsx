@@ -7,7 +7,7 @@ import Modal from "@/components/Modal";
 import Image from "next/image";
 import React, {useState} from "react";
 import {FaEye, FaEyeSlash} from "react-icons/fa";
-import {useCreateUser, useUpdateUser, useUsers} from "@/hooks/useUser";
+import {useCheckHandover, useCreateUser, useUpdateUser, useUsers} from "@/hooks/useUser";
 import {useCurrentUser} from "@/utils/auth";
 import {useToast} from "@/hooks/useToast";
 import Toast from "@/components/Toast";
@@ -49,6 +49,8 @@ export default function UserManagement() {
 
     const user = useCurrentUser();
 
+    const checkHandoverMutation = useCheckHandover();
+
     const {data: users = [], isLoading} = useUsers(filters);
     const createUserMutation = useCreateUser();
     const updateUserMutation = useUpdateUser();
@@ -78,6 +80,12 @@ export default function UserManagement() {
     const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
     const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
     const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
+
+    const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
+    const [replacementUsers, setReplacementUsers] = useState<any[]>([]);
+    const [selectedReplacementId, setSelectedReplacementId] = useState<string>("");
+    const [handoverCount, setHandoverCount] = useState(0);
+    const [pendingUpdatePayload, setPendingUpdatePayload] = useState<any>(null);
 
     const parseLanguages = (langData: any): string[] => {
         if (!langData) return ["en"];
@@ -121,6 +129,7 @@ export default function UserManagement() {
 
     const shouldShowLanguages = (role: string) => role === ROLES.CALL_AGENT;
     const shouldShowBranch = (role: string) => role !== ROLES.ADMIN;
+    const shouldShowDepartment = (role: string) => role !== ROLES.CALL_AGENT;
 
     const resetAddForm = () => {
         setFullName("");
@@ -133,6 +142,73 @@ export default function UserManagement() {
         setConfirmPassword("");
         setUserLanguages(["en"]);
     }
+
+    const handleUpdateClick = async () => {
+        const originalUser = users.find((u: any) => u.id === selectedUser.id);
+
+        if (!originalUser) {
+            showToast("Error: Original user data not found", "error");
+            return;
+        }
+
+        const payload = {
+            full_name: selectedUser.full_name,
+            contact_no: selectedUser.contact_no,
+            email: selectedUser.email,
+            user_role: selectedUser.user_role,
+            department: shouldShowDepartment(selectedUser.user_role) ? selectedUser.department : null,
+            branch: shouldShowBranch(selectedUser.user_role) ? selectedUser.branch : null,
+            languages: shouldShowLanguages(selectedUser.user_role) ? selectedUser.languages : ["en"],
+            // Password is valid to take from state because it's distinct from selectedUser
+            ...(password ? {password, confirm_password: confirmPassword} : {})
+        };
+
+        const isRoleChanged = originalUser.user_role !== payload.user_role;
+        const isDeptChanged = originalUser.department !== payload.department;
+        // Handle null/empty string mismatches safely
+        const isBranchChanged = (originalUser.branch || "") !== (payload.branch || "");
+
+        if (!isRoleChanged && !isDeptChanged && !isBranchChanged) {
+            await performUpdate(payload);
+            return;
+        }
+
+        try {
+            const check = await checkHandoverMutation.mutateAsync(selectedUser.id);
+
+            if (check.needsHandover && check.activeLeadsCount > 0) {
+                setPendingUpdatePayload(payload);
+                setReplacementUsers(check.replacements);
+                setHandoverCount(check.activeLeadsCount);
+                setIsHandoverModalOpen(true);
+            } else {
+                await performUpdate(payload);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast("Failed to check user requirements", "error");
+        }
+    };
+
+    const performUpdate = async (payload: any, transferId?: string) => {
+        try {
+            const finalPayload = transferId ? {...payload, transferToUserId: transferId} : payload;
+            await updateUserMutation.mutateAsync({
+                id: selectedUser.id,
+                data: finalPayload
+            });
+
+            showToast("User updated successfully!", "success");
+            setIsUserDetailsModalOpen(false);
+            setIsHandoverModalOpen(false);
+            setPendingUpdatePayload(null);
+            setSelectedReplacementId("");
+
+        } catch (error: any) {
+            const msg = error.response?.data?.message || "Failed to update user";
+            showToast(msg, "error");
+        }
+    };
 
 
     return (
@@ -215,6 +291,17 @@ export default function UserManagement() {
                                                         ...item,
                                                         languages: parseLanguages(item.languages)
                                                     });
+
+                                                    setFullName(item.full_name);
+                                                    setContactNumber(item.contact_no);
+                                                    setEmail(item.email);
+                                                    setUserRole(item.user_role);
+                                                    setDepartment(item.department);
+                                                    setBranch(item.branch || "");
+                                                    setUserLanguages(parseLanguages(item.languages));
+                                                    setPassword("");
+                                                    setConfirmPassword("");
+
                                                     setIsUserDetailsModalOpen(true);
                                                 }}
                                             >
@@ -228,7 +315,7 @@ export default function UserManagement() {
                                                 <div className="w-1/7 px-3 py-2">
                                                     {item.department || "-"}
                                                 </div>
-                                                <div className="w-1/7 px-3 py-2">{item.branch}</div>
+                                                <div className="w-1/7 px-3 py-2">{item.branch || "-"}</div>
                                                 <div className="w-1/7 px-3 py-2 flex gap-1 items-center">
                                                     {parseLanguages(item.languages).map((lang: string) => (
                                                         <span key={lang}
@@ -291,7 +378,7 @@ export default function UserManagement() {
                                     contact_no: contactNumber,
                                     email,
                                     user_role: userRole,
-                                    department,
+                                    department: shouldShowDepartment(userRole) ? department : null,
                                     password,
                                     confirm_password: confirmPassword,
                                     branch: shouldShowBranch(userRole) ? branch : null,
@@ -378,25 +465,26 @@ export default function UserManagement() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">
-                        <div>
-                            <label className="block mb-2 font-medium">Department</label>
-                            <div
-                                className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
-                                <select
-                                    value={department}
-                                    onChange={(e) => setDepartment(e.target.value)}
-                                    className="w-full bg-transparent outline-none appearance-none"
-                                >
-                                    <option value="" disabled>Select Department</option>
-                                    {/*<option value="ITPL">ITPL</option>*/}
-                                    {/*<option value="ISP">ISP</option>*/}
-                                    {/*<option value="IMS">IMS</option>*/}
-                                    {/*<option value="IFT">IFT</option>*/}
-                                    {departments.map((d) => (
-                                        <option key={d} value={d}>{d}</option>
-                                    ))}
-                                </select>
-                                <span className="absolute right-4 pointer-events-none">
+                        {shouldShowDepartment(userRole) && (
+                            <div>
+                                <label className="block mb-2 font-medium">Department</label>
+                                <div
+                                    className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+                                    <select
+                                        value={department}
+                                        onChange={(e) => setDepartment(e.target.value)}
+                                        className="w-full bg-transparent outline-none appearance-none"
+                                    >
+                                        <option value="" disabled>Select Department</option>
+                                        {/*<option value="ITPL">ITPL</option>*/}
+                                        {/*<option value="ISP">ISP</option>*/}
+                                        {/*<option value="IMS">IMS</option>*/}
+                                        {/*<option value="IFT">IFT</option>*/}
+                                        {departments.map((d) => (
+                                            <option key={d} value={d}>{d}</option>
+                                        ))}
+                                    </select>
+                                    <span className="absolute right-4 pointer-events-none">
                                   <Image
                                       src={"/images/sales/icon-park-solid_down-one.svg"}
                                       width={19}
@@ -404,8 +492,9 @@ export default function UserManagement() {
                                       alt="Arrow"
                                   />
                                 </span>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {shouldShowBranch(userRole) && (
                             <div>
@@ -550,9 +639,9 @@ export default function UserManagement() {
                                     >
                                         {roleVal === ROLES.SALES_LV1 ? "Sales Lv 1" :
                                             roleVal === ROLES.SALES_LV2 ? "Sales Lv 2" :
-                                            roleVal === ROLES.SALES_LV3 ? "Sales Lv 3" :
-                                                roleVal === ROLES.CALL_AGENT ? "Call Agent" :
-                                                    roleVal.charAt(0).toUpperCase() + roleVal.slice(1).toLowerCase()}
+                                                roleVal === ROLES.SALES_LV3 ? "Sales Lv 3" :
+                                                    roleVal === ROLES.CALL_AGENT ? "Call Agent" :
+                                                        roleVal.charAt(0).toUpperCase() + roleVal.slice(1).toLowerCase()}
                                     </div>
                                 );
                             })}
@@ -702,37 +791,42 @@ export default function UserManagement() {
                 <Modal
                     title="User Details"
                     onClose={() => setIsUserDetailsModalOpen(false)}
+                    // actionButton={{
+                    //     label: "Update",
+                    //     onClick: async () => {
+                    //         try {
+                    //             const role = selectedUser.user_role;
+                    //             await updateUserMutation.mutateAsync({
+                    //                 id: selectedUser.id,
+                    //                 // full_name: selectedUser.full_name,
+                    //                 // contact_no: selectedUser.contact_no,
+                    //                 // email: selectedUser.email,
+                    //                 // user_role: selectedUser.user_role,
+                    //                 // department: selectedUser.department,
+                    //                 // branch: selectedUser.branch,
+                    //                 data: {
+                    //                     full_name: selectedUser.full_name,
+                    //                     contact_no: selectedUser.contact_no,
+                    //                     email: selectedUser.email,
+                    //                     user_role: selectedUser.user_role,
+                    //                     department: selectedUser.department,
+                    //                     branch: shouldShowBranch(role) ? selectedUser.branch : null,
+                    //                     languages: shouldShowLanguages(role) ? selectedUser.languages : ["en"],
+                    //                 },
+                    //             });
+                    //             showToast("User updated successfully!", "success");
+                    //             setIsUserDetailsModalOpen(false);
+                    //         } catch (error: any) {
+                    //             console.error("Error updating user:", error);
+                    //             const msg = error.response?.data?.message || "Failed to update user";
+                    //             showToast(msg, "error");
+                    //         }
+                    //     },
+                    // }}
                     actionButton={{
                         label: "Update",
-                        onClick: async () => {
-                            try {
-                                const role = selectedUser.user_role;
-                                await updateUserMutation.mutateAsync({
-                                    id: selectedUser.id,
-                                    // full_name: selectedUser.full_name,
-                                    // contact_no: selectedUser.contact_no,
-                                    // email: selectedUser.email,
-                                    // user_role: selectedUser.user_role,
-                                    // department: selectedUser.department,
-                                    // branch: selectedUser.branch,
-                                    data: {
-                                        full_name: selectedUser.full_name,
-                                        contact_no: selectedUser.contact_no,
-                                        email: selectedUser.email,
-                                        user_role: selectedUser.user_role,
-                                        department: selectedUser.department,
-                                        branch: shouldShowBranch(role) ? selectedUser.branch : null,
-                                        languages: shouldShowLanguages(role) ? selectedUser.languages : ["en"],
-                                    },
-                                });
-                                showToast("User updated successfully!", "success");
-                                setIsUserDetailsModalOpen(false);
-                            } catch (error: any) {
-                                console.error("Error updating user:", error);
-                                const msg = error.response?.data?.message || "Failed to update user";
-                                showToast(msg, "error");
-                            }
-                        },
+                        onClick: handleUpdateClick,
+                        // disabled: checkHandoverMutation.isPending || updateUserMutation.isPending
                     }}
                 >
                     <div className="w-full min-w-[800px] mt-3 space-y-2">
@@ -778,18 +872,27 @@ export default function UserManagement() {
                                 }
                                 className="text-lg text-[#575757] bg-transparent border-b border-gray-400 focus:outline-none"
                             />
-                            <div className="text-lg font-semibold">Department:</div>
-                            <select
-                                value={selectedUser.department}
-                                onChange={(e) =>
-                                    setSelectedUser({...selectedUser, department: e.target.value})
-                                }
-                                className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
-                            >
-                                {departments.map((d) => (
-                                    <option key={d} value={d}>{d}</option>
-                                ))}
-                            </select>
+                            {shouldShowDepartment(selectedUser.user_role) ? (
+                                <>
+                                    <div className="text-lg font-semibold">Department:</div>
+                                    <select
+                                        value={selectedUser.department}
+                                        onChange={(e) =>
+                                            setSelectedUser({...selectedUser, department: e.target.value})
+                                        }
+                                        className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
+                                    >
+                                        {departments.map((d) => (
+                                            <option key={d} value={d}>{d}</option>
+                                        ))}
+                                    </select>
+                                </>
+                            ) : (
+                                <>
+                                    <div></div>
+                                    <div></div>
+                                </>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-[150px_1fr_150px_1fr] gap-4 items-start">
@@ -851,6 +954,75 @@ export default function UserManagement() {
                                     })}
                                 </div>
                             </div>
+                        )}
+                    </div>
+                </Modal>
+            )}
+
+
+            {isHandoverModalOpen && (
+                <Modal
+                    title="Required: Lead Handover"
+                    onClose={() => setIsHandoverModalOpen(false)}
+                    actionButton={{
+                        label: "Transfer",
+                        onClick: () => {
+                            if (!selectedReplacementId) {
+                                showToast("Please select a user to transfer leads to", "error");
+                                return;
+                            }
+                            performUpdate(pendingUpdatePayload, selectedReplacementId);
+                        },
+                        // disabled: updateUserMutation.isPending
+                    }}
+                >
+                    <div className="w-full min-w-[500px] p-2">
+                        <div
+                            className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-xl mb-6 flex items-start gap-3">
+                            <Image src="/error-white.svg" width={24} height={24} alt="warning"/>
+                            <div>
+                                <h4 className="font-bold">Active Leads Detected</h4>
+                                <p className="text-sm mt-1">
+                                    <strong>{selectedUser.full_name}</strong> has <strong>{handoverCount}</strong> active
+                                    ongoing leads in the
+                                    <span className="font-semibold mx-1">{selectedUser.department}</span> department.
+                                </p>
+                                <p className="text-sm mt-2">
+                                    Before changing their details, you must re-assign these leads to a colleague in the
+                                    same branch and department.
+                                </p>
+                            </div>
+                        </div>
+
+                        <label className="block mb-2 font-medium">Select Replacement User</label>
+                        <div
+                            className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+                            <select
+                                value={selectedReplacementId}
+                                onChange={(e) => setSelectedReplacementId(e.target.value)}
+                                className="w-full bg-transparent outline-none appearance-none"
+                            >
+                                <option value="" disabled>Select Colleague</option>
+                                {replacementUsers.length > 0 ? (
+                                    replacementUsers.map((u) => (
+                                        <option key={u.id} value={u.id}>
+                                            {u.full_name} ({u.email})
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option disabled>No eligible users found in this branch/dept</option>
+                                )}
+                            </select>
+                            <span className="absolute right-4 pointer-events-none">
+                     <Image src={"/images/sales/icon-park-solid_down-one.svg"} width={19} height={19} alt="Arrow"/>
+                </span>
+                        </div>
+
+                        {replacementUsers.length === 0 && (
+                            <p className="text-red-500 text-sm mt-2">
+                                * No other users found in {selectedUser.branch} - {selectedUser.department}.
+                                Please create another user first or manually reassign leads individually.
+                            </p>
                         )}
                     </div>
                 </Modal>

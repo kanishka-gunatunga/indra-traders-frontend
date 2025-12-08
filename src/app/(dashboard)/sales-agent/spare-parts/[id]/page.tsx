@@ -107,6 +107,7 @@ export default function SalesDetailsPage() {
                     activity: activityText,
                     activity_date: new Date().toISOString(),
                     spare_part_sale_id: sale.id,
+                    userId: userId
                 },
                 {
                     onSuccess: () => {
@@ -134,6 +135,7 @@ export default function SalesDetailsPage() {
                     task_date: new Date(reminderDate).toISOString(),
                     note: reminderNote || null,
                     spare_part_sale_id: sale.id,
+                    userId: userId
                 },
                 {
                     onSuccess: () => {
@@ -260,21 +262,23 @@ export default function SalesDetailsPage() {
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
                 IMS
-              </span>
-                            <div
-                                className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
-                                <select
-                                    value={sale.priority}
-                                    onChange={(e) => handlePriorityChange(Number(e.target.value))}
-                                    className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
-                                    style={{textAlignLast: "center"}}
-                                >
-                                    <option value={0}>P0</option>
-                                    <option value={1}>P1</option>
-                                    <option value={2}>P2</option>
-                                    <option value={3}>P3</option>
-                                </select>
-                            </div>
+                            </span>
+                            {status !== "New" && (
+                                <div
+                                    className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
+                                    <select
+                                        value={sale.priority}
+                                        onChange={(e) => handlePriorityChange(Number(e.target.value))}
+                                        className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
+                                        style={{textAlignLast: "center"}}
+                                    >
+                                        <option value={0}>P0</option>
+                                        <option value={1}>P1</option>
+                                        <option value={2}>P2</option>
+                                        <option value={3}>P3</option>
+                                    </select>
+                                </div>
+                            )}
                         </div>
                         <FlowBar<SalesStatus>
                             variant="sales"

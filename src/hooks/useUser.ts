@@ -2,6 +2,7 @@
 
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {userService} from "@/services/userService";
+import axiosInstance from "@/utils/axiosinstance";
 
 export const useUsers = (filters?: {
     user_role?: string;
@@ -29,6 +30,23 @@ export const useCreateUser = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: ["users"]});
         },
+    });
+};
+
+// export const useCheckHandover = () => {
+//     return useMutation({
+//         mutationFn: async (userId: string) => {
+//             userService.handoverCheck(userId);
+//         }
+//     });
+// };
+
+export const useCheckHandover = () => {
+    return useMutation({
+        mutationFn: async (userId: string) => {
+            const res = await axiosInstance.get(`/users/${userId}/handover-check`);
+            return res.data;
+        }
     });
 };
 

@@ -12,6 +12,7 @@ import Modal from "@/components/Modal";
 import {useCreateUnavailableService} from "@/hooks/useUnavailable";
 import Toast from "@/components/Toast";
 import {useToast} from "@/hooks/useToast";
+import {useCurrentUser} from "@/utils/auth";
 
 
 // export const serviceParkSchema = z.object({
@@ -177,6 +178,11 @@ const ServicePark = () => {
     } | null>(null);
 
 
+
+    const user = useCurrentUser();
+    const userId = Number(user?.id) || 1;
+
+
     const [packageData, setPackageData] = useState(initialPackageData);
     const [maintenanceData, setMaintenanceData] = useState(initialMaintenanceData);
     const [allServicesData, setAllServicesData] = useState(initialAllServicesData);
@@ -277,7 +283,7 @@ const ServicePark = () => {
                 oil_type: data.oil_type,
                 service_center: data.service_center,
                 service_advisor: data.service_advisor,
-                created_by: 1,
+                created_by: userId,
                 customer_name: data.owner_name,
                 phone_number: data.contact_no,
             });
@@ -316,6 +322,7 @@ const ServicePark = () => {
                 additional_note: data.additional_note,
                 lead_source: "Call Agent",
                 priority: 1,
+                call_agent_id: userId,
             });
 
             showToast("Service sale created successfully", "success");
@@ -334,7 +341,7 @@ const ServicePark = () => {
     const handleUnavailableSubmit = async (data: UnavailableServiceFormData) => {
         try {
             const submissionData = {
-                call_agent_id: 1,
+                call_agent_id: userId,
                 ...data,
             };
 

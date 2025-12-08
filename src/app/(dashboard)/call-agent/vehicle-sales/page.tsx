@@ -130,7 +130,7 @@ const VehicleSales = () => {
 
     const onUnavailableSubmit = (data: UnavailableVehicleSaleFormData) => {
         const submissionData = {
-            call_agent_id: 1,
+            call_agent_id: Number(userId) || 1,
             ...data,
             manufacture_year: parseInt(data.manufacture_year, 10),
             down_payment: data.down_payment ? parseFloat(data.down_payment) : 0,

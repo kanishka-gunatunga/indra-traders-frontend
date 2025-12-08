@@ -11,6 +11,7 @@ import {z} from "zod";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useCreateDirectRequest} from "@/hooks/useFastTrack";
 import FormField from "@/components/FormField";
+import {useCurrentUser} from "@/utils/auth";
 
 
 export const fastTrackFilterSchema = z.object({
@@ -195,6 +196,9 @@ export default function FastTrackPage() {
 
     const {mutate: createDirectRequest, isPending} = useCreateDirectRequest();
 
+    const user = useCurrentUser();
+    const userId = Number(user?.id) || 1;
+
     const [priceFrom, setPriceFrom] = useState<number | "">("");
     const [priceTo, setPriceTo] = useState<number | "">("");
 
@@ -232,7 +236,7 @@ export default function FastTrackPage() {
             price_from: data.priceFrom ? Number(data.priceFrom) : null,
             price_to: data.priceTo ? Number(data.priceTo) : null,
             customer_id: "CUS1760976040167",
-            call_agent_id: 1,
+            call_agent_id: userId,
         };
     };
 

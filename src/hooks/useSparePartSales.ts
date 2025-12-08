@@ -7,6 +7,7 @@ export const useSpareSales = (status?: string, userId?: number, userRole?: strin
     useQuery({
         queryKey: ["spareSales", status, userId, userRole],
         queryFn: () => SparePartSalesService.listSales(status, userId, userRole).then((res) => res.data),
+        refetchInterval: 1000,
     });
 
 export const useSpareCreateSale = () => {
@@ -25,7 +26,7 @@ export const useSpareSaleByTicket = (ticket: string) =>
         queryKey: ["spareSale", ticket],
         queryFn: () => SparePartSalesService.getSaleByTicket(ticket).then((res) => res.data),
         enabled: !!ticket,
-        refetchInterval: 3000,
+        refetchInterval: 1000,
     });
 
 export const useAssignToSpareSales = () => {

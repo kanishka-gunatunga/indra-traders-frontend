@@ -1573,9 +1573,9 @@ export default function SalesDashboard() {
                                             idx > 0 ? "mt-3" : ""
                                         } font-medium text-black min-w-[400px]`}
                                     >
-                                        <div className="w-1/3 px-2">{item.ticketNo}</div>
-                                        <div className="w-1/3 px-2">{item.name}</div>
-                                        <div className="w-1/3 px-2">{item.contactNo}</div>
+                                        <div className="w-1/3 px-2">{item.ticket_number}</div>
+                                        <div className="w-1/3 px-2">{item.customer_name}</div>
+                                        <div className="w-1/3 px-2">{item.contact_number}</div>
                                     </div>
                                 ))}
                             </div>
