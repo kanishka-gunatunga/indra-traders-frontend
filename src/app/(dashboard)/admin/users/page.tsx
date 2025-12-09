@@ -248,7 +248,10 @@ export default function UserManagement() {
                             </button>
                             <button
                                 className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
-                                onClick={() => setIsAddNewUserModalOpen(true)}
+                                onClick={() => {
+                                    resetAddForm();
+                                    setIsAddNewUserModalOpen(true)
+                                }}
                             >
                                 <Image
                                     src={"/images/sales/plus.svg"}
