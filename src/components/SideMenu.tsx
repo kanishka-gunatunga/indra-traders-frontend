@@ -258,6 +258,20 @@ const SideMenu = () => {
                     </Link>
                 )}
 
+                {hasRole(["ADMIN"]) && (
+                    <Link href="/admin/bank-leasing">
+                        <div className={getLinkClasses("/admin/bank-leasing")}>
+                            <Image
+                                src={"/images/calculator.svg"}
+                                alt="List icon"
+                                width={24}
+                                height={24}
+                                className={pathname === "/admin/bank-leasing" ? "brightness-0 invert" : ""}
+                            />
+                        </div>
+                    </Link>
+                )}
+
                 <button
                     id="setting"
                     className="w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition">

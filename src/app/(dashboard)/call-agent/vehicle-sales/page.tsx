@@ -11,6 +11,8 @@ import {useCreateUnavailableVehicleSale} from "@/hooks/useUnavailable";
 import {useToast} from "@/hooks/useToast";
 import Toast from "@/components/Toast";
 import {useCurrentUser} from "@/utils/auth";
+import VehicleGallery from "@/components/VehicleGallery";
+import LeasingCalculator from "@/components/LeasingCalculator";
 
 
 export const vehicleSaleSchema = z.object({
@@ -59,6 +61,10 @@ const VehicleSales = () => {
     const {mutate: createUnavailableSale, isPending: isUnavailablePending} = useCreateUnavailableVehicleSale();
     const [unavailableSubmitSuccess, setUnavailableSubmitSuccess] = useState(false);
 
+    const [showVehicleDetailsAndLoyaltyAndPromotions , setShowVehicleDetailsAndLoyaltyAndPromotions] = useState(false);
+
+    const [copiedIndex, setCopiedIndex] = useState<null | number>(null);
+
     const {toast, showToast, hideToast} = useToast();
 
     const {
@@ -81,8 +87,8 @@ const VehicleSales = () => {
             price_from: "",
             price_to: "",
             additional_note: "",
-            contact_number: "0771234567",
-            customer_name: "Amal",
+            contact_number: "",
+            customer_name: "",
         },
     });
 
@@ -211,6 +217,46 @@ const VehicleSales = () => {
         {make: 'Honda', model: 'NSX', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000'},
     ];
 
+    const loyaltyData = [
+        {
+            category: 'Indra Traders (ITPL)',
+            points: '500',
+            promoCode: 'NEWBUY500'
+        },
+        {
+            category: 'Indra Traders (ITPL)',
+            points: '500',
+            promoCode: 'NEWBUY500'
+        },
+        {
+            category: 'Indra Traders (ITPL)',
+            points: '500',
+            promoCode: 'NEWBUY500'
+        },
+        {
+            category: 'Indra Traders (ITPL)',
+            points: '500',
+            promoCode: 'NEWBUY500'
+        },
+    ];
+
+
+    const handleCopy = (promoCode: string, index: number) => {
+        navigator.clipboard.writeText(promoCode)
+            .then(() => {
+                setCopiedIndex(index);
+                setTimeout(() => setCopiedIndex(null), 2000);
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+    };
+
+
+    const handleStockItemClick = () => {
+        setShowVehicleDetailsAndLoyaltyAndPromotions(true);
+    };
+
 
     const vehicleMakeOptions = vehicleData.map((vehicle) => ({
         value: vehicle.make,
@@ -262,13 +308,13 @@ const VehicleSales = () => {
                                 <h2 className="font-semibold text-[22px] mb-6">Filters</h2>
                                 <div>
                                     <button
-                                        className="ml-auto mt-8 md:mt-0 text-[#DB2727] text-base font-medium rounded-full px-9 py-2 hover:text-white transition">
+                                        className="ml-auto mt-8 md:mt-0 text-[#DB2727] text-base font-medium rounded-full px-9 py-2 hover:text-red-400 cursor-pointer transition">
                                         Clear all
                                     </button>
                                     <button
                                         id="applyBtn"
                                         onClick={() => setShowStockAvailability(true)}
-                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition">
+                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 cursor-pointer transition">
                                         Apply
                                     </button>
                                 </div>
@@ -359,7 +405,8 @@ const VehicleSales = () => {
                                         </thead>
                                         <tbody>
                                         {stockData.map((item, index) => (
-                                            <tr key={index} className="text-lg font-medium text-[#4353FF] underline">
+                                            <tr key={index} onClick={handleStockItemClick}
+                                                className="text-lg font-medium text-[#4353FF] underline">
                                                 <td className="py-4 px-4"><a>{item.physical}</a></td>
                                                 <td className="py-4 px-4">{item.onOrder}</td>
                                                 <td className="py-4 px-4">{item.ftProgressLevel}</td>
@@ -370,6 +417,182 @@ const VehicleSales = () => {
                                     </table>
                                 </div>
                             </div>
+                        </section>
+                    )}
+
+                    {showStockAvailability && showVehicleDetailsAndLoyaltyAndPromotions && (
+                        <section
+                            className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
+                            <div className="w-full flex justify-between items-center">
+              <span className="font-semibold text-[22px]">
+                  2025 Honda Civic Hatchback
+              </span>
+                                <div className="flex gap-3">
+                                    <button
+                                        className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                                        <Image
+                                            src={"/images/material-symbols_sms-outline.svg"}
+                                            alt="material-symbols_sms-outline"
+                                            width={24}
+                                            height={24}
+                                        />
+                                    </button>
+
+                                    <button
+                                        className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                                        <Image
+                                            src={"/images/ri_whatsapp-line.svg"}
+                                            alt="ri_whatsapp-line"
+                                            width={24}
+                                            height={24}
+                                        />
+                                    </button>
+                                    <button
+                                        className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                                        <Image
+                                            src={"/images/material-symbols_mail-outline.svg"}
+                                            alt="material-symbols_mail-outline"
+                                            width={24}
+                                            height={24}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="w-full flex justify-center mt-8">
+                                <div className="w-1/2">
+                                    <VehicleGallery
+                                        mainImage="/images/main-vehicle.png"
+                                        images={[
+                                            "/images/vehicle1.png",
+                                            "/images/vehicle2.png",
+                                            "/images/vehicle3.png",
+                                            "/images/vehicle4.png",
+                                        ]}
+                                    />
+                                </div>
+                                <div className="w-1/2 px-10 flex flex-col">
+                <span className="text-[20px] font-semibold tracking-wide">
+                  Vehicle Details
+                </span>
+                                    <div className="text-[23px] mb-3 font-semibold tracking-wide text-[#DB2727] mt-5">
+                                        Rs. {'N/A'}
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {/*{vehicle ? (*/}
+                                        {
+                                            [
+                                                {label: "Millage:", value: `N/A km`},
+                                                {label: "No. of Owners:", value: 'N/A'},
+                                                {label: "Vehicle No:", value: 'N/A'},
+                                                {label: "Color:", value: 'N/A'},
+                                                {label: "Capacity:", value: `N/A cc`},
+                                                {label: "Model:", value: 'N/A'},
+                                                {label: "Fuel:", value: 'N/A'},
+                                                {label: "Transmission:", value: 'N/A'},
+                                                {label: "Year:", value: 'N/A'},
+                                                {label: "Grade:", value: 'N/A'},
+                                            ].map((detail, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="w-full flex text-lg font-medium tracking-wide"
+                                                >
+                                                    <div className="w-2/6">{detail.label}</div>
+                                                    <div className="w-4/6 text-[#575757]">{detail.value}</div>
+                                                </div>
+                                            ))
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
+                    {showStockAvailability && showVehicleDetailsAndLoyaltyAndPromotions && (
+                        <section
+                            id="loyalty-section"
+                            className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
+                            <div
+                                className="w-full">
+                                <div className="flex flex-row items-center justify-between">
+                                    <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Loyalty
+                                        Points
+                                        &
+                                        Promotions</h2>
+                                </div>
+
+                                {/* Table Headers */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-black">
+                                        <thead>
+                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                            <th className="py-5 px-4 text-left">Category</th>
+                                            <th className="py-5 px-4 text-left">Points (Loyalty programme)</th>
+                                            <th className="py-5 px-4 text-left">Promo Codes (Discount on leasing)</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {loyaltyData.map((item, index) => (
+                                            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
+                                                <td className="py-4 px-4 text-[#1D1D1D]">{item.category}</td>
+                                                <td className="py-4 px-4 text-[#1D1D1D]">{item.points}</td>
+                                                <td className="py-4 px-4 items-center flex"><span
+                                                    className="mr-8">{item.promoCode}</span>
+                                                    <button
+                                                        onClick={() => handleCopy(item.promoCode, index)}
+                                                        className="font-medium rounded-full">
+                                                        <Image src="/copy.svg" alt="info" height={36}
+                                                               width={36} className="h-5 w-5"/>
+                                                    </button>
+                                                    {copiedIndex === index && (
+                                                        <span
+                                                            className="absolute right-40 transform -translate-y-1/2 ml-2 bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                                        Copied!
+                                                    </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
+                    {showStockAvailability && showVehicleDetailsAndLoyaltyAndPromotions && (
+                        <section
+                            className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 items-center space-y-6 mb-6">
+                            <header className="flex items-center space-x-4">
+                                <h2 className="font-semibold text-[22px]">Promotions</h2>
+                            </header>
+
+                            <div className="space-y-3 montserrat">
+                                <p className="text-[#575757] text-[15px] font-normal mb-8">
+                                    Lorem ipsum dolor sit amet consectetur. Amet purus et aliquam amet odio nulla ut
+                                    quam.
+                                    In ut
+                                    fames ut adipiscing. Faucibus facilisi mattis duis lobortis rhoncus nibh diam. Etiam
+                                    scelerisque mattis sem dolor diam quis vestibulum volutpat pretium. Et odio senectus
+                                    id
+                                    vitae auctor nisl at turpis id. Neque turpis orci egestas lacus volutpat tellus
+                                    morbi
+                                    eget
+                                    mi. Sed nulla proin ut vivamus sodales.
+                                </p>
+                                <ul className="list-disc list-inside space-y-1 text-[#575757] font-semibold text-[15px] max-w-[600px]">
+                                    <li>Free service for one year</li>
+                                    <li>Free maintenance checkups for six months.</li>
+                                    <li>Free tire rotations for 12 months.</li>
+                                    <li>Lifetime engine diagnostic checks.</li>
+                                </ul>
+                            </div>
+                        </section>
+                    )}
+
+                    {showStockAvailability && showVehicleDetailsAndLoyaltyAndPromotions && (
+                        <section className="w-full">
+                            <LeasingCalculator vehiclePrice={1000000} />
                         </section>
                     )}
 
@@ -384,7 +607,7 @@ const VehicleSales = () => {
                                         <button
                                             type="submit"
                                             disabled={isPending}
-                                            className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition disabled:bg-gray-400">
+                                            className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition disabled:bg-gray-400 cursor-pointer">
                                             {isPending ? "Submitting..." : "Send"}
                                         </button>
                                     </div>
@@ -425,7 +648,7 @@ const VehicleSales = () => {
 
                                     <FormField
                                         label="Customer Name"
-                                        placeholder="Emily Charlotte"
+                                        placeholder="Customer Name"
                                         type="text"
                                         register={register("customer_name")}
                                         error={errors.customer_name}
@@ -433,7 +656,7 @@ const VehicleSales = () => {
 
                                     <FormField
                                         label="Contact Number"
-                                        placeholder="077 5647256"
+                                        placeholder="077 1234567"
                                         type="text"
                                         register={register("contact_number")}
                                         error={errors.contact_number}

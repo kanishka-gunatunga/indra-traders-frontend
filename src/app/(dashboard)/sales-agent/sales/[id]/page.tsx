@@ -443,7 +443,7 @@ export default function SalesDetailsPage() {
                     actionButton={{
                         label: createFollowupMutation.isPending ? "Saving..." : "Save",
                         onClick: handleActivitySave,
-                        // disabled: createFollowupMutation.isPending,
+                        disabled: createFollowupMutation.isPending,
                     }}
                 >
                     <div className="w-full">
@@ -466,7 +466,7 @@ export default function SalesDetailsPage() {
                     actionButton={{
                         label: createReminderMutation.isPending ? "Saving..." : "Save",
                         onClick: handleReminderSave,
-                        // disabled: createReminderMutation.isPending,
+                        disabled: createReminderMutation.isPending,
                     }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">

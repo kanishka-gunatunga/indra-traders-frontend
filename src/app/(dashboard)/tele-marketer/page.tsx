@@ -17,6 +17,7 @@ import {
     useAssignBestMatchToSale,
     useAllDirectReminders, useVehicleDetails
 } from "@/hooks/useFastTrack";
+import {useCurrentUser} from "@/utils/auth";
 // import {useCreateReminder} from "@/hooks/useReminder";
 
 
@@ -167,6 +168,10 @@ const customer = {
 };
 
 export default function TeleMarketerPage() {
+
+    const user = useCurrentUser();
+    const userId = Number(user?.id || 1);
+
     const [isBestMatchesModalOpen, setIsBestMatchesModalOpen] = useState(false);
     const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
 
@@ -239,7 +244,7 @@ export default function TeleMarketerPage() {
             {
                 directRequestId: selectedDirectRequestId,
                 vehicleId: selectedVehicleId,
-                payload: { salesUserId: 1 } // Assume ID 1 for demo; replace with real user ID from auth
+                payload: { salesUserId: userId } // Assume ID 1 for demo; replace with real user ID from auth
             },
             {
                 onSuccess: () => {
@@ -262,8 +267,8 @@ export default function TeleMarketerPage() {
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Ronald Richards"
-                    location="Bambalapitiya"
+                    name={user?.full_name || "Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Indra Fast Track Telemarketer Dashboard"
                     reminders={reminders.length}
                 />

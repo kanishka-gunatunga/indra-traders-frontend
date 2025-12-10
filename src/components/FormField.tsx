@@ -89,8 +89,9 @@ function FormField({
                         <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757"/>
                     </svg>
                 )}
-                {error && <span className="text-red-600 text-sm">{error.message}</span>}
+
             </div>
+            {error && <span className="text-red-600 text-sm">{error.message}</span>}
         </label>
     );
 }
