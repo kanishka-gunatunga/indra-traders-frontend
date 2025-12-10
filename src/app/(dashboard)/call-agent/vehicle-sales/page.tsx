@@ -87,8 +87,8 @@ const VehicleSales = () => {
             price_from: "",
             price_to: "",
             additional_note: "",
-            contact_number: "0771234567",
-            customer_name: "Amal",
+            contact_number: "",
+            customer_name: "",
         },
     });
 
@@ -308,13 +308,13 @@ const VehicleSales = () => {
                                 <h2 className="font-semibold text-[22px] mb-6">Filters</h2>
                                 <div>
                                     <button
-                                        className="ml-auto mt-8 md:mt-0 text-[#DB2727] text-base font-medium rounded-full px-9 py-2 hover:text-white transition">
+                                        className="ml-auto mt-8 md:mt-0 text-[#DB2727] text-base font-medium rounded-full px-9 py-2 hover:text-red-400 cursor-pointer transition">
                                         Clear all
                                     </button>
                                     <button
                                         id="applyBtn"
                                         onClick={() => setShowStockAvailability(true)}
-                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition">
+                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 cursor-pointer transition">
                                         Apply
                                     </button>
                                 </div>
@@ -607,7 +607,7 @@ const VehicleSales = () => {
                                         <button
                                             type="submit"
                                             disabled={isPending}
-                                            className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition disabled:bg-gray-400">
+                                            className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition disabled:bg-gray-400 cursor-pointer">
                                             {isPending ? "Submitting..." : "Send"}
                                         </button>
                                     </div>
@@ -648,7 +648,7 @@ const VehicleSales = () => {
 
                                     <FormField
                                         label="Customer Name"
-                                        placeholder="Emily Charlotte"
+                                        placeholder="Customer Name"
                                         type="text"
                                         register={register("customer_name")}
                                         error={errors.customer_name}
@@ -656,7 +656,7 @@ const VehicleSales = () => {
 
                                     <FormField
                                         label="Contact Number"
-                                        placeholder="077 5647256"
+                                        placeholder="077 1234567"
                                         type="text"
                                         register={register("contact_number")}
                                         error={errors.contact_number}

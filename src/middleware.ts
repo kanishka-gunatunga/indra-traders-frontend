@@ -115,7 +115,7 @@ export const config = {
     // ],
 
     matcher: [
-        "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:png|jpg|svg)).*)",
+        "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:png|jpg|svg|gif)).*)",
         // "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg)).*)",
     ],
 };

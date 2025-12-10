@@ -256,8 +256,8 @@ export default function SalesDetailsPage() {
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name || "Sophie Eleanor"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Indra Service Park Sales Dashboard"
                 />
 
@@ -460,9 +460,9 @@ export default function SalesDetailsPage() {
                         setActivityModalOpen(false);
                     }}
                     actionButton={{
-                        label: "Save",
+                        label: createFollowupMutation.isPending ? "Saving..." : "Save",
                         onClick: handleSaveActivity,
-                        // disabled: createFollowupMutation.isPending,
+                        disabled: createFollowupMutation.isPending,
                     }}
                 >
                     <div className="w-full">
@@ -488,9 +488,9 @@ export default function SalesDetailsPage() {
                         setReminderModalOpen(false);
                     }}
                     actionButton={{
-                        label: "Save",
+                        label: createReminderMutation.isPending ? "Saving..." : "Save",
                         onClick: handleSaveReminder,
-                        // disabled: createReminderMutation.isPending,
+                        disabled: createReminderMutation.isPending,
                     }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">

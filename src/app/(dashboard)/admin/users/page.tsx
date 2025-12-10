@@ -74,6 +74,8 @@ export default function UserManagement() {
 
     const [userLanguages, setUserLanguages] = useState<string[]>(["en"]);
 
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -143,7 +145,109 @@ export default function UserManagement() {
         setUserLanguages(["en"]);
     }
 
+    const validateForm = (isEditMode = false) => {
+        const errors: Record<string, string> = {};
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // Common Fields
+        const currentName = isEditMode ? selectedUser.full_name : fullName;
+        const currentContact = isEditMode ? selectedUser.contact_no : contactNumber;
+        const currentEmail = isEditMode ? selectedUser.email : email;
+        const currentRole = isEditMode ? selectedUser.user_role : userRole;
+        const currentDept = isEditMode ? selectedUser.department : department;
+        const currentBranch = isEditMode ? selectedUser.branch : branch;
+
+        // Password fields (only relevant for Add or if Edit inputs are filled)
+        const currentPass = isEditMode ? password : password;
+        const currentConfirm = isEditMode ? confirmPassword : confirmPassword;
+
+        if (!currentName?.trim()) errors.full_name = "Full Name is required";
+        if (!currentContact?.trim()) errors.contact_no = "Contact Number is required";
+        else if (currentContact.length < 10) errors.contact_no = "Invalid Contact Number";
+
+        if (!currentEmail?.trim()) errors.email = "Email is required";
+        else if (!emailRegex.test(currentEmail)) errors.email = "Invalid Email Format";
+
+        if (!currentRole) errors.user_role = "User Role is required";
+
+        // Conditional Validation
+        if (shouldShowDepartment(currentRole) && !currentDept) {
+            errors.department = "Department is required";
+        }
+        if (shouldShowBranch(currentRole) && !currentBranch) {
+            errors.branch = "Branch is required";
+        }
+
+        // Password Validation
+        if (!isEditMode) {
+            if (!currentPass) errors.password = "Password is required";
+            else if (currentPass.length < 6) errors.password = "Password must be at least 6 chars";
+
+            if (currentPass !== currentConfirm) {
+                errors.confirm_password = "Passwords do not match";
+            }
+        } else {
+            // Edit Mode: Only validate if user typed something in password
+            if (currentPass && currentPass.length < 6) {
+                errors.password = "Password must be at least 6 chars";
+            }
+            if (currentPass && currentPass !== currentConfirm) {
+                errors.confirm_password = "Passwords do not match";
+            }
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const clearError = (field: string) => {
+        if (formErrors[field]) {
+            setFormErrors(prev => {
+                const newErrors = {...prev};
+                delete newErrors[field];
+                return newErrors;
+            });
+        }
+    };
+
+
+    const handleCreateClick = async () => {
+        if (!validateForm(false)) {
+            showToast("Please fix the errors in the form", "error");
+            return;
+        }
+
+        try {
+            const payload = {
+                full_name: fullName,
+                contact_no: contactNumber,
+                email,
+                user_role: userRole,
+                department: shouldShowDepartment(userRole) ? department : null,
+                branch: shouldShowBranch(userRole) ? branch : null,
+                languages: shouldShowLanguages(userRole) ? userLanguages : ["en"],
+                password,
+                confirm_password: confirmPassword,
+            };
+
+            await createUserMutation.mutateAsync(payload);
+            showToast("User created successfully!", "success");
+            setIsAddNewUserModalOpen(false);
+            resetAddForm();
+        } catch (error: any) {
+            console.error("Error creating user:", error);
+            const msg = error.response?.data?.message || "Failed to create user";
+            showToast(msg, "error");
+        }
+    };
+
+
     const handleUpdateClick = async () => {
+        if (!validateForm(true)) {
+            showToast("Please fix the errors", "error");
+            return;
+        }
+
         const originalUser = users.find((u: any) => u.id === selectedUser.id);
 
         if (!originalUser) {
@@ -340,64 +444,44 @@ export default function UserManagement() {
             {/* Add New User Modal */}
             {isAddNewUserModalOpen && (
                 <Modal
-                    title="User Management"
+                    title="Add User"
                     onClose={() => setIsAddNewUserModalOpen(false)}
+
                     // actionButton={{
                     //     label: "Add",
-                    //     onClick: () => {
-                    //         console.log("Saved user data:", {
-                    //             fullName,
-                    //             contactNumber,
-                    //             email,
-                    //             department,
-                    //             branch,
-                    //             userRole,
-                    //             password,
-                    //             confirmPassword,
-                    //         });
-                    //         // Reset form
-                    //         setFullName("");
-                    //         setContactNumber("");
-                    //         setEmail("");
-                    //         setBranch("");
-                    //         setDepartment("");
-                    //         setUserRole("");
-                    //         setPassword("");
-                    //         setConfirmPassword("");
-                    //         setIsAddNewUserModalOpen(false);
+                    //     onClick: async () => {
+                    //         if (password !== confirmPassword) {
+                    //             showToast("Passwords do not match!", "error");
+                    //             return;
+                    //         }
+                    //         try {
+                    //             const payload = {
+                    //                 full_name: fullName,
+                    //                 contact_no: contactNumber,
+                    //                 email,
+                    //                 user_role: userRole,
+                    //                 department: shouldShowDepartment(userRole) ? department : null,
+                    //                 password,
+                    //                 confirm_password: confirmPassword,
+                    //                 branch: shouldShowBranch(userRole) ? branch : null,
+                    //                 languages: shouldShowLanguages(userRole) ? userLanguages : ["en"],
+                    //             };
+                    //
+                    //             await createUserMutation.mutateAsync(payload);
+                    //             showToast("User created successfully!", "success");
+                    //             setIsAddNewUserModalOpen(false);
+                    //             resetAddForm();
+                    //         } catch (error: any) {
+                    //             console.error("Error creating user:", error);
+                    //             const msg = error.response?.data?.message || "Failed to create user";
+                    //             showToast(msg, "error");
+                    //         }
                     //     },
                     // }}
 
                     actionButton={{
                         label: "Add",
-                        onClick: async () => {
-                            if (password !== confirmPassword) {
-                                showToast("Passwords do not match!", "error");
-                                return;
-                            }
-                            try {
-                                const payload = {
-                                    full_name: fullName,
-                                    contact_no: contactNumber,
-                                    email,
-                                    user_role: userRole,
-                                    department: shouldShowDepartment(userRole) ? department : null,
-                                    password,
-                                    confirm_password: confirmPassword,
-                                    branch: shouldShowBranch(userRole) ? branch : null,
-                                    languages: shouldShowLanguages(userRole) ? userLanguages : ["en"],
-                                };
-
-                                await createUserMutation.mutateAsync(payload);
-                                showToast("User created successfully!", "success");
-                                setIsAddNewUserModalOpen(false);
-                                resetAddForm();
-                            } catch (error: any) {
-                                console.error("Error creating user:", error);
-                                const msg = error.response?.data?.message || "Failed to create user";
-                                showToast(msg, "error");
-                            }
-                        },
+                        onClick: handleCreateClick,
                     }}
 
                 >
@@ -407,36 +491,50 @@ export default function UserManagement() {
                             <input
                                 type="text"
                                 value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                                onChange={(e) => {
+                                    setFullName(e.target.value);
+                                    clearError("full_name");
+                                }}
+                                className={`w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border ${formErrors.full_name ? "border-red-500" : "border-black/50"} backdrop-blur-[50px] px-4`}
                                 placeholder="Full Name"
                             />
+                            {formErrors.full_name &&
+                                <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.full_name}</p>}
                         </div>
                         <div>
                             <label className="block mb-2 font-medium">Contact No</label>
                             <input
                                 type="text"
                                 value={contactNumber}
-                                onChange={(e) => setContactNumber(e.target.value)}
-                                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                                onChange={(e) => {
+                                    setContactNumber(e.target.value);
+                                    clearError("contact_no");
+                                }}
+                                className={`w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border ${formErrors.contact_no ? "border-red-500" : "border-black/50"} backdrop-blur-[50px] px-4`}
                                 placeholder="Contact No"
                             />
+                            {formErrors.contact_no &&
+                                <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.contact_no}</p>}
                         </div>
                         <div>
                             <label className="block mb-2 font-medium">Email</label>
                             <input
                                 type="text"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    clearError("email");
+                                }}
+                                className={`w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border ${formErrors.email ? "border-red-500" : "border-black/50"} backdrop-blur-[50px] px-4`}
                                 placeholder="Email"
                             />
+                            {formErrors.email && <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.email}</p>}
                         </div>
                         <div>
                             <div>
                                 <label className="block mb-2 font-medium">User Role</label>
                                 <div
-                                    className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+                                    className={`relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4`}>
                                     <select
                                         value={userRole}
                                         onChange={(e) => {
@@ -447,12 +545,7 @@ export default function UserManagement() {
                                         className="w-full bg-transparent outline-none appearance-none"
                                     >
                                         <option value="" disabled>User Role</option>
-                                        <option value={ROLES.ADMIN}>Admin</option>
-                                        <option value={ROLES.SALES_LV1}>Sales Lv 1</option>
-                                        <option value={ROLES.SALES_LV2}>Sales Lv 2</option>
-                                        <option value={ROLES.SALES_LV3}>Sales Lv 3</option>
-                                        <option value={ROLES.CALL_AGENT}>Call Agent</option>
-                                        <option value={ROLES.TELEMARKETER}>Telemarketer</option>
+                                        {Object.values(ROLES).map(r => <option key={r} value={r}>{r}</option>)}
                                     </select>
                                     <span className="absolute right-4 pointer-events-none">
                                         <Image
@@ -463,6 +556,8 @@ export default function UserManagement() {
                                         />
                                       </span>
                                 </div>
+                                {formErrors.user_role &&
+                                    <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.user_role}</p>}
                             </div>
                         </div>
                     </div>
@@ -472,17 +567,16 @@ export default function UserManagement() {
                             <div>
                                 <label className="block mb-2 font-medium">Department</label>
                                 <div
-                                    className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+                                    className={`relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border ${formErrors.department ? "border-red-500" : "border-black/50"} flex items-center px-4`}>
                                     <select
                                         value={department}
-                                        onChange={(e) => setDepartment(e.target.value)}
+                                        onChange={(e) => {
+                                            setDepartment(e.target.value);
+                                            clearError("department");
+                                        }}
                                         className="w-full bg-transparent outline-none appearance-none"
                                     >
                                         <option value="" disabled>Select Department</option>
-                                        {/*<option value="ITPL">ITPL</option>*/}
-                                        {/*<option value="ISP">ISP</option>*/}
-                                        {/*<option value="IMS">IMS</option>*/}
-                                        {/*<option value="IFT">IFT</option>*/}
                                         {departments.map((d) => (
                                             <option key={d} value={d}>{d}</option>
                                         ))}
@@ -496,6 +590,8 @@ export default function UserManagement() {
                                   />
                                 </span>
                                 </div>
+                                {formErrors.department &&
+                                    <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.department}</p>}
                             </div>
                         )}
 
@@ -503,18 +599,16 @@ export default function UserManagement() {
                             <div>
                                 <label className="block mb-2 font-medium">Branch</label>
                                 <div
-                                    className="relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 flex items-center px-4">
+                                    className={`relative w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border ${formErrors.branch ? "border-red-500" : "border-black/50"} flex items-center px-4`}>
                                     <select
                                         value={branch}
-                                        onChange={(e) => setBranch(e.target.value)}
+                                        onChange={(e) => {
+                                            setBranch(e.target.value);
+                                            clearError("branch");
+                                        }}
                                         className="w-full bg-transparent outline-none appearance-none"
                                     >
                                         <option disabled value="">Select Branch</option>
-                                        {/*<option value="BAMBALAPITIYA">Bambalapitiya</option>*/}
-                                        {/*<option value="KANDY">Kandy</option>*/}
-                                        {/*<option value="JAFFNA">Jaffna</option>*/}
-                                        {/*<option value="GALLE">Galle</option>*/}
-                                        {/*<option value="NEGOMBO">Negombo</option>*/}
                                         {branches.map((b) => (
                                             <option key={b} value={b.toUpperCase()}>{b}</option>
                                         ))}
@@ -528,6 +622,8 @@ export default function UserManagement() {
                                   />
                                 </span>
                                 </div>
+                                {formErrors.branch &&
+                                    <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.branch}</p>}
                             </div>
                             // ) : (
                             //     <div></div>
@@ -540,8 +636,11 @@ export default function UserManagement() {
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 pr-10"
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        clearError("password");
+                                    }}
+                                    className={`w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border ${formErrors.password ? "border-red-500" : "border-black/50"} backdrop-blur-[50px] px-4 pr-10`}
                                     placeholder="Password"
                                 />
                                 <span
@@ -551,6 +650,8 @@ export default function UserManagement() {
                                   {showPassword ? <FaEye/> : <FaEyeSlash/>}
                                 </span>
                             </div>
+                            {formErrors.password &&
+                                <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.password}</p>}
                         </div>
 
                         {/* Confirm Password */}
@@ -560,8 +661,11 @@ export default function UserManagement() {
                                 <input
                                     type={showConfirmPassword ? "text" : "password"}
                                     value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 pr-10"
+                                    onChange={(e) => {
+                                        setConfirmPassword(e.target.value);
+                                        clearError("confirm_password");
+                                    }}
+                                    className={`w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border ${formErrors.confirm_password ? "border-red-500" : "border-black/50"} backdrop-blur-[50px] px-4 pr-10`}
                                     placeholder="Confirm Password"
                                 />
                                 <span
@@ -571,6 +675,8 @@ export default function UserManagement() {
                                   {showConfirmPassword ? <FaEye/> : <FaEyeSlash/>}
                                 </span>
                             </div>
+                            {formErrors.confirm_password &&
+                                <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.confirm_password}</p>}
                         </div>
                     </div>
 
@@ -625,29 +731,14 @@ export default function UserManagement() {
                           User Role
                         </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
-                            {Object.values(ROLES).map((roleVal) => {
-                                const isSelected = selectedRoles.includes(roleVal);
-                                return (
-                                    <div
-                                        key={roleVal}
-                                        className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                                            ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
-                                        onClick={() => {
-                                            if (isSelected) {
-                                                setSelectedRoles(selectedRoles.filter((r) => r !== roleVal));
-                                            } else {
-                                                setSelectedRoles([roleVal]);
-                                            }
-                                        }}
-                                    >
-                                        {roleVal === ROLES.SALES_LV1 ? "Sales Lv 1" :
-                                            roleVal === ROLES.SALES_LV2 ? "Sales Lv 2" :
-                                                roleVal === ROLES.SALES_LV3 ? "Sales Lv 3" :
-                                                    roleVal === ROLES.CALL_AGENT ? "Call Agent" :
-                                                        roleVal.charAt(0).toUpperCase() + roleVal.slice(1).toLowerCase()}
-                                    </div>
-                                );
-                            })}
+                            {Object.values(ROLES).map((role) => (
+                                <FilterTag
+                                    key={role}
+                                    label={role}
+                                    isSelected={selectedRoles.includes(role)}
+                                    onClick={() => setSelectedRoles(prev => prev.includes(role) ? [] : [role])}
+                                />
+                            ))}
                         </div>
                     </div>
 
@@ -657,25 +748,14 @@ export default function UserManagement() {
                           Department
                         </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
-                            {departments.map((dept) => {
-                                const isSelected = selectedDepartments.includes(dept);
-                                return (
-                                    <div
-                                        key={dept}
-                                        className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                                            ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
-                                        onClick={() => {
-                                            if (isSelected) {
-                                                setSelectedDepartments(selectedDepartments.filter((d) => d !== dept));
-                                            } else {
-                                                setSelectedDepartments([dept]);
-                                            }
-                                        }}
-                                    >
-                                        {dept}
-                                    </div>
-                                );
-                            })}
+                            {departments.map((d) => (
+                                <FilterTag
+                                    key={d}
+                                    label={d}
+                                    isSelected={selectedDepartments.includes(d)}
+                                    onClick={() => setSelectedDepartments(prev => prev.includes(d) ? [] : [d])}
+                                />
+                            ))}
                         </div>
                     </div>
 
@@ -685,26 +765,14 @@ export default function UserManagement() {
                           Branch
                         </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
-                            {branches.map((branch) => {
-                                const isSelected = selectedBranches.includes(branch);
-                                return (
-                                    <div
-                                        key={branch}
-                                        className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                                        ${isSelected ? "bg-blue-500 text-white border-none" : ""}`}
-                                        onClick={() => {
-                                            const val = branch.toUpperCase();
-                                            if (isSelected) {
-                                                setSelectedBranches(selectedBranches.filter((b) => b !== val));
-                                            } else {
-                                                setSelectedBranches([val]);
-                                            }
-                                        }}
-                                    >
-                                        {branch}
-                                    </div>
-                                );
-                            })}
+                            {branches.map((b) => (
+                                <FilterTag
+                                    key={b}
+                                    label={b}
+                                    isSelected={selectedBranches.includes(b.toUpperCase())}
+                                    onClick={() => setSelectedBranches(prev => prev.includes(b.toUpperCase()) ? [] : [b.toUpperCase()])}
+                                />
+                            ))}
                         </div>
                     </div>
                 </Modal>
@@ -838,11 +906,13 @@ export default function UserManagement() {
                             <input
                                 type="text"
                                 value={selectedUser.full_name}
-                                onChange={(e) =>
-                                    setSelectedUser({...selectedUser, full_name: e.target.value})
-                                }
-                                className="text-lg text-[#575757] bg-transparent border-b border-gray-400 focus:outline-none"
+                                onChange={(e) => {
+                                    setSelectedUser({...selectedUser, full_name: e.target.value});
+                                    clearError("full_name");
+                                }}
+                                className={`w-full text-lg text-[#575757] bg-transparent border-b ${formErrors.full_name ? "border-red-500" : "border-gray-400"} focus:outline-none`}
                             />
+                            {formErrors.full_name && <p className="text-red-500 text-xs">{formErrors.full_name}</p>}
                             <div className="text-lg font-semibold">User Role:</div>
                             <select
                                 value={selectedUser.user_role}
@@ -853,15 +923,11 @@ export default function UserManagement() {
                                     if (newRole !== ROLES.CALL_AGENT) updates.languages = ["en"];
 
                                     setSelectedUser({...selectedUser, ...updates});
+                                    clearError("user_role");
                                 }}
                                 className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
                             >
-                                <option value={ROLES.SALES_LV1}>Sales Lv 1</option>
-                                <option value={ROLES.SALES_LV2}>Sales Lv 2</option>
-                                <option value={ROLES.SALES_LV3}>Sales Lv 3</option>
-                                <option value={ROLES.CALL_AGENT}>Call Agent</option>
-                                <option value={ROLES.ADMIN}>Admin</option>
-                                <option value={ROLES.TELEMARKETER}>Telemarketer</option>
+                                {Object.values(ROLES).map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
                         </div>
 
@@ -870,25 +936,30 @@ export default function UserManagement() {
                             <input
                                 type="text"
                                 value={selectedUser.contact_no}
-                                onChange={(e) =>
-                                    setSelectedUser({...selectedUser, contact_no: e.target.value})
-                                }
-                                className="text-lg text-[#575757] bg-transparent border-b border-gray-400 focus:outline-none"
+                                onChange={(e) => {
+                                    setSelectedUser({...selectedUser, contact_no: e.target.value});
+                                    clearError("contact_no");
+                                }}
+                                className={`w-full text-lg text-[#575757] bg-transparent border-b ${formErrors.contact_no ? "border-red-500" : "border-gray-400"} focus:outline-none`}
                             />
+                            {formErrors.contact_no && <p className="text-red-500 text-xs">{formErrors.contact_no}</p>}
                             {shouldShowDepartment(selectedUser.user_role) ? (
                                 <>
                                     <div className="text-lg font-semibold">Department:</div>
                                     <select
                                         value={selectedUser.department}
-                                        onChange={(e) =>
-                                            setSelectedUser({...selectedUser, department: e.target.value})
-                                        }
-                                        className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
+                                        onChange={(e) => {
+                                            setSelectedUser({...selectedUser, department: e.target.value});
+                                            clearError("department");
+                                        }}
+                                        className={`w-full bg-transparent text-lg text-[#575757] border-b ${formErrors.department ? "border-red-500" : "border-gray-400"} focus:outline-none`}
                                     >
                                         {departments.map((d) => (
                                             <option key={d} value={d}>{d}</option>
                                         ))}
                                     </select>
+                                    {formErrors.department &&
+                                        <p className="text-red-500 text-xs">{formErrors.department}</p>}
                                 </>
                             ) : (
                                 <>
@@ -903,25 +974,29 @@ export default function UserManagement() {
                             <input
                                 type="text"
                                 value={selectedUser.email}
-                                onChange={(e) =>
-                                    setSelectedUser({...selectedUser, email: e.target.value})
-                                }
-                                className="text-lg text-[#575757] bg-transparent border-b border-gray-400 focus:outline-none"
+                                onChange={(e) => {
+                                    setSelectedUser({...selectedUser, email: e.target.value});
+                                    clearError("email");
+                                }}
+                                className={`w-full text-lg text-[#575757] bg-transparent border-b ${formErrors.email ? "border-red-500" : "border-gray-400"} focus:outline-none`}
                             />
+                            {formErrors.email && <p className="text-red-500 text-xs">{formErrors.email}</p>}
                             {shouldShowBranch(selectedUser.user_role) ? (
                                 <>
                                     <div className="text-lg font-semibold">Branch:</div>
                                     <select
                                         value={selectedUser.branch}
-                                        onChange={(e) =>
-                                            setSelectedUser({...selectedUser, branch: e.target.value})
-                                        }
-                                        className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
+                                        onChange={(e) => {
+                                            setSelectedUser({...selectedUser, branch: e.target.value});
+                                            clearError("branch");
+                                        }}
+                                        className={`w-full bg-transparent text-lg text-[#575757] border-b ${formErrors.branch ? "border-red-500" : "border-gray-400"} focus:outline-none`}
                                     >
                                         {branches.map((b) => (
                                             <option key={b} value={b.toUpperCase()}>{b}</option>
                                         ))}
                                     </select>
+                                    {formErrors.branch && <p className="text-red-500 text-xs">{formErrors.branch}</p>}
                                 </>
                             ) : (
                                 <>
@@ -1032,5 +1107,18 @@ export default function UserManagement() {
             )}
 
         </div>
+    );
+}
+
+
+function FilterTag({label, isSelected, onClick}: { label: string, isSelected: boolean, onClick: () => void }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`px-4 py-1 rounded-full border text-sm transition ${isSelected ? "bg-blue-500 text-white border-blue-500" : "bg-gray-200 text-gray-700 border-transparent hover:bg-gray-300"}`}
+        >
+            {label}
+        </button>
     );
 }

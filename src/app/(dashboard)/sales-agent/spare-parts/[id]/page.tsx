@@ -449,9 +449,9 @@ export default function SalesDetailsPage() {
                         setActivityModalOpen(false);
                     }}
                     actionButton={{
-                        label: "Save",
+                        label: createFollowupMutation.isPending ? "Saving..." : "Save",
                         onClick: handleSaveActivity,
-                        // disabled: createFollowupMutation.isPending,
+                        disabled: createFollowupMutation.isPending,
                     }}
                 >
                     <div className="w-full">
@@ -478,9 +478,9 @@ export default function SalesDetailsPage() {
                         setReminderModalOpen(false);
                     }}
                     actionButton={{
-                        label: "Save",
+                        label: createReminderMutation.isPending ? "Saving..." : "Save",
                         onClick: handleSaveReminder,
-                        // disabled: createReminderMutation.isPending,
+                        disabled: createReminderMutation.isPending,
                     }}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
