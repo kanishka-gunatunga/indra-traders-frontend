@@ -1,10 +1,13 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {
+    addServiceToBranch,
     assignToSalesAgent,
-    createAssignToSale, createFollowup, createReminder, getHistory, getNearestReminders,
+    createAssignToSale, createBranch, createFollowup, createPackage, createReminder, createService,
+    createServiceLine, getAllServices,
+    getBranchDetails, getHistory, getNearestReminders,
     getSaleDetails, getSaleDetailsByTicket,
     getVehicleHistoryByNumber,
-    handleServiceIntake,
+    handleServiceIntake, listBranches,
     listVehicleHistories, listVehicleSales, promote, updatePriority, updateStatus
 } from "@/services/serviceParkService";
 
@@ -163,4 +166,78 @@ export const useSaleHistory = (saleId: number) =>
         enabled: !!saleId
     });
 
+
+export const useAllServices = () =>
+    useQuery({
+        queryKey: ["serviceParkConfig", "services"],
+        queryFn: getAllServices,
+    });
+
+export const useBranches = () =>
+    useQuery({
+        queryKey: ["serviceParkConfig", "branches"],
+        queryFn: listBranches,
+    });
+
+export const useBranchDetails = (branchId: number) =>
+    useQuery({
+        queryKey: ["serviceParkConfig", "branch", branchId],
+        queryFn: () => getBranchDetails(branchId),
+        enabled: !!branchId,
+    });
+
+// --- MUTATIONS ---
+
+export const useCreateService = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createService,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "services"]});
+        },
+    });
+};
+
+export const useCreatePackage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createPackage,
+        // Optional: Invalidate packages list if you have one
+        // onSuccess: () => queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "packages"] }),
+    });
+};
+
+export const useCreateBranch = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createBranch,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branches"]});
+        },
+    });
+};
+
+export const useAddServiceToBranch = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({branchId, data}: { branchId: number; data: { service_id: number; custom_price: number } }) =>
+            addServiceToBranch(branchId, data),
+        onSuccess: (_, variables) => {
+            // Invalidate specific branch details to reflect updated pricing
+            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branch", variables.branchId]});
+        },
+    });
+};
+
+export const useCreateServiceLine = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({branchId, data}: { branchId: number; data: { name: string; type: string; advisor: number } }) =>
+            createServiceLine(branchId, data),
+        onSuccess: (_, variables) => {
+            // Invalidate specific branch details to show new line
+            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branch", variables.branchId]});
+        },
+    });
+};
 
