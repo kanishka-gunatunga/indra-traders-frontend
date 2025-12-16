@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import React, {useState, useMemo, useEffect} from "react";
@@ -13,22 +15,18 @@ import {
 } from "lucide-react";
 import {useToast} from "@/hooks/useToast";
 import Toast from "@/components/Toast";
-import Modal from "@/components/Modal"; // Importing the Modal component
-import {useAllServices, useCreateBranch} from "@/hooks/useServicePark";
+import Modal from "@/components/Modal";
+import {useAllServices} from "@/hooks/useServicePark";
 
-import {Calendar, Modal as AntModal, ConfigProvider, Badge} from 'antd';
+import {Calendar, Modal as AntModal, ConfigProvider} from 'antd';
 import type {Dayjs} from 'dayjs';
-import dayjs from 'dayjs';
 
-
-// --- Types ---
 
 type BranchForm = {
     name: string;
     email: string;
     contact_number: string;
     address: string;
-    location_code: string;
 };
 
 type UnavailableDate = {
@@ -50,14 +48,12 @@ type ServiceSelection = {
 };
 
 type BranchFormProps = {
-    initialData?: any; // The branch object from API
+    initialData?: any;
     isEditMode?: boolean;
     onSubmit: (data: any) => Promise<void>;
     isSubmitting: boolean;
 };
 
-
-// --- Reusable Glass Input (Matches your requested style) ---
 const GlassInput = ({
                         label,
                         value,
@@ -99,24 +95,19 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
 
     const {toast, showToast, hideToast} = useToast();
 
-    // --- API Hooks ---
     const {data: services = [], isLoading: loadingServices} = useAllServices();
-    const createBranchMutation = useCreateBranch();
 
-    // --- State ---
     const [form, setForm] = useState<BranchForm>({
         name: "",
         email: "",
         contact_number: "",
         address: "",
-        location_code: ""
+        // location_code: ""
     });
     const [errors, setErrors] = useState<Partial<BranchForm>>({});
 
-    // Services
     const [serviceSelections, setServiceSelections] = useState<Record<number, ServiceSelection>>({});
 
-    // Unavailable Dates
     const [unavailableDates, setUnavailableDates] = useState<UnavailableDate[]>([]);
     const [isDateModalVisible, setIsDateModalVisible] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
@@ -127,7 +118,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
     const [lines, setLines] = useState<ServiceLineTemp[]>([]);
     const [lineFilter, setLineFilter] = useState("ALL");
 
-    // Modal State
     const [isLineModalOpen, setIsLineModalOpen] = useState(false);
     const [newLine, setNewLine] = useState<ServiceLineTemp>({
         id: "",
@@ -139,43 +129,32 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
 
     useEffect(() => {
         if (isEditMode && initialData) {
-            // 1. Fill Basic Info
             setForm({
                 name: initialData.name || "",
                 email: initialData.email || "",
                 contact_number: initialData.contact_number || "",
                 address: initialData.address || "",
-                location_code: initialData.location_code || ""
             });
 
-            // 2. Fill Services (Map API response to selection state)
+
             const selections: any = {};
             if (initialData.services) {
                 initialData.services.forEach((svc: any) => {
-                    // Check logic depending on how API returns the join table data (BranchService)
-                    // Usually it's in svc.BranchService.price or similar
                     const price = svc.BranchService?.price || svc.base_price;
                     selections[svc.id] = {isSelected: true, customPrice: parseFloat(price)};
                 });
             }
             setServiceSelections(selections);
 
-            // 3. Fill Unavailable Dates
-            // Assuming API returns array of objects { date: "2023-01-01", reason: "..." }
-            if (initialData.unavailable_dates) {
-                // If API returns just strings:
-                // const dates = initialData.unavailable_dates.map((d: string, i: number) => ({ id: i.toString(), date: d, reason: "N/A" }));
-
-                // If API returns objects (recommended for reason):
-                const dates = initialData.BranchUnavailableDates?.map((d: any) => ({
+            if (initialData.unavailableDates) {
+                const dates = initialData.unavailableDates.map((d: any) => ({
                     id: d.id?.toString() || Math.random().toString(),
                     date: d.date,
                     reason: d.reason
-                })) || [];
+                }));
                 setUnavailableDates(dates);
             }
 
-            // 4. Fill Lines
             if (initialData.serviceLines) {
                 const loadedLines = initialData.serviceLines.map((l: any) => ({
                     id: l.id?.toString() || Math.random().toString(),
@@ -189,13 +168,11 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
     }, [initialData, isEditMode]);
 
 
-    // --- Handlers: Branch Info ---
     const handleInputChange = (field: keyof BranchForm, value: string) => {
         setForm((prev) => ({...prev, [field]: value}));
         if (errors[field]) setErrors((prev) => ({...prev, [field]: undefined}));
     };
 
-    // --- Handlers: Services ---
     const toggleService = (serviceId: number, basePrice: number) => {
         setServiceSelections((prev) => {
             const current = prev[serviceId];
@@ -247,7 +224,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
             {...newLine, id: Date.now().toString()}
         ]);
 
-        // Reset and Close
         setNewLine({id: "", name: "", advisor: "", type: "REPAIR"});
         setIsLineModalOpen(false);
         showToast("Service line added", "success");
@@ -257,7 +233,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
         setLines((prev) => prev.filter((l) => l.id !== id));
     };
 
-    // --- Final Submission ---
     const handleSubmit = async () => {
         const newErrors: Partial<BranchForm> = {};
         if (!form.name) newErrors.name = "Branch Name is required";
@@ -275,8 +250,13 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                 email: form.email,
                 contact_number: form.contact_number,
                 address: form.address,
-                location_code: form.location_code,
-                unavailable_dates: unavailableDates.map(d => d.date),
+
+                unavailable_dates: unavailableDates.map(d => ({
+                    date: d.date,
+                    reason: d.reason
+                })),
+
+
                 lines: lines.map(l => ({
                     name: l.name,
                     type: l.type,
@@ -291,17 +271,13 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                 })
             };
 
-            await createBranchMutation.mutateAsync(payload);
-            showToast("Branch created successfully!", "success");
-            setTimeout(() => router.push("/service-park"), 1500);
+            await onSubmit(payload);
 
         } catch (error) {
             console.error(error);
-            showToast("Failed to create branch. Check console.", "error");
         }
     };
 
-    // --- Helpers ---
     const servicesByCategory = useMemo(() => {
         const grouped: Record<string, any[]> = {};
         services.forEach((svc: any) => {
@@ -320,11 +296,9 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
         setSelectedDate(date);
 
         if (existingRecord) {
-            // Edit mode
             setDateReason(existingRecord.reason);
             setEditingDateId(existingRecord.id);
         } else {
-            // Add mode
             setDateReason("");
             setEditingDateId(null);
         }
@@ -341,12 +315,10 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
         const dateStr = selectedDate.format('YYYY-MM-DD');
 
         if (editingDateId) {
-            // Update existing
             setUnavailableDates(prev => prev.map(item =>
                 item.id === editingDateId ? {...item, reason: dateReason} : item
             ));
         } else {
-            // Create new
             setUnavailableDates(prev => [
                 ...prev,
                 {id: Date.now().toString(), date: dateStr, reason: dateReason}
@@ -392,11 +364,9 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                 <div className="flex items-center gap-4 mb-4 ml-16">
                     <button onClick={() => router.back()} className="p-2 rounded-full hover:bg-white/50 transition">
                         <ArrowLeft size={24}/>
-                        {/*<h1 className="text-2xl font-bold">{isEditMode ? `Edit Branch: ${initialData?.name || ''}` : "Create New Branch"}</h1>*/}
                     </button>
                 </div>
 
-                {/* --- SECTION 1: Branch Info --- */}
                 <section className="bg-[#FFFFFF4D] border border-[#E0E0E0] rounded-[45px] p-8 shadow-sm ml-16">
                     <h2 className="font-semibold text-[22px] mb-6">Branch Information</h2>
                     <div className="grid grid-cols-3 gap-6">
@@ -421,7 +391,7 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                             onChange={(e) => handleInputChange("email", e.target.value)}
                             error={errors.email}
                         />
-                        <div className="lg:col-span-2">
+                        <div className="">
                             <GlassInput
                                 label="Address"
                                 value={form.address}
@@ -432,7 +402,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                     </div>
                 </section>
 
-                {/* --- SECTION 2: Services --- */}
                 <section className="bg-[#FFFFFF4D] border border-[#E0E0E0] rounded-[45px] p-8 shadow-sm ml-16">
                     <h2 className="font-semibold text-[22px]">Available Services & Pricing</h2>
                     <div className="grid grid-cols-3 gap-6 mt-8">
@@ -457,7 +426,7 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                                             className="text-sm text-gray-500 font-normal ml-2">(Click to Select All)</span>
                                     </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pl-4">
+                                    <div className="grid grid-cols-1 gap-4 pl-4">
                                         {servicesByCategory[category].map((svc) => {
                                             const isSelected = !!serviceSelections[svc.id]?.isSelected;
                                             return (
@@ -517,13 +486,12 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                     </div>
                 </section>
 
-                {/* --- SECTION 4: Service Booth Lines --- */}
                 <section className="bg-[#FFFFFF4D] border border-[#E0E0E0] rounded-[45px] p-8 shadow-sm ml-16">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="font-semibold text-[22px]">Service Booth Lines</h2>
                         <button
                             onClick={() => setIsLineModalOpen(true)}
-                            className="bg-[#DB2727] text-white px-5 py-2 rounded-full font-semibold flex items-center gap-2 hover:bg-red-700 transition"
+                            className="bg-[#DB2727] text-white px-5 py-2 rounded-full font-semibold flex items-center gap-2 hover:bg-red-700 transition cursor-pointer"
                         >
                             <Plus size={18}/> Add New Line
                         </button>
@@ -531,7 +499,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
 
                     <div className="w-full">
 
-                        {/* Table */}
                         <div className="overflow-hidden rounded-[20px] border border-gray-200 bg-white/40">
                             <table className="w-full text-left border-collapse">
                                 <thead className="bg-gray-100/80 text-gray-600 font-medium border-b border-gray-200">
@@ -578,10 +545,9 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                     </div>
                 </section>
 
-                {/* --- Actions --- */}
                 <div className="flex justify-end gap-4 ml-16 mt-4 pb-12">
                     <button onClick={() => router.back()}
-                            className="px-8 py-3 rounded-[30px] border border-gray-400 text-gray-600 font-semibold hover:bg-gray-100 transition">
+                            className="px-8 py-3 rounded-[30px] border border-gray-400 text-gray-600 font-semibold hover:bg-gray-100 transition cursor-pointer">
                         Cancel
                     </button>
                     <button onClick={handleSubmit} disabled={isSubmitting}
@@ -592,7 +558,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                 </div>
             </main>
 
-            {/* --- ADD SERVICE LINE MODAL --- */}
             {isLineModalOpen && (
                 <Modal
                     title="Add Service Line"
@@ -603,7 +568,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                     }}
                 >
                     <div className="grid grid-cols-3 gap-6 w-[800px]">
-                        {/* Line Name Input */}
                         <div>
                             <label className="block mb-2 font-medium">Line Name</label>
                             <input
@@ -615,7 +579,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                             />
                         </div>
 
-                        {/* Advisor ID Input */}
                         <div>
                             <label className="block mb-2 font-medium">Advisor Name</label>
                             <input
@@ -627,7 +590,6 @@ export default function BranchForm({initialData, isEditMode = false, onSubmit, i
                             />
                         </div>
 
-                        {/* Type Selection */}
                         <div>
                             <label className="block mb-2 font-medium">Type</label>
                             <div

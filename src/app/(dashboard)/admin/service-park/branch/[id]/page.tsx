@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import React, { use } from "react";
@@ -5,16 +7,14 @@ import { useRouter } from "next/navigation";
 import { useBranchDetails, useUpdateBranch } from "@/hooks/useServicePark";
 import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/Toast";
-import BranchForm from "@/components/BranchForm"; // The component from Step 2
+import BranchForm from "@/components/BranchForm";
 import { Loader2 } from "lucide-react";
 
 export default function EditBranchPage({ params }: { params: Promise<{ id: string }> }) {
-    // Unwrap params in Next.js 15+
     const { id } = use(params);
     const router = useRouter();
     const { toast, showToast, hideToast } = useToast();
 
-    // Hooks
     const branchId = parseInt(id);
     const { data: branch, isLoading, isError } = useBranchDetails(branchId);
     const updateBranchMutation = useUpdateBranch();
@@ -44,7 +44,7 @@ export default function EditBranchPage({ params }: { params: Promise<{ id: strin
 
     return (
         <div className="">
-            {/*<Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast} />*/}
+            <Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast} />
             <main className="">
                 <BranchForm
                     initialData={branch}

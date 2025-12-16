@@ -683,7 +683,7 @@ export default function CreateBranchPage() {
 
     return (
         <div className="">
-            {/*<Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast} />*/}
+            <Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast} />
             <main className="">
                 <BranchForm
                     isEditMode={false}

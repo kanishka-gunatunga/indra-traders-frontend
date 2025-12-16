@@ -8,13 +8,12 @@ import React, {useState} from "react";
 import {useCurrentUser} from "@/utils/auth";
 import {useToast} from "@/hooks/useToast";
 import Toast from "@/components/Toast";
-import {Eye, Trash2, Edit2} from "lucide-react";
+import {Trash2, Edit2} from "lucide-react";
 import {
     useAllServices,
     useBranches,
     useCreateService,
     useCreatePackage,
-    useCreateBranch,
     usePackages,
     useUpdatePackage,
     useDeletePackage,
@@ -22,10 +21,8 @@ import {
     useDeleteService, useDeleteBranch,
 
 } from "@/hooks/useServicePark" ;
-import BranchDetailsModal from "@/components/BranchDetailsModal";
-import CreateBranchModal from "@/components/BranchDetailsModal";
 import CreatePackageModal from "@/components/CreatePackageModal";
-import {useRouter} from "next/navigation"; // Assumes hooks from previous steps
+import {useRouter} from "next/navigation";
 
 export default function ServiceParkConfig() {
     const router = useRouter();
@@ -34,12 +31,10 @@ export default function ServiceParkConfig() {
 
     const deleteBranchMutation = useDeleteBranch();
 
-    // --- Data Hooks ---
     const {data: services = [], isLoading: loadingServices} = useAllServices();
     const {data: packages = [], isLoading: loadingPackages} = usePackages();
     const {data: branches = [], isLoading: loadingBranches} = useBranches();
 
-    // --- Mutations ---
     const createServiceMutation = useCreateService();
     const updateServiceMutation = useUpdateService();
     const deleteServiceMutation = useDeleteService();
@@ -48,89 +43,15 @@ export default function ServiceParkConfig() {
     const updatePackageMutation = useUpdatePackage();
     const deletePackageMutation = useDeletePackage();
 
-    const createBranchMutation = useCreateBranch();
 
-
-    // --- State ---
     const [activeTab, setActiveTab] = useState<"SERVICES" | "PACKAGES">("SERVICES");
     const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
-    const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
     const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
 
     const [editingService, setEditingService] = useState<any | null>(null);
     const [editingPackage, setEditingPackage] = useState<any | null>(null);
 
-    // "See More" State
-    const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
-
     const [serviceForm, setServiceForm] = useState({name: "", type: "REPAIR", base_price: ""});
-
-    // Form States
-    const [newItemName, setNewItemName] = useState("");
-    const [newItemType, setNewItemType] = useState("REPAIR");
-    const [newItemPrice, setNewItemPrice] = useState("");
-
-    const [branchName, setBranchName] = useState("");
-    const [branchLocation, setBranchLocation] = useState("");
-    const [branchContact, setBranchContact] = useState("");
-    const [branchAddress, setBranchAddress] = useState("");
-
-    // --- Handlers ---
-
-    const handleCreateService = async () => {
-        try {
-            await createServiceMutation.mutateAsync({
-                name: newItemName,
-                type: newItemType,
-                base_price: parseFloat(newItemPrice)
-            });
-            showToast("Service created successfully", "success");
-            setIsServiceModalOpen(false);
-            setNewItemName("");
-            setNewItemPrice("");
-        } catch (e) {
-            showToast("Failed to create service", "error");
-        }
-    };
-
-    const handleCreateBranch = async () => {
-        try {
-            await createBranchMutation.mutateAsync({
-                name: branchName,
-                location_code: branchLocation,
-                contact_number: branchContact,
-                address: branchAddress
-            });
-            showToast("Branch created successfully", "success");
-            setIsBranchModalOpen(false);
-            setBranchName("");
-            setBranchLocation("");
-            setBranchContact("");
-        } catch (e) {
-            showToast("Failed to create branch", "error");
-        }
-    };
-
-    const handleCreatePackage = async (data: any) => {
-        try {
-            await createPackageMutation.mutateAsync(data);
-            showToast("Package created successfully", "success");
-            setIsPackageModalOpen(false);
-        } catch (e) {
-            showToast("Failed to create package", "error");
-        }
-    };
-
-    const handleCreateBranchComplex = async (data: any) => {
-        try {
-            await createBranchMutation.mutateAsync(data);
-            showToast("Branch configured successfully", "success");
-            setIsBranchModalOpen(false);
-        } catch (e) {
-            showToast("Failed to create branch", "error");
-        }
-    };
-
 
     const openServiceModal = (service?: any) => {
         if (service) {
@@ -165,11 +86,9 @@ export default function ServiceParkConfig() {
             };
 
             if (editingService) {
-                // Update
                 await updateServiceMutation.mutateAsync({id: editingService.id, data: payload});
                 showToast("Service updated successfully", "success");
             } else {
-                // Create
                 await createServiceMutation.mutateAsync(payload);
                 showToast("Service created successfully", "success");
             }
@@ -215,12 +134,11 @@ export default function ServiceParkConfig() {
     };
 
     const handleViewBranch = (id: number) => {
-        // Navigate to the edit/view page
         router.push(`/admin/service-park/branch/${id}`);
     };
 
     const handleDeleteBranch = async (id: number) => {
-        if(!confirm("Are you sure you want to delete this branch? This cannot be undone.")) return;
+        if (!confirm("Are you sure you want to delete this branch? This cannot be undone.")) return;
         try {
             await deleteBranchMutation.mutateAsync(id);
             showToast("Branch deleted successfully", "success");
@@ -238,11 +156,10 @@ export default function ServiceParkConfig() {
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8 pb-20">
                 <Header
                     name={user?.full_name || "Admin User"}
-                    location={user?.branch || "Head Office"}
+                    location={user?.branch || "Bambalapitiya"}
                     title="Service Park Configuration"
                 />
 
-                {/* --- SECTION 1: Services & Packages --- */}
                 <section
                     className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-8 flex flex-col">
                     <div className="w-full flex justify-between items-center mb-6">
@@ -262,7 +179,7 @@ export default function ServiceParkConfig() {
                         </div>
 
                         <button
-                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition"
+                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition cursor-pointer"
                             onClick={() => activeTab === "SERVICES" ? openServiceModal() : openPackageModal()}
                         >
                             <Image src={"/images/sales/plus.svg"} width={24} height={24} alt="Add"/>
@@ -272,22 +189,18 @@ export default function ServiceParkConfig() {
                     <div className="w-full mt-5">
                         <div className="h-[400px] overflow-x-auto overflow-y-hidden">
                             <div className="min-w-[1000px]">
-                                {/* Table Header */}
                                 <div
                                     className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
                                     <div className="w-1/4 px-3 py-2 text-left pl-8">Name</div>
-                                    {/* Dynamic Header for Column 2 */}
                                     <div className="w-1/4 px-3 py-2 text-center">
                                         {activeTab === "SERVICES" ? "Type" : "Short Description"}
                                     </div>
-                                    {/* Dynamic Header for Column 3 */}
                                     <div className="w-1/4 px-3 py-2 text-center">
                                         {activeTab === "SERVICES" ? "Base Price (LKR)" : "Total Value (LKR)"}
                                     </div>
                                     <div className="w-1/4 px-3 py-2 text-center">Action</div>
                                 </div>
 
-                                {/* Table Body */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {activeTab === "SERVICES" ? (
                                         loadingServices ? (
@@ -319,7 +232,7 @@ export default function ServiceParkConfig() {
                                                     <div className="w-1/4 px-3 py-2 flex justify-center gap-3">
                                                         <button
                                                             onClick={() => openServiceModal(svc)}
-                                                            className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50">
+                                                            className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 cursor-pointer">
                                                             <Edit2 size={18}/>
                                                         </button>
                                                         <button
@@ -327,7 +240,7 @@ export default function ServiceParkConfig() {
                                                                 e.stopPropagation();
                                                                 handleDeleteService(svc.id);
                                                             }}
-                                                            className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50">
+                                                            className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 cursor-pointer">
                                                             <Trash2 size={18}/>
                                                         </button>
                                                     </div>
@@ -361,13 +274,13 @@ export default function ServiceParkConfig() {
                                                         </div>
                                                         <div className="w-1/4 px-3 py-2 flex justify-center gap-3">
                                                             <button onClick={() => openPackageModal(pkg)}
-                                                                    className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50">
+                                                                    className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 cursor-pointer">
                                                                 <Edit2 size={18}/></button>
                                                             <button onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleDeletePackage(pkg.id);
                                                             }}
-                                                                    className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50">
+                                                                    className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 cursor-pointer">
                                                                 <Trash2 size={18}/></button>
                                                         </div>
                                                     </div>
@@ -380,14 +293,13 @@ export default function ServiceParkConfig() {
                     </div>
                 </section>
 
-                {/* --- SECTION 2: Branch Management --- */}
                 <section
                     className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-8 flex flex-col">
                     <div className="w-full flex justify-between items-center mb-6">
                         <span className="font-semibold text-[22px]">Branches</span>
                         <button
-                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition"
-                            onClick={() => setIsBranchModalOpen(true)}
+                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition cursor-pointer"
+                            onClick={() => router.push("/admin/service-park/create-branch")}
                         >
                             <Image src={"/images/sales/plus.svg"} width={24} height={24} alt="Add"/>
                         </button>
@@ -396,8 +308,8 @@ export default function ServiceParkConfig() {
                     <div className="w-full mt-5">
                         <div className="h-[400px] overflow-x-auto overflow-y-hidden">
                             <div className="min-w-[1000px]">
-                                {/* Table Header */}
-                                <div className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
+                                <div
+                                    className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
                                     <div className="w-1/5 px-3 py-2 text-left pl-8">Branch Name</div>
                                     <div className="w-1/5 px-3 py-2 text-center">Email</div>
                                     <div className="w-1/5 px-3 py-2 text-center">Contact</div>
@@ -405,58 +317,44 @@ export default function ServiceParkConfig() {
                                     <div className="w-1/5 px-3 py-2 text-center">Action</div>
                                 </div>
 
-                                {/* Table Body */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {loadingBranches ? (
                                         <div className="text-center py-5">Loading branches...</div>
                                     ) : branches.length === 0 ? (
-                                        <div className="text-center py-5 text-gray-500">No branches configured yet.</div>
+                                        <div className="text-center py-5 text-gray-500">No branches configured
+                                            yet.</div>
                                     ) : (
                                         branches.map((branch: any) => (
                                             <div
                                                 key={branch.id}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer"
                                             >
-                                                {/* Name */}
                                                 <div className="w-1/5 px-3 py-2 text-left pl-8 font-medium">
                                                     {branch.name}
                                                 </div>
-
-                                                {/* Code/Email */}
                                                 <div className="w-1/5 px-3 py-2 text-center text-base text-gray-600">
                                                     {branch.location_code || branch.email || "-"}
                                                 </div>
-
-                                                {/* Contact */}
                                                 <div className="w-1/5 px-3 py-2 text-center text-base">
                                                     {branch.contact_number}
                                                 </div>
-
-                                                {/* Address */}
-                                                <div className="w-1/5 px-3 py-2 text-center text-base truncate" title={branch.address}>
+                                                <div className="w-1/5 px-3 py-2 text-center text-base truncate"
+                                                     title={branch.address}>
                                                     {branch.address}
                                                 </div>
-
-                                                {/* Actions */}
                                                 <div className="w-1/5 px-3 py-2 flex justify-center items-center gap-2">
                                                     <button
                                                         onClick={() => handleViewBranch(branch.id)}
-                                                        className="bg-[#DB2727] text-white px-3 py-1 rounded-full text-xs hover:bg-red-700 transition"
+                                                        className="bg-[#DB2727] text-white px-3 py-1 rounded-full text-xs hover:bg-red-700 transition cursor-pointer"
                                                     >
                                                         See More
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleViewBranch(branch.id)}
-                                                        className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50"
-                                                    >
-                                                        <Edit2 size={18}/>
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleDeleteBranch(branch.id);
                                                         }}
-                                                        className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50"
+                                                        className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 cursor-pointer"
                                                     >
                                                         <Trash2 size={18}/>
                                                     </button>
@@ -514,12 +412,12 @@ export default function ServiceParkConfig() {
                 />
             )}
 
-            {isBranchModalOpen && (
-                <CreateBranchModal
-                    onClose={() => setIsBranchModalOpen(false)}
-                    onSubmit={handleCreateBranchComplex}
-                />
-            )}
+            {/*{isBranchModalOpen && (*/}
+            {/*    <CreateBranchModal*/}
+            {/*        onClose={() => setIsBranchModalOpen(false)}*/}
+            {/*        onSubmit={handleCreateBranchComplex}*/}
+            {/*    />*/}
+            {/*)}*/}
 
             <style jsx>{`
                 .input-field {
