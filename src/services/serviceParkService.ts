@@ -134,3 +134,39 @@ export const createServiceLine = async (branchId: number, data: { name: string; 
     const res = await axiosInstance.post(`/service-park/branches/${branchId}/lines`, data);
     return res.data;
 };
+
+
+export const getAllPackages = async () => {
+    const res = await axiosInstance.get("/service-park/packages");
+    return res.data;
+};
+
+export const updateService = async ({id, data}: { id: number, data: any }) => {
+    const res = await axiosInstance.put(`/service-park/services/${id}`, data);
+    return res.data;
+};
+
+export const deleteService = async (id: number) => {
+    const res = await axiosInstance.delete(`/service-park/services/${id}`);
+    return res.data;
+};
+
+export const updatePackage = async ({id, data}: { id: number, data: any }) => {
+    const res = await axiosInstance.put(`/service-park/packages/${id}`, data);
+    return res.data;
+};
+
+export const deletePackage = async (id: number) => {
+    const res = await axiosInstance.delete(`/service-park/packages/${id}`);
+    return res.data;
+};
+
+export const updateBranch = async ({ id, data }: { id: number; data: any }) => {
+    const res = await axiosInstance.put(`/service-park/branches/${id}`, data);
+    return res.data;
+};
+
+export const deleteBranch = async (id: number) => {
+    const res = await axiosInstance.delete(`/service-park/branches/${id}`);
+    return res.data;
+};

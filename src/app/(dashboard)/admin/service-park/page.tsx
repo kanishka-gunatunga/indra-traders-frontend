@@ -8,39 +8,62 @@ import React, {useState} from "react";
 import {useCurrentUser} from "@/utils/auth";
 import {useToast} from "@/hooks/useToast";
 import Toast from "@/components/Toast";
-import {Eye, Plus, Trash2, Edit2, Package as PackageIcon, Wrench} from "lucide-react";
+import {Eye, Trash2, Edit2} from "lucide-react";
 import {
     useAllServices,
     useBranches,
     useCreateService,
     useCreatePackage,
-    useCreateBranch
+    useCreateBranch,
+    usePackages,
+    useUpdatePackage,
+    useDeletePackage,
+    useUpdateService,
+    useDeleteService, useDeleteBranch,
+
 } from "@/hooks/useServicePark" ;
-import BranchDetailsModal from "@/components/BranchDetailsModal"; // Assumes hooks from previous steps
+import BranchDetailsModal from "@/components/BranchDetailsModal";
+import CreateBranchModal from "@/components/BranchDetailsModal";
+import CreatePackageModal from "@/components/CreatePackageModal";
+import {useRouter} from "next/navigation"; // Assumes hooks from previous steps
 
 export default function ServiceParkConfig() {
+    const router = useRouter();
     const user = useCurrentUser();
     const {toast, showToast, hideToast} = useToast();
 
+    const deleteBranchMutation = useDeleteBranch();
+
     // --- Data Hooks ---
     const {data: services = [], isLoading: loadingServices} = useAllServices();
-    // For this example, assume we have a hook for packages (mocked if not created yet)
-    // const { data: packages = [] } = usePackages();
-    const packages = []; // Placeholder
+    const {data: packages = [], isLoading: loadingPackages} = usePackages();
     const {data: branches = [], isLoading: loadingBranches} = useBranches();
 
     // --- Mutations ---
     const createServiceMutation = useCreateService();
+    const updateServiceMutation = useUpdateService();
+    const deleteServiceMutation = useDeleteService();
+
     const createPackageMutation = useCreatePackage();
+    const updatePackageMutation = useUpdatePackage();
+    const deletePackageMutation = useDeletePackage();
+
     const createBranchMutation = useCreateBranch();
+
 
     // --- State ---
     const [activeTab, setActiveTab] = useState<"SERVICES" | "PACKAGES">("SERVICES");
     const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
     const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+    const [isPackageModalOpen, setIsPackageModalOpen] = useState(false);
+
+    const [editingService, setEditingService] = useState<any | null>(null);
+    const [editingPackage, setEditingPackage] = useState<any | null>(null);
 
     // "See More" State
     const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+
+    const [serviceForm, setServiceForm] = useState({name: "", type: "REPAIR", base_price: ""});
 
     // Form States
     const [newItemName, setNewItemName] = useState("");
@@ -88,6 +111,125 @@ export default function ServiceParkConfig() {
         }
     };
 
+    const handleCreatePackage = async (data: any) => {
+        try {
+            await createPackageMutation.mutateAsync(data);
+            showToast("Package created successfully", "success");
+            setIsPackageModalOpen(false);
+        } catch (e) {
+            showToast("Failed to create package", "error");
+        }
+    };
+
+    const handleCreateBranchComplex = async (data: any) => {
+        try {
+            await createBranchMutation.mutateAsync(data);
+            showToast("Branch configured successfully", "success");
+            setIsBranchModalOpen(false);
+        } catch (e) {
+            showToast("Failed to create branch", "error");
+        }
+    };
+
+
+    const openServiceModal = (service?: any) => {
+        if (service) {
+            setEditingService(service);
+            setServiceForm({
+                name: service.name,
+                type: service.type,
+                base_price: service.base_price
+            });
+        } else {
+            setEditingService(null);
+            setServiceForm({name: "", type: "REPAIR", base_price: ""});
+        }
+        setIsServiceModalOpen(true);
+    };
+
+    const openPackageModal = (pkg?: any) => {
+        if (pkg) {
+            setEditingPackage(pkg);
+        } else {
+            setEditingPackage(null);
+        }
+        setIsPackageModalOpen(true);
+    };
+
+    const handleSaveService = async () => {
+        try {
+            const payload = {
+                name: serviceForm.name,
+                type: serviceForm.type,
+                base_price: parseFloat(serviceForm.base_price)
+            };
+
+            if (editingService) {
+                // Update
+                await updateServiceMutation.mutateAsync({id: editingService.id, data: payload});
+                showToast("Service updated successfully", "success");
+            } else {
+                // Create
+                await createServiceMutation.mutateAsync(payload);
+                showToast("Service created successfully", "success");
+            }
+            setIsServiceModalOpen(false);
+        } catch (e) {
+            showToast("Failed to save service", "error");
+        }
+    };
+
+    const handleDeleteService = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this service?")) return;
+        try {
+            await deleteServiceMutation.mutateAsync(id);
+            showToast("Service deleted", "success");
+        } catch (e) {
+            showToast("Failed to delete service", "error");
+        }
+    };
+
+    const handleSavePackage = async (data: any) => {
+        try {
+            if (editingPackage) {
+                await updatePackageMutation.mutateAsync({id: editingPackage.id, data});
+                showToast("Package updated successfully", "success");
+            } else {
+                await createPackageMutation.mutateAsync(data);
+                showToast("Package created successfully", "success");
+            }
+            setIsPackageModalOpen(false);
+        } catch (e: any) {
+            showToast("Failed to save package", "error");
+        }
+    };
+
+    const handleDeletePackage = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this package?")) return;
+        try {
+            await deletePackageMutation.mutateAsync(id);
+            showToast("Package deleted", "success");
+        } catch (e) {
+            showToast("Failed to delete package", "error");
+        }
+    };
+
+    const handleViewBranch = (id: number) => {
+        // Navigate to the edit/view page
+        router.push(`/admin/service-park/branch/${id}`);
+    };
+
+    const handleDeleteBranch = async (id: number) => {
+        if(!confirm("Are you sure you want to delete this branch? This cannot be undone.")) return;
+        try {
+            await deleteBranchMutation.mutateAsync(id);
+            showToast("Branch deleted successfully", "success");
+        } catch (e) {
+            showToast("Failed to delete branch", "error");
+        }
+    };
+
+
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
@@ -109,7 +251,7 @@ export default function ServiceParkConfig() {
                                 onClick={() => setActiveTab("SERVICES")}
                                 className={`text-[22px] font-semibold transition-colors ${activeTab === "SERVICES" ? "text-black border-b-2 border-[#DB2727]" : "text-gray-400"}`}
                             >
-                                Global Services
+                                Services
                             </button>
                             <button
                                 onClick={() => setActiveTab("PACKAGES")}
@@ -121,53 +263,118 @@ export default function ServiceParkConfig() {
 
                         <button
                             className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition"
-                            onClick={() => setIsServiceModalOpen(true)}
+                            onClick={() => activeTab === "SERVICES" ? openServiceModal() : openPackageModal()}
                         >
                             <Image src={"/images/sales/plus.svg"} width={24} height={24} alt="Add"/>
                         </button>
                     </div>
 
-                    <div className="w-full h-[350px] overflow-y-auto no-scrollbar">
-                        <div className="min-w-[900px]">
-                            {/* Table Header */}
-                            <div
-                                className="flex bg-gray-100/80 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC] rounded-t-lg sticky top-0 backdrop-blur-sm z-10">
-                                <div className="w-1/4 px-3 py-3 text-left pl-8">Name</div>
-                                <div className="w-1/4 px-3 py-3 text-center">Type / Description</div>
+                    <div className="w-full mt-5">
+                        <div className="h-[400px] overflow-x-auto overflow-y-hidden">
+                            <div className="min-w-[1000px]">
+                                {/* Table Header */}
                                 <div
-                                    className="w-1/4 px-3 py-3 text-center">{activeTab === "SERVICES" ? "Base Price (LKR)" : "Total Price (LKR)"}</div>
-                                <div className="w-1/4 px-3 py-3 text-center">Action</div>
-                            </div>
+                                    className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
+                                    <div className="w-1/4 px-3 py-2 text-left pl-8">Name</div>
+                                    {/* Dynamic Header for Column 2 */}
+                                    <div className="w-1/4 px-3 py-2 text-center">
+                                        {activeTab === "SERVICES" ? "Type" : "Short Description"}
+                                    </div>
+                                    {/* Dynamic Header for Column 3 */}
+                                    <div className="w-1/4 px-3 py-2 text-center">
+                                        {activeTab === "SERVICES" ? "Base Price (LKR)" : "Total Value (LKR)"}
+                                    </div>
+                                    <div className="w-1/4 px-3 py-2 text-center">Action</div>
+                                </div>
 
-                            {/* Table Body */}
-                            <div className="flex flex-col gap-1">
-                                {activeTab === "SERVICES" ? (
-                                    loadingServices ? <p className="text-center py-4">Loading...</p> :
-                                        services.map((svc: any) => (
-                                            <div key={svc.id}
-                                                 className="flex text-lg bg-white/40 hover:bg-white/80 transition items-center rounded-lg py-2 border border-transparent hover:border-gray-200">
-                                                <div className="w-1/4 px-3 pl-8 font-medium flex items-center gap-2">
-                                                    <Wrench size={16} className="text-gray-500"/> {svc.name}
+                                {/* Table Body */}
+                                <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
+                                    {activeTab === "SERVICES" ? (
+                                        loadingServices ? (
+                                            <div className="text-center py-5">Loading services...</div>
+                                        ) : services.length === 0 ? (
+                                            <div className="text-center py-5 text-gray-500">No services
+                                                configured.</div>
+                                        ) : (
+                                            services.map((svc: any) => (
+                                                <div key={svc.id}
+                                                     className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer">
+                                                    <div
+                                                        onClick={() => openServiceModal(svc)}
+                                                        className="w-1/4 px-3 py-2 pl-8 font-medium text-left flex items-center gap-2">
+                                                        {svc.name}
+                                                    </div>
+                                                    <div className="w-1/4 px-3 py-2 text-center">
+                                    <span
+                                        onClick={() => openServiceModal(svc)}
+                                        className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                                        {svc.type}
+                                    </span>
+                                                    </div>
+                                                    <div
+                                                        onClick={() => openServiceModal(svc)}
+                                                        className="w-1/4 px-3 py-2 text-center font-semibold text-gray-700">
+                                                        {parseFloat(svc.base_price).toLocaleString()}
+                                                    </div>
+                                                    <div className="w-1/4 px-3 py-2 flex justify-center gap-3">
+                                                        <button
+                                                            onClick={() => openServiceModal(svc)}
+                                                            className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50">
+                                                            <Edit2 size={18}/>
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteService(svc.id);
+                                                            }}
+                                                            className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50">
+                                                            <Trash2 size={18}/>
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="w-1/4 px-3 text-center text-sm">
-                                                    <span
-                                                        className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">{svc.type}</span>
-                                                </div>
-                                                <div className="w-1/4 px-3 text-center font-semibold">
-                                                    {parseFloat(svc.base_price).toLocaleString()}
-                                                </div>
-                                                <div className="w-1/4 px-3 flex justify-center gap-3">
-                                                    <button className="text-gray-500 hover:text-blue-600"><Edit2
-                                                        size={18}/></button>
-                                                    <button className="text-red-400 hover:text-red-600"><Trash2
-                                                        size={18}/></button>
-                                                </div>
-                                            </div>
-                                        ))
-                                ) : (
-                                    // Packages Mock
-                                    <div className="text-center text-gray-500 py-4">No packages configured yet.</div>
-                                )}
+                                            ))
+                                        )
+                                    ) : (
+                                        loadingPackages ? <div className="text-center py-5">Loading packages...</div> :
+                                            packages.length === 0 ? (
+                                                <div className="text-center py-5 text-gray-500">No packages configured
+                                                    yet.</div>
+                                            ) : (
+                                                packages.map((pkg: any) => (
+                                                    <div key={pkg.id}
+                                                         className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer">
+                                                        <div
+                                                            onClick={() => openPackageModal(pkg)}
+                                                            className="w-1/4 px-3 py-2 pl-8 font-medium text-left flex items-center gap-2">
+                                                            {pkg.name}
+                                                        </div>
+                                                        <div
+                                                            onClick={() => openPackageModal(pkg)}
+                                                            className="w-1/4 px-3 py-2 text-center text-sm text-gray-500 truncate"
+                                                            title={pkg.short_description}>
+                                                            {pkg.short_description || "-"}
+                                                        </div>
+                                                        <div
+                                                            onClick={() => openPackageModal(pkg)}
+                                                            className="w-1/4 px-3 py-2 text-center font-semibold text-[#DB2727]">
+                                                            {parseFloat(pkg.total_price).toLocaleString()}
+                                                        </div>
+                                                        <div className="w-1/4 px-3 py-2 flex justify-center gap-3">
+                                                            <button onClick={() => openPackageModal(pkg)}
+                                                                    className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50">
+                                                                <Edit2 size={18}/></button>
+                                                            <button onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeletePackage(pkg.id);
+                                                            }}
+                                                                    className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50">
+                                                                <Trash2 size={18}/></button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -177,7 +384,7 @@ export default function ServiceParkConfig() {
                 <section
                     className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-8 flex flex-col">
                     <div className="w-full flex justify-between items-center mb-6">
-                        <span className="font-semibold text-[22px]">Service Centers (Branches)</span>
+                        <span className="font-semibold text-[22px]">Branches</span>
                         <button
                             className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition"
                             onClick={() => setIsBranchModalOpen(true)}
@@ -186,66 +393,102 @@ export default function ServiceParkConfig() {
                         </button>
                     </div>
 
-                    <div className="w-full h-[350px] overflow-y-auto no-scrollbar">
-                        <div className="min-w-[900px]">
-                            {/* Table Header */}
-                            <div
-                                className="flex bg-gray-100/80 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC] rounded-t-lg sticky top-0 backdrop-blur-sm z-10">
-                                <div className="w-1/5 px-3 py-3 text-left pl-8">Branch Name</div>
-                                <div className="w-1/5 px-3 py-3 text-center">Code</div>
-                                <div className="w-1/5 px-3 py-3 text-center">Contact</div>
-                                <div className="w-1/5 px-3 py-3 text-left">Address</div>
-                                <div className="w-1/5 px-3 py-3 text-center">Action</div>
-                            </div>
+                    <div className="w-full mt-5">
+                        <div className="h-[400px] overflow-x-auto overflow-y-hidden">
+                            <div className="min-w-[1000px]">
+                                {/* Table Header */}
+                                <div className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
+                                    <div className="w-1/5 px-3 py-2 text-left pl-8">Branch Name</div>
+                                    <div className="w-1/5 px-3 py-2 text-center">Email</div>
+                                    <div className="w-1/5 px-3 py-2 text-center">Contact</div>
+                                    <div className="w-1/5 px-3 py-2 text-center">Address</div>
+                                    <div className="w-1/5 px-3 py-2 text-center">Action</div>
+                                </div>
 
-                            {/* Table Body */}
-                            <div className="flex flex-col gap-1">
-                                {loadingBranches ? <p className="text-center py-4">Loading...</p> :
-                                    branches.map((branch: any) => (
-                                        <div key={branch.id}
-                                             className="flex text-lg bg-white/40 hover:bg-white/80 transition items-center rounded-lg py-3 border border-transparent hover:border-gray-200">
-                                            <div className="w-1/5 px-3 pl-8 font-medium">{branch.name}</div>
+                                {/* Table Body */}
+                                <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
+                                    {loadingBranches ? (
+                                        <div className="text-center py-5">Loading branches...</div>
+                                    ) : branches.length === 0 ? (
+                                        <div className="text-center py-5 text-gray-500">No branches configured yet.</div>
+                                    ) : (
+                                        branches.map((branch: any) => (
                                             <div
-                                                className="w-1/5 px-3 text-center text-sm font-mono text-gray-600">{branch.location_code}</div>
-                                            <div
-                                                className="w-1/5 px-3 text-center text-sm">{branch.contact_number}</div>
-                                            <div className="w-1/5 px-3 text-sm truncate"
-                                                 title={branch.address}>{branch.address}</div>
-                                            <div className="w-1/5 px-3 flex justify-center">
-                                                <button
-                                                    onClick={() => setSelectedBranchId(branch.id)}
-                                                    className="bg-[#DB2727] text-white px-4 py-1.5 rounded-full text-xs hover:bg-red-700 transition flex items-center gap-2"
-                                                >
-                                                    See More <Eye size={14}/>
-                                                </button>
+                                                key={branch.id}
+                                                className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer"
+                                            >
+                                                {/* Name */}
+                                                <div className="w-1/5 px-3 py-2 text-left pl-8 font-medium">
+                                                    {branch.name}
+                                                </div>
+
+                                                {/* Code/Email */}
+                                                <div className="w-1/5 px-3 py-2 text-center text-base text-gray-600">
+                                                    {branch.location_code || branch.email || "-"}
+                                                </div>
+
+                                                {/* Contact */}
+                                                <div className="w-1/5 px-3 py-2 text-center text-base">
+                                                    {branch.contact_number}
+                                                </div>
+
+                                                {/* Address */}
+                                                <div className="w-1/5 px-3 py-2 text-center text-base truncate" title={branch.address}>
+                                                    {branch.address}
+                                                </div>
+
+                                                {/* Actions */}
+                                                <div className="w-1/5 px-3 py-2 flex justify-center items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleViewBranch(branch.id)}
+                                                        className="bg-[#DB2727] text-white px-3 py-1 rounded-full text-xs hover:bg-red-700 transition"
+                                                    >
+                                                        See More
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleViewBranch(branch.id)}
+                                                        className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50"
+                                                    >
+                                                        <Edit2 size={18}/>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteBranch(branch.id);
+                                                        }}
+                                                        className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50"
+                                                    >
+                                                        <Trash2 size={18}/>
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
             </main>
 
-            {/* --- Modals --- */}
-
-            {/* Add Service Modal */}
             {isServiceModalOpen && (
                 <Modal
-                    title={activeTab === "SERVICES" ? "Add New Global Service" : "Add New Package"}
+                    title={editingService ? "Edit Service" : "Add New Global Service"}
                     onClose={() => setIsServiceModalOpen(false)}
-                    actionButton={{label: "Create", onClick: handleCreateService}}
+                    actionButton={{label: editingService ? "Save" : "Create", onClick: handleSaveService}}
                 >
-                    <div className="space-y-4 w-full">
+                    <div className="space-y-4 w-[800px]">
                         <div>
                             <label className="block text-sm font-medium mb-1">Name</label>
-                            <input value={newItemName} onChange={e => setNewItemName(e.target.value)}
+                            <input value={serviceForm.name}
+                                   onChange={e => setServiceForm({...serviceForm, name: e.target.value})}
                                    className="input-field" placeholder="e.g. Full Body Wash"/>
                         </div>
                         <div className="flex gap-4">
                             <div className="w-1/2">
                                 <label className="block text-sm font-medium mb-1">Type</label>
-                                <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
+                                <select value={serviceForm.type}
+                                        onChange={e => setServiceForm({...serviceForm, type: e.target.value})}
                                         className="input-field">
                                     <option value="REPAIR">Repair</option>
                                     <option value="PAINT">Paint</option>
@@ -254,54 +497,27 @@ export default function ServiceParkConfig() {
                             </div>
                             <div className="w-1/2">
                                 <label className="block text-sm font-medium mb-1">Base Price (LKR)</label>
-                                <input type="number" value={newItemPrice}
-                                       onChange={e => setNewItemPrice(e.target.value)} className="input-field"
-                                       placeholder="0.00"/>
+                                <input type="number" value={serviceForm.base_price}
+                                       onChange={e => setServiceForm({...serviceForm, base_price: e.target.value})}
+                                       className="input-field" placeholder="0.00"/>
                             </div>
                         </div>
                     </div>
                 </Modal>
             )}
 
-            {/* Add Branch Modal */}
+            {isPackageModalOpen && (
+                <CreatePackageModal
+                    initialData={editingPackage}
+                    onClose={() => setIsPackageModalOpen(false)}
+                    onSubmit={handleSavePackage}
+                />
+            )}
+
             {isBranchModalOpen && (
-                <Modal
-                    title="Add New Service Center"
+                <CreateBranchModal
                     onClose={() => setIsBranchModalOpen(false)}
-                    actionButton={{label: "Create Branch", onClick: handleCreateBranch}}
-                >
-                    <div className="space-y-4 w-full">
-                        <div className="flex gap-4">
-                            <div className="w-2/3">
-                                <label className="block text-sm font-medium mb-1">Branch Name</label>
-                                <input value={branchName} onChange={e => setBranchName(e.target.value)}
-                                       className="input-field" placeholder="e.g. Indra Service Park - Kandy"/>
-                            </div>
-                            <div className="w-1/3">
-                                <label className="block text-sm font-medium mb-1">Location Code</label>
-                                <input value={branchLocation} onChange={e => setBranchLocation(e.target.value)}
-                                       className="input-field" placeholder="KANDY"/>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Contact Number</label>
-                            <input value={branchContact} onChange={e => setBranchContact(e.target.value)}
-                                   className="input-field" placeholder="077..."/>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Address</label>
-                            <textarea value={branchAddress} onChange={e => setBranchAddress(e.target.value)}
-                                      className="input-field h-24 pt-2" placeholder="Full Address..."/>
-                        </div>
-                    </div>
-                </Modal>
-            )}
-
-            {/* Detail View (See More) */}
-            {selectedBranchId && (
-                <BranchDetailsModal
-                    branchId={selectedBranchId}
-                    onClose={() => setSelectedBranchId(null)}
+                    onSubmit={handleCreateBranchComplex}
                 />
             )}
 
