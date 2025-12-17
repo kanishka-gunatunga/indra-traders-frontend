@@ -86,7 +86,7 @@ export const getHistory = async (id: number) => {
 }
 
 
-// --- SERVICES (Admin) ---
+
 export const createService = async (data: { name: string; type: string; description?: string; base_price: number }) => {
     const res = await axiosInstance.post("/service-park/services", data);
     return res.data;
@@ -97,13 +97,11 @@ export const getAllServices = async () => {
     return res.data;
 };
 
-// --- PACKAGES ---
 export const createPackage = async (data: { name: string; description?: string; serviceIds: number[] }) => {
     const res = await axiosInstance.post("/service-park/packages", data);
     return res.data;
 };
 
-// --- BRANCHES ---
 export const createBranch = async (data: {
     name: string;
     location_code: string;
@@ -124,7 +122,6 @@ export const getBranchDetails = async (id: number) => {
     return res.data;
 };
 
-// --- BRANCH SPECIFIC (PRICING & LINES) ---
 export const addServiceToBranch = async (branchId: number, data: { service_id: number; custom_price: number }) => {
     const res = await axiosInstance.post(`/service-park/branches/${branchId}/services`, data);
     return res.data;
@@ -168,5 +165,21 @@ export const updateBranch = async ({ id, data }: { id: number; data: any }) => {
 
 export const deleteBranch = async (id: number) => {
     const res = await axiosInstance.delete(`/service-park/branches/${id}`);
+    return res.data;
+};
+
+export const getBranchCatalog = async (branchId: number) => {
+    const res = await axiosInstance.get(`/service-park/branches/${branchId}/catalog`);
+    return res.data;
+};
+
+
+export const validatePromo = async (code: string) => {
+    const res = await axiosInstance.post(`/service-park/validate-promo`, { code });
+    return res.data;
+};
+
+export const getPromos = async () => {
+    const res = await axiosInstance.get("/service-park/promos");
     return res.data;
 };

@@ -28,7 +28,7 @@ import {
     updateService,
     deletePackage,
     deleteService,
-    updateBranch, deleteBranch
+    updateBranch, deleteBranch, getBranchCatalog, validatePromo, getPromos
 } from "@/services/serviceParkService";
 
 
@@ -323,3 +323,24 @@ export const useDeleteBranch = () => {
         },
     });
 };
+
+export const useBranchCatalog = (branchId: number | null) =>
+    useQuery({
+        queryKey: ["branchCatalog", branchId],
+        queryFn: () => getBranchCatalog(branchId!),
+        enabled: !!branchId
+    });
+
+
+export const useValidatePromo = () => {
+    return useMutation({
+        mutationFn: validatePromo
+    });
+};
+
+
+export const useAvailablePromos = () =>
+    useQuery({
+        queryKey: ["servicePark", "promos"],
+        queryFn: getPromos
+    })
