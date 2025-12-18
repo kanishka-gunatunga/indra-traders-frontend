@@ -183,3 +183,23 @@ export const getPromos = async () => {
     const res = await axiosInstance.get("/service-park/promos");
     return res.data;
 };
+
+
+export const getBookingAvailability = async (branchId: number, lineId: number, month: string) => {
+    const res = await axiosInstance.get('/service-park/bookings/availability', {
+        params: { branchId, serviceLineId: lineId, month }
+    });
+    return res.data;
+};
+
+export const getDailyBookings = async (branchId: number, lineId: number, date: string) => {
+    const res = await axiosInstance.get('/service-park/bookings/daily', {
+        params: { branchId, serviceLineId: lineId, date }
+    });
+    return res.data;
+};
+
+export const submitBooking = async (data: any) => {
+    const res = await axiosInstance.post('/service-park/bookings', data);
+    return res.data;
+};

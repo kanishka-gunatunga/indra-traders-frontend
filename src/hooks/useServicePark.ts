@@ -28,7 +28,8 @@ import {
     updateService,
     deletePackage,
     deleteService,
-    updateBranch, deleteBranch, getBranchCatalog, validatePromo, getPromos
+    updateBranch, deleteBranch, getBranchCatalog, validatePromo, getPromos, getDailyBookings, submitBooking,
+    getBookingAvailability
 } from "@/services/serviceParkService";
 
 
@@ -343,4 +344,43 @@ export const useAvailablePromos = () =>
     useQuery({
         queryKey: ["servicePark", "promos"],
         queryFn: getPromos
-    })
+    });
+
+
+
+export const useBookingAvailability = (
+    branchId: number | null,
+    lineId: number | null,
+    month: string
+) => {
+    return useQuery({
+        queryKey: ['bookingAvailability', branchId, lineId, month],
+        queryFn: () => getBookingAvailability(branchId!, lineId!, month),
+        enabled: !!branchId && !!lineId && !!month,
+        staleTime: 5 * 60 * 1000,
+    });
+};
+
+export const useDailyBookings = (
+    branchId: number | null,
+    lineId: number | null,
+    date: string
+) => {
+    return useQuery({
+        queryKey: ['dailyBookings', branchId, lineId, date],
+        queryFn: () => getDailyBookings(branchId!, lineId!, date),
+        enabled: !!branchId && !!lineId && !!date,
+    });
+};
+
+export const useSubmitBooking = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: submitBooking,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['dailyBookings'] });
+            queryClient.invalidateQueries({ queryKey: ['bookingAvailability'] });
+        },
+    });
+};

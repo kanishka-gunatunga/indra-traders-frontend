@@ -21,6 +21,9 @@ import Toast from "@/components/Toast";
 import {useToast} from "@/hooks/useToast";
 import {useCurrentUser} from "@/utils/auth";
 import {useServiceCart, CartItem} from "@/hooks/useServiceCart";
+import {useDispatch} from 'react-redux';
+import {useRouter} from 'next/navigation';
+import {setBookingData} from "@/redux/slices/bookingSlice";
 
 
 export const vehicleHistorySchema = z.object({
@@ -129,6 +132,9 @@ const ServicePark = () => {
     const user = useCurrentUser();
     const userId = Number(user?.id) || 1;
 
+    const dispatch = useDispatch();
+    const router = useRouter();
+
     const allServicesSectionRef = useRef<HTMLElement>(null);
 
 
@@ -174,7 +180,7 @@ const ServicePark = () => {
 
     const {
         addItem, removeItem, isSelected,
-        groupedItems, totals, getPromoForType, removePromo, addPromo
+        groupedItems, totals, getPromoForType, removePromo, addPromo, selectedItems
     } = useServiceCart();
 
 
@@ -197,6 +203,7 @@ const ServicePark = () => {
         handleSubmit: handleVehicleSubmit,
         reset: resetVehicle,
         formState: {errors: vehicleErrors},
+        getValues
     } = useForm<z.infer<typeof vehicleHistorySchema>>({
         resolver: zodResolver(vehicleHistorySchema),
         defaultValues: {
@@ -457,6 +464,18 @@ const ServicePark = () => {
             .catch(err => {
                 console.error('Failed to copy: ', err);
             });
+    };
+
+    const handleBookNow = () => {
+        const vehicleValues = getValues();
+
+        dispatch(setBookingData({
+            vehicleData: vehicleValues,
+            selectedServices: selectedItems,
+            totals: totals
+        }));
+
+        router.push('/call-agent/service-park/book');
     };
 
 
@@ -1010,7 +1029,7 @@ const ServicePark = () => {
                         )}
 
 
-                        {totals.total > 0 &&(
+                        {totals.total > 0 && (
                             <section
                                 id="loyalty-section"
                                 className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
@@ -1344,8 +1363,9 @@ const ServicePark = () => {
                                                 <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium"></td>
                                                 <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold ">
                                                     <button
-                                                        className="font-bold text-[#FFFFFF] bg-[#DB2727] rounded-[20] px-14 py-2">Book
-                                                        Now
+                                                        onClick={handleBookNow}
+                                                        className="font-bold text-[#FFFFFF] bg-[#DB2727] rounded-[20] px-14 py-2">
+                                                        Book Now
                                                     </button>
                                                 </td>
                                             </tr>
@@ -1608,8 +1628,7 @@ const ServicePark = () => {
                 </div>
             </div>
         </>
-    )
-        ;
+    );
 }
 
 export default ServicePark;
