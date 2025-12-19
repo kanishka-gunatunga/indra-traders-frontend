@@ -3,7 +3,7 @@
 
 "use client"
 import Image from "next/image";
-import React, {useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import FormField from "@/components/FormField";
 import z from "zod";
 import {useForm} from "react-hook-form";
@@ -148,22 +148,73 @@ const ServicePark = () => {
 
     const [isServiceAvailabilityModalOpen, setIsServiceAvailabilityModalOpen] = useState(false);
 
+    const [isPackageExpanded, setIsPackageExpanded] = useState(false);
+    const [isServicesExpanded, setIsServicesExpanded] = useState(false);
+
+    const [isSearchActive, setIsSearchActive] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+
 
     const [selectedBranchId, setSelectedBranchId] = useState<number | null>(15);
     // const [promoInput, setPromoInput] = useState("");
-    const [promoInputs, setPromoInputs] = useState({
-        packages: "",
-        repairs: "",
-        paints: "",
-        maintenance: "",
-        addOns: ""
-    });
+    // const [promoInputs, setPromoInputs] = useState({
+    //     packages: "",
+    //     repairs: "",
+    //     paints: "",
+    //     maintenance: "",
+    //     addOns: ""
+    // });
+
+    const [promoInput, setPromoInput] = useState("");
+    const [isPromoValidating, setIsPromoValidating] = useState(false);
 
     const [loadingCategory, setLoadingCategory] = useState<string | null>(null);
 
     const {data: catalog, isLoading: loadingCatalog} = useBranchCatalog(selectedBranchId);
     const validatePromoMutation = useValidatePromo();
     const {data: promoList, isLoading: loadingPromos} = useAvailablePromos();
+
+    const [allServicesView, setAllServicesView] = useState<"Services" | "Packages">("Services");
+
+
+    const [searchServiceQuery, setSearchServiceQuery] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isServiceSearchActive, setIsServiceSearchActive] = useState(false);
+
+    const sourceData = allServicesView === "Services"
+        ? catalog?.services || []
+        : catalog?.packages || [];
+
+    const filteredData = React.useMemo(() => {
+        if (!searchServiceQuery) return sourceData;
+        const lowerQuery = searchServiceQuery.toLowerCase();
+
+        return sourceData.filter((item: any) => {
+            const nameMatch = item.name?.toLowerCase().includes(lowerQuery);
+            const descMatch = (item.description || item.short_description)?.toLowerCase().includes(lowerQuery);
+            const typeMatch = item.type?.toLowerCase().includes(lowerQuery);
+            return nameMatch || descMatch || typeMatch;
+        });
+    }, [sourceData, searchServiceQuery]);
+
+
+    const ITEMS_PER_PAGE = 5;
+
+    const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+    const paginatedData = filteredData.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [allServicesView, searchQuery]);
 
 
     const handleAddServiceClick = () => {
@@ -180,7 +231,7 @@ const ServicePark = () => {
 
     const {
         addItem, removeItem, isSelected,
-        groupedItems, totals, getPromoForType, removePromo, addPromo, selectedItems
+        groupedItems, totals, removePromo, selectedItems, applyPromo, activePromo
     } = useServiceCart();
 
 
@@ -193,9 +244,6 @@ const ServicePark = () => {
     const repairsTotal = getCategoryTotal(groupedItems.repairs);
     const paintsTotal = getCategoryTotal(groupedItems.paints);
     const addOnsTotal = getCategoryTotal(groupedItems.addOns);
-
-
-    const [allServicesView, setAllServicesView] = useState<"Services" | "Packages">("Services");
 
 
     const {
@@ -371,40 +419,79 @@ const ServicePark = () => {
         }
     };
 
-    const handleInputChange = (category: string, value: string) => {
-        setPromoInputs(prev => ({...prev, [category]: value}));
-    };
+    // const handleInputChange = (category: string, value: string) => {
+    //     setPromoInputs(prev => ({...prev, [category]: value}));
+    // };
 
-    const handleApplyCategoryPromo = (categoryKey: string, backendTypeString: string) => {
-        const code = promoInputs[categoryKey as keyof typeof promoInputs];
+    // const handleApplyCategoryPromo = (categoryKey: string, backendTypeString: string) => {
+    //     const code = promoInputs[categoryKey as keyof typeof promoInputs];
+    //
+    //     if (!code) {
+    //         showToast("Please enter a code", "error");
+    //         return;
+    //     }
+    //
+    //     // Set the loading state for THIS category
+    //     setLoadingCategory(categoryKey);
+    //
+    //     validatePromoMutation.mutate(code, {
+    //         onSuccess: (data) => {
+    //             if (data.isValid) {
+    //                 const appliesToSection = data.applicableTypes.includes(backendTypeString) || data.applicableTypes.includes("ALL");
+    //
+    //                 if (!appliesToSection) {
+    //                     showToast(`This code is not valid for ${categoryKey}`, "error");
+    //                     setLoadingCategory(null); // Reset loading
+    //                     return;
+    //                 }
+    //
+    //                 addPromo({
+    //                     code: data.code,
+    //                     discountType: data.discountType,
+    //                     amount: data.amount,
+    //                     applicableTypes: data.applicableTypes
+    //                 });
+    //                 showToast(`${categoryKey} promo applied!`, "success");
+    //                 handleInputChange(categoryKey, "");
+    //             }
+    //         },
+    //         onError: (error: any) => {
+    //             const msg = error.response?.data?.message || "Invalid Promo Code";
+    //             showToast(msg, "error");
+    //         },
+    //         onSettled: () => {
+    //             // Always turn off loading, success or fail
+    //             setLoadingCategory(null);
+    //         }
+    //     });
+    // };
+    //
+    //
+    // const repairPromo = getPromoForType('Repair');
+    // const paintPromo = getPromoForType('Paint');
+    // const addOnPromo = getPromoForType('AddOn');
+    // const maintenancePromo = getPromoForType('Maintenance');
+    // const packagePromo = getPromoForType('Package');
 
-        if (!code) {
-            showToast("Please enter a code", "error");
+    const handleApplyGlobalPromo = () => {
+        if (!promoInput.trim()) {
+            showToast("Please enter a promo code", "error");
             return;
         }
 
-        // Set the loading state for THIS category
-        setLoadingCategory(categoryKey);
+        setIsPromoValidating(true);
 
-        validatePromoMutation.mutate(code, {
+        validatePromoMutation.mutate(promoInput, {
             onSuccess: (data) => {
                 if (data.isValid) {
-                    const appliesToSection = data.applicableTypes.includes(backendTypeString) || data.applicableTypes.includes("ALL");
-
-                    if (!appliesToSection) {
-                        showToast(`This code is not valid for ${categoryKey}`, "error");
-                        setLoadingCategory(null); // Reset loading
-                        return;
-                    }
-
-                    addPromo({
+                    applyPromo({
                         code: data.code,
                         discountType: data.discountType,
                         amount: data.amount,
                         applicableTypes: data.applicableTypes
                     });
-                    showToast(`${categoryKey} promo applied!`, "success");
-                    handleInputChange(categoryKey, "");
+                    showToast("Promo applied successfully!", "success");
+                    setPromoInput(""); // Clear input on success
                 }
             },
             onError: (error: any) => {
@@ -412,18 +499,19 @@ const ServicePark = () => {
                 showToast(msg, "error");
             },
             onSettled: () => {
-                // Always turn off loading, success or fail
-                setLoadingCategory(null);
+                setIsPromoValidating(false);
             }
         });
     };
 
-
-    const repairPromo = getPromoForType('Repair');
-    const paintPromo = getPromoForType('Paint');
-    const addOnPromo = getPromoForType('AddOn');
-    const maintenancePromo = getPromoForType('Maintenance');
-    const packagePromo = getPromoForType('Package');
+    // Helper to map category keys to Display Titles
+    const categoryTitles: Record<string, string> = {
+        packages: "Packages",
+        repairs: "Repairs",
+        paints: "Paints",
+        maintenance: "Maintenance",
+        addOns: "Add-Ons"
+    };
 
 
     const handleSelectPackage = (index: number) => {
@@ -602,46 +690,94 @@ const ServicePark = () => {
                                 <div className="flex flex-row items-center justify-between">
                                     <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Recommended
                                         Package Details</h2>
-                                    <div>
+                                    <div className="flex gap-5">
+                                        {isPackageExpanded && (
+                                            // <button
+                                            //     id="package-search-button"
+                                            //     aria-label="Search packages"
+                                            //     className="ml-auto text-white text-base font-medium rounded-full animate-fade-in">
+                                            //     <Image src="/search.svg" alt="search" height={36}
+                                            //            width={36} className="h-12 w-12"/>
+                                            // </button>
+
+                                            <div className="relative flex items-center justify-end">
+                                                {/* Expanding Input Field */}
+                                                <input
+                                                    type="text"
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    onBlur={() => !searchQuery && setIsSearchActive(false)} // Close on blur if empty
+                                                    placeholder="Search packages..."
+                                                    className={`
+                                                        bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-500
+                                                        rounded-full border border-gray-300 outline-none
+                                                        transition-all duration-300 ease-in-out
+                                                        ${isSearchActive ? 'w-64 px-4 py-2 opacity-100 mr-2' : 'w-0 px-0 py-2 opacity-0 border-none'}
+                                                     `}
+                                                    autoFocus={isSearchActive}
+                                                />
+                                                <button
+                                                    id="package-search-button"
+                                                    aria-label="Search packages"
+                                                    onClick={() => setIsSearchActive(!isSearchActive)}
+                                                    className={`ml-auto text-white text-base font-medium rounded-full animate-fade-in z-10 cursor-pointer ${isSearchActive ? 'bg-[#DB2727] p-1 scale-90' : ''}`}
+                                                >
+                                                    <Image
+                                                        src="/search.svg"
+                                                        alt="search"
+                                                        height={36}
+                                                        width={36}
+                                                        className="h-11 w-11"
+                                                    />
+                                                </button>
+                                            </div>
+                                        )}
                                         <button
-                                            className="ml-auto text-white text-base font-medium rounded-full">
-                                            <Image src="/search.svg" alt="search" height={36}
-                                                   width={36} className="h-12 w-12"/>
+                                            onClick={() => setIsPackageExpanded(!isPackageExpanded)}
+                                            aria-expanded={isPackageExpanded}
+                                            aria-controls="package-table-content"
+                                            aria-label={isPackageExpanded ? "Collapse package details" : "Expand package details"}
+                                            className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
+                                            <Image src="/expand-arrow.svg" alt="search" height={36}
+                                                   width={36}
+                                                   className={`h-12 w-12 transition-transform duration-300 ease-in-out ${isPackageExpanded ? 'rotate-180' : ''}`}/>
                                         </button>
                                     </div>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-black">
-                                        <thead>
-                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                            <th className="py-5 px-4 text-left">Package Name</th>
-                                            <th className="py-5 px-4 text-left">Description</th>
-                                            <th className="py-5 px-4 text-left">Estimate Price</th>
-                                            <th className="py-5 px-4 text-left min-w-40">Action</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {packageData.map((item, index) => (
-                                            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                <td className="py-4 px-4"><a>{item.name}</a></td>
-                                                <td className="py-4 px-4 items-center flex"><span
-                                                    className="mr-2">{item.description}</span>
-                                                    <button
-                                                        className="font-medium rounded-full">
-                                                        <Image src="/info.svg" alt="info" height={36}
-                                                               width={36} className="h-5 w-5"/>
-                                                    </button>
-                                                </td>
-                                                <td className="py-4 px-4">{item.estimatePrice}</td>
-                                                <td className="py-4 px-4">
-                                                    <button onClick={() => handleSelectPackage(index)}
-                                                            className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}>{!item.action ? "Select" : "Selected"}</button>
-                                                </td>
+                                {isPackageExpanded && (
+                                    <div id="package-table-content" className="overflow-x-auto animate-slide-down">
+                                        <table className="w-full text-black">
+                                            <thead>
+                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                <th className="py-5 px-4 text-left">Package Name</th>
+                                                <th className="py-5 px-4 text-left">Description</th>
+                                                <th className="py-5 px-4 text-left">Estimate Price</th>
+                                                <th className="py-5 px-4 text-left min-w-40">Action</th>
                                             </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody>
+                                            {packageData.map((item, index) => (
+                                                <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
+                                                    <td className="py-4 px-4"><a>{item.name}</a></td>
+                                                    <td className="py-4 px-4 items-center flex"><span
+                                                        className="mr-2">{item.description}</span>
+                                                        <button
+                                                            className="font-medium rounded-full">
+                                                            <Image src="/info.svg" alt="info" height={36}
+                                                                   width={36} className="h-5 w-5"/>
+                                                        </button>
+                                                    </td>
+                                                    <td className="py-4 px-4">{item.estimatePrice}</td>
+                                                    <td className="py-4 px-4">
+                                                        <button onClick={() => handleSelectPackage(index)}
+                                                                className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}>{!item.action ? "Select" : "Selected"}</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         </section>
 
@@ -654,40 +790,54 @@ const ServicePark = () => {
                                 <div className="flex flex-row items-center justify-between">
                                     <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Recommended
                                         Maintenance Details</h2>
-                                    <div>
+                                    <div className="flex gap-5">
+                                        {isServicesExpanded && (
+                                            <button
+                                                className="ml-auto text-white text-base font-medium rounded-full animate-fade-in">
+                                                <Image src="/search.svg" alt="search" height={36}
+                                                       width={36} className="h-12 w-12"/>
+                                            </button>
+                                        )}
                                         <button
+                                            onClick={() => setIsServicesExpanded(!isServicesExpanded)}
+                                            aria-expanded={isServicesExpanded}
+                                            aria-controls="service-table-content"
+                                            aria-label={isServicesExpanded ? "Collapse service details" : "Expand service details"}
                                             className="ml-auto text-white text-base font-medium rounded-full">
-                                            <Image src="/search.svg" alt="search" height={36}
-                                                   width={36} className="h-12 w-12"/>
+                                            <Image src="/expand-arrow.svg" alt="search" height={36}
+                                                   width={36}
+                                                   className={`h-12 w-12 transition-transform duration-300 ease-in-out ${isServicesExpanded ? 'rotate-180' : ''}`}/>
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-black">
-                                        <thead>
-                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                            <th className="py-5 px-4 text-left">Maintenance Services</th>
-                                            <th className="py-5 px-4 text-left">Service Type</th>
-                                            <th className="py-5 px-4 text-left">Estimate Price</th>
-                                            <th className="py-5 px-4 text-left min-w-40">Action</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {maintenanceData.map((item, index) => (
-                                            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                <td className="py-4 px-4"><a>{item.serviceName}</a></td>
-                                                <td className="py-4 px-4 items-center flex">{item.serviceType}</td>
-                                                <td className="py-4 px-4">{item.estimatePrice}</td>
-                                                <td className="py-4 px-4">
-                                                    <button onClick={() => handleSelectMaintenance(index)}
-                                                            className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}>{!item.action ? "Select" : "Selected"}</button>
-                                                </td>
+                                {isServicesExpanded && (
+                                    <div id="service-table-content" className="overflow-x-auto animate-slide-down">
+                                        <table className="w-full text-black">
+                                            <thead>
+                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                <th className="py-5 px-4 text-left">Maintenance Services</th>
+                                                <th className="py-5 px-4 text-left">Service Type</th>
+                                                <th className="py-5 px-4 text-left">Estimate Price</th>
+                                                <th className="py-5 px-4 text-left min-w-40">Action</th>
                                             </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody>
+                                            {maintenanceData.map((item, index) => (
+                                                <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
+                                                    <td className="py-4 px-4"><a>{item.serviceName}</a></td>
+                                                    <td className="py-4 px-4 items-center flex">{item.serviceType}</td>
+                                                    <td className="py-4 px-4">{item.estimatePrice}</td>
+                                                    <td className="py-4 px-4">
+                                                        <button onClick={() => handleSelectMaintenance(index)}
+                                                                className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}>{!item.action ? "Select" : "Selected"}</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         </section>
 
@@ -702,9 +852,39 @@ const ServicePark = () => {
                                     <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">All
                                         Services</h2>
                                     <div className="flex flex-row gap-6">
+                                        <div className="relative flex items-center justify-end">
+                                            <input
+                                                type="text"
+                                                value={searchServiceQuery}
+                                                onChange={(e) => setSearchServiceQuery(e.target.value)}
+                                                onBlur={() => !searchServiceQuery && setIsServiceSearchActive(false)}
+                                                placeholder={`Search ${allServicesView.toLowerCase()}...`}
+                                                className={`
+                                    bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-500
+                                    rounded-full border border-gray-300 outline-none
+                                    transition-all duration-300 ease-in-out h-10 text-sm
+                                    ${isServiceSearchActive ? 'w-64 px-4 opacity-100 mr-2 border' : 'w-0 px-0 opacity-0 border-none'}
+                                `}
+                                                autoFocus={isServiceSearchActive}
+                                            />
+                                            <button
+                                                onClick={() => setIsServiceSearchActive(!isServiceSearchActive)}
+                                                className={`ml-auto text-white text-base font-medium rounded-full z-10 transition-transform duration-200 cursor-pointer ${isServiceSearchActive ? 'scale-90' : ''}`}
+                                            >
+                                                <Image src="/search.svg" alt="search" height={36} width={36}
+                                                       className="h-12 w-12"/>
+                                            </button>
+                                        </div>
+                                        {/*<button*/}
+                                        {/*    className="ml-auto text-white text-base font-medium rounded-full">*/}
+                                        {/*    <Image src="/search.svg" alt="search" height={36}*/}
+                                        {/*           width={36} className="h-12 w-12"/>*/}
+                                        {/*</button>*/}
+
                                         <button
-                                            className="ml-auto text-white text-base font-medium rounded-full">
-                                            <Image src="/search.svg" alt="search" height={36}
+                                            onClick={() => setIsServiceAvailabilityModalOpen(true)}
+                                            className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
+                                            <Image src="/repair.svg" alt="search" height={36}
                                                    width={36} className="h-12 w-12"/>
                                         </button>
 
@@ -750,68 +930,165 @@ const ServicePark = () => {
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        {allServicesView === "Services" ? (
-                                            catalog?.services.map((item: any, index: number) => {
+                                        {/*{allServicesView === "Services" ? (*/}
+                                        {/*    catalog?.services.map((item: any, index: number) => {*/}
+                                        {/*        const typeMap: any = {*/}
+                                        {/*            'REPAIR': 'Repair',*/}
+                                        {/*            'PAINT': 'Paint',*/}
+                                        {/*            'Maintenance': 'Maintenance',*/}
+                                        {/*            'ADDON': 'AddOn'*/}
+                                        {/*        };*/}
+                                        {/*        const cartType = typeMap[item.type] || 'Repair';*/}
+                                        {/*        const isActive = isSelected(item.id, cartType);*/}
+
+                                        {/*        return (*/}
+                                        {/*            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">*/}
+                                        {/*                <td className="py-4 px-4 text-[#1D1D1D]"><a>{item.name}</a></td>*/}
+                                        {/*                <td className="py-4 px-4 items-center flex text-[#1D1D1D]">{item.type}</td>*/}
+                                        {/*                <td className="py-4 px-4 text-[#1D1D1D]">LKR {item.price.toLocaleString()}</td>*/}
+                                        {/*                <td className="py-4 px-4">*/}
+                                        {/*                    <button*/}
+                                        {/*                        // onClick={() => handleSelectAllServices(index)}*/}
+                                        {/*                        onClick={() => handleToggleItem(item, cartType)}*/}
+                                        {/*                        // className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}*/}
+                                        {/*                        className={`px-6 py-2 rounded-[20] cursor-pointer ${!isActive ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}*/}
+                                        {/*                    >*/}
+                                        {/*                        /!*{!item.action ? "Select" : "Selected"}*!/*/}
+                                        {/*                        {!isActive ? "Select" : "Selected"}*/}
+                                        {/*                    </button>*/}
+                                        {/*                </td>*/}
+                                        {/*            </tr>*/}
+                                        {/*        )*/}
+                                        {/*    })*/}
+                                        {/*) : (*/}
+                                        {/*    catalog?.packages.map((item: any, index: number) => {*/}
+                                        {/*        const isActive = isSelected(item.id, 'Package');*/}
+                                        {/*        return (*/}
+                                        {/*            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">*/}
+                                        {/*                <td className="py-4 px-4 text-[#1D1D1D]"><a>{item.name}</a>*/}
+                                        {/*                </td>*/}
+                                        {/*                <td className="py-4 px-4 items-center flex text-[#1D1D1D]">*/}
+                                        {/*                    <span*/}
+                                        {/*                        className="mr-2">{item.short_description}</span>*/}
+                                        {/*                    <button id="view-description"*/}
+                                        {/*                            className="font-medium rounded-full">*/}
+                                        {/*                        <Image src="/info.svg" alt="info" height={36}*/}
+                                        {/*                               width={36} className="h-5 w-5"/>*/}
+                                        {/*                    </button>*/}
+                                        {/*                </td>*/}
+                                        {/*                <td className="py-4 px-4 text-[#1D1D1D]">LKR {item.total_price.toLocaleString()}</td>*/}
+                                        {/*                <td className="py-4 px-4">*/}
+                                        {/*                    <button*/}
+                                        {/*                        onClick={() => handleToggleItem(item, 'Package')}*/}
+                                        {/*                        className={`px-6 py-2 rounded-[20] cursor-pointer ${!isActive ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}*/}
+                                        {/*                    >*/}
+                                        {/*                        {!isActive ? "Select" : "Selected"}*/}
+                                        {/*                    </button>*/}
+                                        {/*                </td>*/}
+                                        {/*            </tr>*/}
+                                        {/*        )*/}
+                                        {/*    })*/}
+                                        {/*)}*/}
+
+                                        {paginatedData.length > 0 ? (
+                                            paginatedData.map((item: any, index: number) => {
+                                                // Determine type and active state logic
                                                 const typeMap: any = {
                                                     'REPAIR': 'Repair',
                                                     'PAINT': 'Paint',
                                                     'Maintenance': 'Maintenance',
                                                     'ADDON': 'AddOn'
                                                 };
-                                                const cartType = typeMap[item.type] || 'Repair';
+
+                                                const isService = allServicesView === "Services";
+                                                const cartType = isService ? (typeMap[item.type] || 'Repair') : 'Package';
                                                 const isActive = isSelected(item.id, cartType);
 
+                                                // Display values
+                                                const name = item.name;
+                                                const description = isService ? item.type : (
+                                                    <div className="flex items-center">
+                                                        <span
+                                                            className="mr-2 truncate max-w-[200px]">{item.short_description}</span>
+                                                        <button
+                                                            className="font-medium rounded-full hover:bg-gray-200 p-1 transition">
+                                                            <Image src="/info.svg" alt="info" height={20} width={20}/>
+                                                        </button>
+                                                    </div>
+                                                );
+                                                const price = isService ? item.price : item.total_price;
+
                                                 return (
-                                                    <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                        <td className="py-4 px-4 text-[#1D1D1D]"><a>{item.name}</a></td>
-                                                        <td className="py-4 px-4 items-center flex text-[#1D1D1D]">{item.type}</td>
-                                                        <td className="py-4 px-4 text-[#1D1D1D]">LKR {item.price.toLocaleString()}</td>
+                                                    <tr key={item.id || index}
+                                                        className="text-lg font-medium text-[#1D1D1D] hover:bg-white/40 transition-colors border-b border-gray-200 last:border-0">
+                                                        <td className="py-4 px-4"><a>{name}</a></td>
+                                                        <td className="py-4 px-4">{description}</td>
+                                                        <td className="py-4 px-4">LKR {price.toLocaleString()}</td>
                                                         <td className="py-4 px-4">
                                                             <button
-                                                                // onClick={() => handleSelectAllServices(index)}
                                                                 onClick={() => handleToggleItem(item, cartType)}
-                                                                // className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}
-                                                                className={`px-6 py-2 rounded-[20] cursor-pointer ${!isActive ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}
+                                                                className={`px-6 py-2 rounded-[20px] cursor-pointer transition-all duration-200 ${
+                                                                    !isActive
+                                                                        ? "bg-[#DFDFDF] text-[#1D1D1D] hover:bg-gray-300"
+                                                                        : "bg-[#DB2727] text-[#FFFFFF] hover:bg-red-700 shadow-md"
+                                                                }`}
                                                             >
-                                                                {/*{!item.action ? "Select" : "Selected"}*/}
                                                                 {!isActive ? "Select" : "Selected"}
                                                             </button>
                                                         </td>
                                                     </tr>
-                                                )
+                                                );
                                             })
                                         ) : (
-                                            catalog?.packages.map((item: any, index: number) => {
-                                                const isActive = isSelected(item.id, 'Package');
-                                                return (
-                                                    <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                        <td className="py-4 px-4 text-[#1D1D1D]"><a>{item.name}</a>
-                                                        </td>
-                                                        <td className="py-4 px-4 items-center flex text-[#1D1D1D]">
-                                                            <span
-                                                                className="mr-2">{item.short_description}</span>
-                                                            <button id="view-description"
-                                                                    className="font-medium rounded-full">
-                                                                <Image src="/info.svg" alt="info" height={36}
-                                                                       width={36} className="h-5 w-5"/>
-                                                            </button>
-                                                        </td>
-                                                        <td className="py-4 px-4 text-[#1D1D1D]">LKR {item.total_price.toLocaleString()}</td>
-                                                        <td className="py-4 px-4">
-                                                            <button
-                                                                onClick={() => handleToggleItem(item, 'Package')}
-                                                                className={`px-6 py-2 rounded-[20] cursor-pointer ${!isActive ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}
-                                                            >
-                                                                {!isActive ? "Select" : "Selected"}
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                )
-                                            })
+                                            <tr>
+                                                <td colSpan={4} className="py-10 text-center text-gray-500">
+                                                    No {allServicesView.toLowerCase()} found
+                                                    matching &quot;{searchQuery}&quot;.
+                                                </td>
+                                            </tr>
                                         )}
                                         </tbody>
                                     </table>
                                 </div>
+
+                                {totalPages > 1 && (
+                                    <div className="flex justify-center mt-8">
+                                        <div className="flex items-center space-x-2">
+                                            <button
+                                                onClick={() => handlePageChange(currentPage - 1)}
+                                                disabled={currentPage === 1}
+                                                className="flex justify-center items-center h-8 px-4 rounded-md bg-white/50 text-gray-600 font-medium hover:bg-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                            >
+                                                Prev
+                                            </button>
+
+                                            <div className="flex items-center space-x-2">
+                                                {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() => handlePageChange(page)}
+                                                        className={`w-8 h-8 text-[13px] rounded-lg font-semibold transition-all cursor-pointer duration-200 ${
+                                                            currentPage === page
+                                                                ? "bg-[#DB2727] text-white shadow-md transform scale-105"
+                                                                : "bg-white/30 text-[#333333] hover:bg-white/60"
+                                                        }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <button
+                                                onClick={() => handlePageChange(currentPage + 1)}
+                                                disabled={currentPage === totalPages}
+                                                className="flex text-sm justify-center items-center h-8 px-4 rounded-md bg-white/50 text-[#333333] font-medium hover:bg-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                             </div>
                         </section>
 
@@ -824,12 +1101,6 @@ const ServicePark = () => {
                                     <div className="flex flex-row items-center justify-between">
                                         <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Repairs</h2>
                                         <div className="flex flex-row gap-6">
-                                            <button
-                                                onClick={() => setIsServiceAvailabilityModalOpen(true)}
-                                                className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
-                                                <Image src="/repair.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
-                                            </button>
                                             <button
                                                 onClick={handleAddServiceClick}
                                                 className="ml-auto text-white text-base font-medium rounded-full">
@@ -1126,184 +1397,78 @@ const ServicePark = () => {
                                             </tr>
                                             </thead>
                                             <tbody>
-                                            {repairsTotal > 0 && (
-                                                <>
-                                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
-                                                        <td className="py-4 px-4 text-[#1D1D1D] font-semibold">Repairs</td>
-                                                        <td className="py-4 px-4 text-right text-[#1D1D1D] font-semibold">
-                                                            LKR {repairsTotal.toLocaleString()}
-                                                        </td>
-                                                    </tr>
-                                                    {/*<tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">*/}
-                                                    {/*    <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium"><input*/}
-                                                    {/*        type="text"*/}
-                                                    {/*        placeholder={promo ? "Promo Applied" : "Enter Promo Code"}*/}
-                                                    {/*        value={promoInput}*/}
-                                                    {/*        onChange={(e) => setPromoInput(e.target.value)}*/}
-                                                    {/*        disabled={!!promo || validatePromoMutation.isPending}*/}
-                                                    {/*        className="border-none focus:border-none focus:outline-none"/>*/}
-                                                    {/*    </td>*/}
-                                                    {/*    <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold ">*/}
-                                                    {/*        <button*/}
-                                                    {/*            // className="font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2"*/}
-                                                    {/*            onClick={handleApplyPromo}*/}
-                                                    {/*            disabled={!!promo || validatePromoMutation.isPending}*/}
-                                                    {/*            className={`font-bold text-[#FFFFFF] rounded-[20] px-16 py-2 transition-all ${*/}
-                                                    {/*                !!promo*/}
-                                                    {/*                    ? "bg-green-600 cursor-default"*/}
-                                                    {/*                    : "bg-[#1D1D1D] hover:bg-gray-800"*/}
-                                                    {/*            }`}*/}
-                                                    {/*        >*/}
-                                                    {/*            {validatePromoMutation.isPending*/}
-                                                    {/*                ? "Checking..."*/}
-                                                    {/*                : promo ? "Applied" : "Apply"*/}
-                                                    {/*            }*/}
-                                                    {/*        </button>*/}
-                                                    {/*    </td>*/}
-                                                    {/*</tr>*/}
 
-                                                    {repairPromo ? (
-                                                        /* --- APPLIED STATE --- */
-                                                        <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
-                                                            <td className="py-2 px-3 pb-2 text-green-600 font-medium">
-                                                                Promo Applied: {getPromoForType('Repair')?.code}
-                                                            </td>
-                                                            <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
-                                                                <button
-                                                                    onClick={() => removePromo(repairPromo.code)}
-                                                                    className="font-bold text-red-500 hover:text-red-700 underline text-base px-16 py-2"
-                                                                >
-                                                                    Remove
-                                                                </button>
+                                            {Object.entries(groupedItems).map(([key, items]) => {
+                                                if (items.length === 0) return null;
+                                                return (
+                                                    <React.Fragment key={key}>
+                                                        {/* Category Header */}
+                                                        <tr className="bg-white/20">
+                                                            <td colSpan={2}
+                                                                className="py-3 px-4 font-bold text-[#1D1D1D] uppercase text-sm tracking-wide opacity-70">
+                                                                {categoryTitles[key]}
                                                             </td>
                                                         </tr>
-                                                    ) : (
-                                                        /* --- INPUT STATE (Using your original styling) --- */
-                                                        <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
-                                                            <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium">
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Enter Promo Code"
-                                                                    value={promoInputs.repairs}
-                                                                    disabled={loadingCategory === 'repairs'}
-                                                                    onChange={(e) => handleInputChange('repairs', e.target.value)}
-                                                                    className="border-none focus:border-none focus:outline-none w-full bg-transparent placeholder-gray-400"
-                                                                />
-                                                            </td>
-                                                            <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
-                                                                <button
-                                                                    onClick={() => handleApplyCategoryPromo('repairs', 'Repair')}
-                                                                    className={`font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2 hover:bg-gray-800 transition-all ${
-                                                                        loadingCategory === 'repairs' ? "opacity-70 cursor-not-allowed" : ""
-                                                                    }`}
-                                                                >
-                                                                    {loadingCategory === 'repairs' ? "..." : "Apply"}
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </>
-                                            )}
-                                            {paintsTotal > 0 && (
-                                                <>
-                                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
-                                                        <td className="py-4 px-4 text-[#1D1D1D] font-semibold">Paints</td>
-                                                        <td className="py-4 px-4 text-right text-[#1D1D1D] font-semibold">
-                                                            LKR {paintsTotal.toLocaleString()}
-                                                        </td>
-                                                    </tr>
+                                                        {/* Items in Category */}
+                                                        {items.map((item) => (
+                                                            <tr key={`${item.type}-${item.id}`}
+                                                                className="group border-b border-gray-200/50 last:border-0 hover:bg-red-50/30 transition-colors duration-200">
+                                                                <td className="py-3 px-4 text-[#1D1D1D] text-lg pl-8">
+                                                                    {item.name}
+                                                                </td>
+                                                                {/*<td className="py-3 px-4 text-right text-[#1D1D1D] text-lg font-medium gap-3 flex justify-end">*/}
+                                                                {/*    <span className="text-[#1D1D1D] text-lg font-medium group-hover:mr-2 transition-all duration-200">LKR {item.price.toLocaleString()} </span>*/}
+                                                                {/*    /!*<button*!/*/}
+                                                                {/*    /!*    className="text-red-500 underline text-sm hover:text-red-700 font-medium"*!/*/}
+                                                                {/*    /!*>*!/*/}
+                                                                {/*    /!*    <Image src="/close.svg" alt="" width={32} height={32} className="w-10 h-10" />*!/*/}
+                                                                {/*    /!*</button>*!/*/}
 
-                                                    {paintPromo ? (
-                                                        <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
-                                                            <td className="py-2 px-3 pb-2 text-green-600 font-medium">
-                                                                Promo Applied: {paintPromo.code}
-                                                            </td>
-                                                            <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
-                                                                <button
-                                                                    onClick={() => removePromo(paintPromo.code)}
-                                                                    className="font-bold text-red-500 hover:text-red-700 underline text-base px-16 py-2"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ) : (
-                                                        <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
-                                                            <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium">
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Enter Promo Code"
-                                                                    value={promoInputs.paints}
-                                                                    onChange={(e) => handleInputChange('paints', e.target.value)}
-                                                                    disabled={loadingCategory === 'paints'}
-                                                                    className="border-none focus:border-none focus:outline-none w-full bg-transparent placeholder-gray-400"
-                                                                />
-                                                            </td>
-                                                            <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
-                                                                <button
-                                                                    onClick={() => handleApplyCategoryPromo('paints', 'Paint')}
-                                                                    disabled={loadingCategory === 'paints'}
-                                                                    className={`font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2 hover:bg-gray-800 transition-all ${
-                                                                        loadingCategory === 'paints' ? "opacity-70 cursor-not-allowed" : ""
-                                                                    }`}
-                                                                >
-                                                                    {loadingCategory === 'paints' ? "..." : "Apply"}
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </>
-                                            )}
-                                            {addOnsTotal > 0 && (
-                                                <>
-                                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
-                                                        <td className="py-4 px-4 text-[#1D1D1D] font-semibold">AddOns</td>
-                                                        <td className="py-4 px-4 text-right text-[#1D1D1D] font-semibold">
-                                                            LKR {addOnsTotal.toLocaleString()}
-                                                        </td>
-                                                    </tr>
+                                                                {/*    <button*/}
+                                                                {/*        onClick={() => removeItem(item.id, item.type)}*/}
+                                                                {/*        className="opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-200 p-1 hover:bg-red-100 rounded-full"*/}
+                                                                {/*        title="Remove item"*/}
+                                                                {/*        aria-label={`Remove ${item.name}`}*/}
+                                                                {/*    >*/}
+                                                                {/*        <Image*/}
+                                                                {/*            src="/close.svg" // Ensure you have a generic close icon or reuse existing*/}
+                                                                {/*            alt="remove"*/}
+                                                                {/*            width={20}*/}
+                                                                {/*            height={20}*/}
+                                                                {/*            className="w-5 h-5 opacity-60 hover:opacity-100"*/}
+                                                                {/*        />*/}
+                                                                {/*    </button>*/}
+                                                                {/*</td>*/}
 
-                                                    {addOnPromo ? (
-                                                        <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
-                                                            <td className="py-2 px-3 pb-2 text-green-600 font-medium">
-                                                                Promo Applied: {addOnPromo.code}
-                                                            </td>
-                                                            <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
-                                                                <button
-                                                                    onClick={() => removePromo(addOnPromo.code)}
-                                                                    className="font-bold text-red-500 hover:text-red-700 underline text-base px-16 py-2"
-                                                                >
-                                                                    Remove
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ) : (
-                                                        <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
-                                                            <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium">
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Enter Promo Code"
-                                                                    value={promoInputs.addOns}
-                                                                    onChange={(e) => handleInputChange('addOns', e.target.value)}
-                                                                    disabled={loadingCategory === 'addOns'}
-                                                                    className="border-none focus:border-none focus:outline-none w-full bg-transparent placeholder-gray-400"
-                                                                />
-                                                            </td>
-                                                            <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
-                                                                <button
-                                                                    onClick={() => handleApplyCategoryPromo('addOns', 'AddOn')}
-                                                                    disabled={loadingCategory === 'addOns'}
-                                                                    className={`font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2 hover:bg-gray-800 transition-all ${
-                                                                        loadingCategory === 'addOns' ? "opacity-70 cursor-not-allowed" : ""
-                                                                    }`}
-                                                                >
-                                                                    {loadingCategory === 'addOns' ? "..." : "Apply"}
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </>
-                                            )}
+                                                                <td className="py-3 px-4 text-right">
+                                                                    <div className="flex items-center justify-end gap-4">
+                                                                        {/* Price (Visible by default) */}
+                                                                        <span className="text-[#1D1D1D] text-lg font-medium group-hover:mr-2 transition-all duration-200">
+                                                        LKR {item.price.toLocaleString()}
+                                                    </span>
+
+                                                                        {/* Remove Button (Visible on Hover) */}
+                                                                        <button
+                                                                            onClick={() => removeItem(item.id, item.type)}
+                                                                            className="opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-200 p-1 hover:bg-red-100 rounded-full"
+                                                                            title="Remove item"
+                                                                            aria-label={`Remove ${item.name}`}
+                                                                        >
+                                                                            <Image
+                                                                                src="/close.svg"
+                                                                                alt="remove"
+                                                                                width={32}
+                                                                                height={32}
+                                                                                className="w-8 h-8 opacity-100"
+                                                                            />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </React.Fragment>
+                                                );
+                                            })}
 
                                             <tr>
                                                 <td>‎</td>
@@ -1317,6 +1482,34 @@ const ServicePark = () => {
                                                     LKR {totals.subTotal.toLocaleString()}
                                                 </td>
                                             </tr>
+
+                                            {!activePromo && (
+                                                <tr>
+                                                    <td className="py-4 px-4">
+                                                        <div className="flex items-center gap-4 max-w-md">
+                                                            <input
+                                                                type="text"
+                                                                value={promoInput}
+                                                                onChange={(e) => setPromoInput(e.target.value)}
+                                                                placeholder="Enter Promo Code"
+                                                                disabled={isPromoValidating}
+                                                                className="border-none focus:border-none focus:outline-none w-full bg-transparent placeholder-gray-400"
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
+                                                        <button
+                                                            onClick={handleApplyGlobalPromo}
+                                                            disabled={isPromoValidating || !promoInput}
+                                                            className="font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2 hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {isPromoValidating ? "..." : "Apply"}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            )}
+
+
                                             <tr className="">
                                                 <td className="py-4 px-4 font-semibold text-[19px] text-[#1D1D1D] mt-8">
                                                     Total Discount
@@ -1328,6 +1521,22 @@ const ServicePark = () => {
                                                 <td className="py-4 px-4 text-[#1D1D1D]">Sub Total</td>
                                                 <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR {totals.subTotal.toLocaleString()}</td>
                                             </tr>
+
+                                            {activePromo && (
+                                            <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                                <td className="py-4 px-4 text-[#1D1D1D]">Applied Promo Code</td>
+                                                <td className="py-4 px-4 text-right text-[#1D1D1D] gap-3 flex items-center justify-end"><span>{activePromo.code}</span>
+                                                <button
+                                                    onClick={removePromo}
+                                                    className="text-red-500 underline text-sm hover:text-red-700 font-medium"
+                                                >
+                                                    <Image src="/close.svg" alt="" width={32} height={32} className="w-10 h-10" />
+                                                </button>
+                                                </td>
+                                            </tr>
+                                            )}
+
+
                                             {/*<tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">*/}
                                             {/*    <td className="py-4 px-4 text-[#1D1D1D]">Applied Promo Code</td>*/}
                                             {/*    <td className="py-4 px-4 text-right text-[#1D1D1D]">NEWSERVICE500</td>*/}
@@ -1348,6 +1557,33 @@ const ServicePark = () => {
                                                         {totals.discount > 0 ? `- LKR ${totals.discount.toLocaleString()}` : "LKR 0"}
                                                     </td>
                                                 </tr>
+
+                                                {/*{activePromo && (*/}
+                                                {/*    <tr className="bg-green-50/50">*/}
+                                                {/*        <td className="py-4 px-4">*/}
+                                                {/*            <div className="flex items-center gap-4">*/}
+                                                {/*    <span className="text-green-600 font-bold">*/}
+                                                {/*        Promo Applied: {activePromo.code}*/}
+                                                {/*    </span>*/}
+                                                {/*                <button*/}
+                                                {/*                    onClick={removePromo}*/}
+                                                {/*                    className="text-red-500 underline text-sm hover:text-red-700 font-medium"*/}
+                                                {/*                >*/}
+                                                {/*                    Remove*/}
+                                                {/*                </button>*/}
+                                                {/*            </div>*/}
+                                                {/*            <div className="text-xs text-green-600 mt-1">*/}
+                                                {/*                {activePromo.applicableTypes.includes("ALL")*/}
+                                                {/*                    ? "Applicable to all items"*/}
+                                                {/*                    : `Applicable to: ${activePromo.applicableTypes.join(", ")}`}*/}
+                                                {/*            </div>*/}
+                                                {/*        </td>*/}
+                                                {/*        <td className="py-4 px-4 text-right text-red-600 font-bold text-lg">*/}
+                                                {/*            - LKR {totals.discount.toLocaleString()}*/}
+                                                {/*        </td>*/}
+                                                {/*    </tr>*/}
+                                                {/*)}*/}
+
                                             </>
 
 
@@ -1628,7 +1864,8 @@ const ServicePark = () => {
                 </div>
             </div>
         </>
-    );
+    )
+        ;
 }
 
 export default ServicePark;
