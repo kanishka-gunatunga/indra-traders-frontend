@@ -12,7 +12,8 @@ import {
     useBranchCatalog,
     useBranchDetails,
     useServiceIntake,
-    useValidatePromo
+    useValidatePromo,
+    useBranches
 } from "@/hooks/useServicePark";
 import {zodResolver} from "@hookform/resolvers/zod";
 import Modal from "@/components/Modal";
@@ -121,12 +122,27 @@ const ServicePark = () => {
         {value: "Inspection", label: "Inspection"},
     ];
 
-    // const [submitSuccess, setSubmitSuccess] = useState(false);
     const [vehicleCustomerData, setVehicleCustomerData] = useState<{
         customer_id: string;
         vehicle_id: string;
         customer_no: string;
     } | null>(null);
+
+
+    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+        packages: false,
+        repairs: false,
+        paints: false,
+        maintenance: false,
+        addOns: false
+    });
+
+    const toggleSection = (section: string) => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
+    };
 
 
     const user = useCurrentUser();
@@ -156,14 +172,6 @@ const ServicePark = () => {
 
 
     const [selectedBranchId, setSelectedBranchId] = useState<number | null>(15);
-    // const [promoInput, setPromoInput] = useState("");
-    // const [promoInputs, setPromoInputs] = useState({
-    //     packages: "",
-    //     repairs: "",
-    //     paints: "",
-    //     maintenance: "",
-    //     addOns: ""
-    // });
 
     const [promoInput, setPromoInput] = useState("");
     const [isPromoValidating, setIsPromoValidating] = useState(false);
@@ -235,15 +243,15 @@ const ServicePark = () => {
     } = useServiceCart();
 
 
-    const getCategoryTotal = (items: CartItem[]) => {
-        return items.reduce((sum, item) => sum + item.price, 0);
-    };
-
-    const packagesTotal = getCategoryTotal(groupedItems.packages);
-    const maintenanceTotal = getCategoryTotal(groupedItems.maintenance);
-    const repairsTotal = getCategoryTotal(groupedItems.repairs);
-    const paintsTotal = getCategoryTotal(groupedItems.paints);
-    const addOnsTotal = getCategoryTotal(groupedItems.addOns);
+    // const getCategoryTotal = (items: CartItem[]) => {
+    //     return items.reduce((sum, item) => sum + item.price, 0);
+    // };
+    //
+    // const packagesTotal = getCategoryTotal(groupedItems.packages);
+    // const maintenanceTotal = getCategoryTotal(groupedItems.maintenance);
+    // const repairsTotal = getCategoryTotal(groupedItems.repairs);
+    // const paintsTotal = getCategoryTotal(groupedItems.paints);
+    // const addOnsTotal = getCategoryTotal(groupedItems.addOns);
 
 
     const {
@@ -309,9 +317,33 @@ const ServicePark = () => {
     const serviceIntake = useServiceIntake();
     const assignToSale = useAssignToSale();
 
+    const { data: branches, isLoading: loadingBranches } = useBranches();
+
     const {toast, showToast, hideToast} = useToast();
 
     const {mutate: createUnavailableServiceMutation, isPending: isUnavailablePending} = useCreateUnavailableService();
+
+
+    const branchOptions = branches?.map((branch: any) => ({
+        value: branch.name,
+        label: branch.name
+    })) || [];
+
+
+    const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedName = e.target.value;
+
+        const selectedBranch = branches?.find((b: any) => b.name === selectedName);
+
+        if (selectedBranch) {
+            console.log("Selected Branch Name:", selectedName);
+            console.log("Selected Branch ID:", selectedBranch.id);
+
+            setSelectedBranchId(selectedBranch.id);
+        } else {
+            setSelectedBranchId(null);
+        }
+    };
 
     const handleVehicleHistory = async (data: ServiceParkHistoryFormData) => {
         try {
@@ -400,14 +432,12 @@ const ServicePark = () => {
 
 
     const handleToggleItem = (item: any, type: CartItem['type']) => {
-        // Normalize ID for packages vs services
         const id = item.id;
         const isActive = isSelected(id, type);
 
         if (isActive) {
             removeItem(id, type);
         } else {
-            // Normalize price
             const price = type === 'Package' ? parseFloat(item.total_price) : parseFloat(item.price);
             addItem({
                 id,
@@ -418,60 +448,6 @@ const ServicePark = () => {
             });
         }
     };
-
-    // const handleInputChange = (category: string, value: string) => {
-    //     setPromoInputs(prev => ({...prev, [category]: value}));
-    // };
-
-    // const handleApplyCategoryPromo = (categoryKey: string, backendTypeString: string) => {
-    //     const code = promoInputs[categoryKey as keyof typeof promoInputs];
-    //
-    //     if (!code) {
-    //         showToast("Please enter a code", "error");
-    //         return;
-    //     }
-    //
-    //     // Set the loading state for THIS category
-    //     setLoadingCategory(categoryKey);
-    //
-    //     validatePromoMutation.mutate(code, {
-    //         onSuccess: (data) => {
-    //             if (data.isValid) {
-    //                 const appliesToSection = data.applicableTypes.includes(backendTypeString) || data.applicableTypes.includes("ALL");
-    //
-    //                 if (!appliesToSection) {
-    //                     showToast(`This code is not valid for ${categoryKey}`, "error");
-    //                     setLoadingCategory(null); // Reset loading
-    //                     return;
-    //                 }
-    //
-    //                 addPromo({
-    //                     code: data.code,
-    //                     discountType: data.discountType,
-    //                     amount: data.amount,
-    //                     applicableTypes: data.applicableTypes
-    //                 });
-    //                 showToast(`${categoryKey} promo applied!`, "success");
-    //                 handleInputChange(categoryKey, "");
-    //             }
-    //         },
-    //         onError: (error: any) => {
-    //             const msg = error.response?.data?.message || "Invalid Promo Code";
-    //             showToast(msg, "error");
-    //         },
-    //         onSettled: () => {
-    //             // Always turn off loading, success or fail
-    //             setLoadingCategory(null);
-    //         }
-    //     });
-    // };
-    //
-    //
-    // const repairPromo = getPromoForType('Repair');
-    // const paintPromo = getPromoForType('Paint');
-    // const addOnPromo = getPromoForType('AddOn');
-    // const maintenancePromo = getPromoForType('Maintenance');
-    // const packagePromo = getPromoForType('Package');
 
     const handleApplyGlobalPromo = () => {
         if (!promoInput.trim()) {
@@ -491,7 +467,7 @@ const ServicePark = () => {
                         applicableTypes: data.applicableTypes
                     });
                     showToast("Promo applied successfully!", "success");
-                    setPromoInput(""); // Clear input on success
+                    setPromoInput("");
                 }
             },
             onError: (error: any) => {
@@ -504,7 +480,6 @@ const ServicePark = () => {
         });
     };
 
-    // Helper to map category keys to Display Titles
     const categoryTitles: Record<string, string> = {
         packages: "Packages",
         repairs: "Repairs",
@@ -600,7 +575,6 @@ const ServicePark = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    {/*<VerificationDropdown label="Vehicle No" placeholder="Select Vehicle No" isIcon={true}/>*/}
                                     <FormField
                                         label="Vehicle No"
                                         placeholder="ABC-1234"
@@ -666,10 +640,23 @@ const ServicePark = () => {
                                             register={registerVehicle("oil_type")}
                                             error={vehicleErrors.oil_type}
                                         />
+                                        {/*<FormField*/}
+                                        {/*    label="Service Center"*/}
+                                        {/*    type="select"*/}
+                                        {/*    placeholder="Service Center"*/}
+                                        {/*    register={registerVehicle("service_center")}*/}
+                                        {/*    error={vehicleErrors.service_center}*/}
+                                        {/*/>*/}
+
                                         <FormField
                                             label="Service Center"
-                                            placeholder="Service Center"
-                                            register={registerVehicle("service_center")}
+                                            type="select"
+                                            placeholder="Select Branch"
+                                            options={branchOptions}
+                                            disabled={loadingBranches}
+                                            register={registerVehicle("service_center", {
+                                                onChange: handleBranchChange
+                                            })}
                                             error={vehicleErrors.service_center}
                                         />
                                         <FormField
@@ -688,25 +675,16 @@ const ServicePark = () => {
                             <div
                                 className="w-full">
                                 <div className="flex flex-row items-center justify-between">
-                                    <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Recommended
+                                    <h2 className="text-xl md:text-[22px] font-semibold text-black px-4">Recommended
                                         Package Details</h2>
                                     <div className="flex gap-5">
                                         {isPackageExpanded && (
-                                            // <button
-                                            //     id="package-search-button"
-                                            //     aria-label="Search packages"
-                                            //     className="ml-auto text-white text-base font-medium rounded-full animate-fade-in">
-                                            //     <Image src="/search.svg" alt="search" height={36}
-                                            //            width={36} className="h-12 w-12"/>
-                                            // </button>
-
                                             <div className="relative flex items-center justify-end">
-                                                {/* Expanding Input Field */}
                                                 <input
                                                     type="text"
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                                    onBlur={() => !searchQuery && setIsSearchActive(false)} // Close on blur if empty
+                                                    onBlur={() => !searchQuery && setIsSearchActive(false)}
                                                     placeholder="Search packages..."
                                                     className={`
                                                         bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-500
@@ -727,7 +705,7 @@ const ServicePark = () => {
                                                         alt="search"
                                                         height={36}
                                                         width={36}
-                                                        className="h-11 w-11"
+                                                        className="h-12 w-12"
                                                     />
                                                 </button>
                                             </div>
@@ -745,7 +723,7 @@ const ServicePark = () => {
                                     </div>
                                 </div>
                                 {isPackageExpanded && (
-                                    <div id="package-table-content" className="overflow-x-auto animate-slide-down">
+                                    <div id="package-table-content" className="overflow-x-auto animate-slide-down mt-8">
                                         <table className="w-full text-black">
                                             <thead>
                                             <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
@@ -788,7 +766,7 @@ const ServicePark = () => {
                             <div
                                 className="w-full">
                                 <div className="flex flex-row items-center justify-between">
-                                    <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Recommended
+                                    <h2 className="text-xl md:text-[22px] font-semibold text-black px-4">Recommended
                                         Maintenance Details</h2>
                                     <div className="flex gap-5">
                                         {isServicesExpanded && (
@@ -812,7 +790,7 @@ const ServicePark = () => {
                                 </div>
 
                                 {isServicesExpanded && (
-                                    <div id="service-table-content" className="overflow-x-auto animate-slide-down">
+                                    <div id="service-table-content" className="overflow-x-auto animate-slide-down mt-8">
                                         <table className="w-full text-black">
                                             <thead>
                                             <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
@@ -848,8 +826,8 @@ const ServicePark = () => {
                             className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
                             <div
                                 className="w-full">
-                                <div className="flex flex-row items-center justify-between">
-                                    <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">All
+                                <div className="flex flex-row items-center mb-8 justify-between">
+                                    <h2 className="text-xl md:text-[22px] font-semibold text-black px-4">All
                                         Services</h2>
                                     <div className="flex flex-row gap-6">
                                         <div className="relative flex items-center justify-end">
@@ -875,11 +853,6 @@ const ServicePark = () => {
                                                        className="h-12 w-12"/>
                                             </button>
                                         </div>
-                                        {/*<button*/}
-                                        {/*    className="ml-auto text-white text-base font-medium rounded-full">*/}
-                                        {/*    <Image src="/search.svg" alt="search" height={36}*/}
-                                        {/*           width={36} className="h-12 w-12"/>*/}
-                                        {/*</button>*/}
 
                                         <button
                                             onClick={() => setIsServiceAvailabilityModalOpen(true)}
@@ -892,7 +865,6 @@ const ServicePark = () => {
                                              className="flex justify-center bg-[#FFFFFF] rounded-full">
                                             <button
                                                 type="button"
-                                                // onClick={() => handleClick("Services")}
                                                 onClick={() => setAllServicesView("Services")}
                                                 className={`py-1 px-4 cursor-pointer rounded-full text-base transition-colors ${
                                                     allServicesView === "Services"
@@ -904,7 +876,6 @@ const ServicePark = () => {
                                             </button>
                                             <button
                                                 type="button"
-                                                // onClick={() => handleClick("Packages")}
                                                 onClick={() => setAllServicesView("Packages")}
                                                 className={`py-1 px-4 cursor-pointer rounded-full text-base transition-colors ${
                                                     allServicesView === "Packages"
@@ -930,69 +901,9 @@ const ServicePark = () => {
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        {/*{allServicesView === "Services" ? (*/}
-                                        {/*    catalog?.services.map((item: any, index: number) => {*/}
-                                        {/*        const typeMap: any = {*/}
-                                        {/*            'REPAIR': 'Repair',*/}
-                                        {/*            'PAINT': 'Paint',*/}
-                                        {/*            'Maintenance': 'Maintenance',*/}
-                                        {/*            'ADDON': 'AddOn'*/}
-                                        {/*        };*/}
-                                        {/*        const cartType = typeMap[item.type] || 'Repair';*/}
-                                        {/*        const isActive = isSelected(item.id, cartType);*/}
-
-                                        {/*        return (*/}
-                                        {/*            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">*/}
-                                        {/*                <td className="py-4 px-4 text-[#1D1D1D]"><a>{item.name}</a></td>*/}
-                                        {/*                <td className="py-4 px-4 items-center flex text-[#1D1D1D]">{item.type}</td>*/}
-                                        {/*                <td className="py-4 px-4 text-[#1D1D1D]">LKR {item.price.toLocaleString()}</td>*/}
-                                        {/*                <td className="py-4 px-4">*/}
-                                        {/*                    <button*/}
-                                        {/*                        // onClick={() => handleSelectAllServices(index)}*/}
-                                        {/*                        onClick={() => handleToggleItem(item, cartType)}*/}
-                                        {/*                        // className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}*/}
-                                        {/*                        className={`px-6 py-2 rounded-[20] cursor-pointer ${!isActive ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}*/}
-                                        {/*                    >*/}
-                                        {/*                        /!*{!item.action ? "Select" : "Selected"}*!/*/}
-                                        {/*                        {!isActive ? "Select" : "Selected"}*/}
-                                        {/*                    </button>*/}
-                                        {/*                </td>*/}
-                                        {/*            </tr>*/}
-                                        {/*        )*/}
-                                        {/*    })*/}
-                                        {/*) : (*/}
-                                        {/*    catalog?.packages.map((item: any, index: number) => {*/}
-                                        {/*        const isActive = isSelected(item.id, 'Package');*/}
-                                        {/*        return (*/}
-                                        {/*            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">*/}
-                                        {/*                <td className="py-4 px-4 text-[#1D1D1D]"><a>{item.name}</a>*/}
-                                        {/*                </td>*/}
-                                        {/*                <td className="py-4 px-4 items-center flex text-[#1D1D1D]">*/}
-                                        {/*                    <span*/}
-                                        {/*                        className="mr-2">{item.short_description}</span>*/}
-                                        {/*                    <button id="view-description"*/}
-                                        {/*                            className="font-medium rounded-full">*/}
-                                        {/*                        <Image src="/info.svg" alt="info" height={36}*/}
-                                        {/*                               width={36} className="h-5 w-5"/>*/}
-                                        {/*                    </button>*/}
-                                        {/*                </td>*/}
-                                        {/*                <td className="py-4 px-4 text-[#1D1D1D]">LKR {item.total_price.toLocaleString()}</td>*/}
-                                        {/*                <td className="py-4 px-4">*/}
-                                        {/*                    <button*/}
-                                        {/*                        onClick={() => handleToggleItem(item, 'Package')}*/}
-                                        {/*                        className={`px-6 py-2 rounded-[20] cursor-pointer ${!isActive ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}*/}
-                                        {/*                    >*/}
-                                        {/*                        {!isActive ? "Select" : "Selected"}*/}
-                                        {/*                    </button>*/}
-                                        {/*                </td>*/}
-                                        {/*            </tr>*/}
-                                        {/*        )*/}
-                                        {/*    })*/}
-                                        {/*)}*/}
 
                                         {paginatedData.length > 0 ? (
                                             paginatedData.map((item: any, index: number) => {
-                                                // Determine type and active state logic
                                                 const typeMap: any = {
                                                     'REPAIR': 'Repair',
                                                     'PAINT': 'Paint',
@@ -1091,214 +1002,6 @@ const ServicePark = () => {
 
                             </div>
                         </section>
-
-                        {repairsTotal > 0 && (
-                            <section
-                                id="repairs-section"
-                                className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                                <div
-                                    className="w-full">
-                                    <div className="flex flex-row items-center justify-between">
-                                        <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Repairs</h2>
-                                        <div className="flex flex-row gap-6">
-                                            <button
-                                                onClick={handleAddServiceClick}
-                                                className="ml-auto text-white text-base font-medium rounded-full">
-                                                <Image src="/add.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-black">
-                                            <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
-                                                <th className="py-5 px-4 text-left">Repairs</th>
-                                                <th className="py-5 px-4 text-right justify-items-end">Estimate Price
-                                                </th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {groupedItems.repairs.map((item, index) => (
-                                                <tr key={index}
-                                                    className="text-lg font-medium justify-between text-[#1D1D1D]">
-                                                    <td className="py-4 px-4 text-[#1D1D1D]">{item.name}</td>
-                                                    <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR {item.price.toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                            <tr className="border-y-1 border-[#575757]">
-                                                <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total
-                                                    Estimate
-                                                    Price
-                                                </td>
-                                                <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">
-                                                    LKR {groupedItems.repairs.reduce((sum, i) => sum + i.price, 0).toLocaleString()}
-                                                </td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-                        {paintsTotal > 0 && (
-                            <section
-                                id="paints-section"
-                                className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                                <div
-                                    className="w-full">
-                                    <div className="flex flex-row items-center justify-between">
-                                        <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Paints</h2>
-                                        <div className="flex flex-row gap-6">
-                                            <button
-                                                onClick={handleAddServiceClick}
-                                                className="ml-auto text-white text-base font-medium rounded-full">
-                                                <Image src="/add.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-black">
-                                            <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
-                                                <th className="py-5 px-4 text-left">Paint Service</th>
-                                                <th className="py-5 px-4 text-right justify-items-end">Estimate Price
-                                                </th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {groupedItems.paints.map((item, index) => (
-                                                <tr key={index}
-                                                    className="text-lg font-medium justify-between text-[#1D1D1D]">
-                                                    <td className="py-4 px-4 text-[#1D1D1D]">{item.name}</td>
-                                                    <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR {item.price.toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                            <tr className="border-y-1 border-[#575757]">
-                                                <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total
-                                                    Estimate
-                                                    Price
-                                                </td>
-                                                <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">
-                                                    LKR {groupedItems.paints.reduce((sum, i) => sum + i.price, 0).toLocaleString()}
-                                                </td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-
-                        {addOnsTotal > 0 && (
-                            <section
-                                id="add-ons-section"
-                                className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                                <div
-                                    className="w-full">
-                                    <div className="flex flex-row items-center justify-between">
-                                        <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Add-On
-                                            Packages</h2>
-                                        <div className="flex flex-row gap-6">
-                                            <button
-                                                onClick={handleAddServiceClick}
-                                                className="ml-auto text-white text-base font-medium rounded-full">
-                                                <Image src="/add.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-black">
-                                            <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
-                                                <th className="py-5 px-4 text-left">Add-On Packages</th>
-                                                <th className="py-5 px-4 text-right justify-items-end">Estimate Price
-                                                </th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {groupedItems.addOns.map((item, index) => (
-                                                <tr key={index}
-                                                    className="text-lg font-medium justify-between text-[#1D1D1D]">
-                                                    <td className="py-4 px-4 text-[#1D1D1D]">{item.name}</td>
-                                                    <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR {item.price.toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                            <tr className="border-y-1 border-[#575757]">
-                                                <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total
-                                                    Estimate
-                                                    Price
-                                                </td>
-                                                <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">
-                                                    LKR {groupedItems.addOns.reduce((sum, i) => sum + i.price, 0).toLocaleString()}
-                                                </td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
-
-                        {packagesTotal > 0 && (
-                            <section
-                                id="packages-section"
-                                className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                                <div
-                                    className="w-full">
-                                    <div className="flex flex-row items-center justify-between">
-                                        <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Packages</h2>
-                                        <div className="flex flex-row gap-6">
-                                            <button
-                                                onClick={handleAddServiceClick}
-                                                className="ml-auto text-white text-base font-medium rounded-full">
-                                                <Image src="/add.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-black">
-                                            <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
-                                                <th className="py-5 px-4 text-left">Paint Service</th>
-                                                <th className="py-5 px-4 text-right justify-items-end">Estimate Price
-                                                </th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {groupedItems.packages.map((item, index) => (
-                                                <tr key={index}
-                                                    className="text-lg font-medium justify-between text-[#1D1D1D]">
-                                                    <td className="py-4 px-4 text-[#1D1D1D]">{item.name}</td>
-                                                    <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR {item.price.toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                            <tr className="border-y-1 border-[#575757]">
-                                                <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total
-                                                    Estimate
-                                                    Price
-                                                </td>
-                                                <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">
-                                                    LKR {groupedItems.packages.reduce((sum, i) => sum + i.price, 0).toLocaleString()}
-                                                </td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </section>
-                        )}
-
 
                         {totals.total > 0 && (
                             <section
@@ -1400,57 +1103,55 @@ const ServicePark = () => {
 
                                             {Object.entries(groupedItems).map(([key, items]) => {
                                                 if (items.length === 0) return null;
+
+                                                const isExpanded = expandedSections[key];
+                                                const categoryTotal = items.reduce((sum, item) => sum + item.price, 0);
+
                                                 return (
                                                     <React.Fragment key={key}>
-                                                        {/* Category Header */}
-                                                        <tr className="bg-white/20">
-                                                            <td colSpan={2}
-                                                                className="py-3 px-4 font-bold text-[#1D1D1D] uppercase text-sm tracking-wide opacity-70">
+                                                        <tr
+                                                            onClick={() => toggleSection(key)}
+                                                            className="bg-white/20">
+                                                            <td
+                                                                className="py-3 px-4 font-semibold text-[#1D1D1D] text-[18px] tracking-wide items-center flex opacity-70 gap-2">
+                                                                <svg
+                                                                    className={`w-5 h-5 text-[#1D1D1D] cursor-pointer transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : ''}`}
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path strokeLinecap="round" strokeLinejoin="round"
+                                                                          strokeWidth={2} d="M19 9l-7 7-7-7"/>
+                                                                </svg>
                                                                 {categoryTitles[key]}
+
+                                                                <span
+                                                                    className="font-medium text-[14px] text-[#575757]">
+                                                                    ({items.length} services)
+                                                                  </span>
+                                                            </td>
+
+                                                            <td className="py-3 px-4 text-right font-semibold text-[#1D1D1D] text-[18px] opacity-80">
+                                                                LKR {categoryTotal.toLocaleString()}
                                                             </td>
                                                         </tr>
-                                                        {/* Items in Category */}
-                                                        {items.map((item) => (
+
+                                                        {isExpanded && items.map((item) => (
                                                             <tr key={`${item.type}-${item.id}`}
-                                                                className="group border-b border-gray-200/50 last:border-0 hover:bg-red-50/30 transition-colors duration-200">
-                                                                <td className="py-3 px-4 text-[#1D1D1D] text-lg pl-8">
+                                                                className="group border-b border-gray-200/50 last:border-0 hover:bg-red-50/30 transition-colors duration-200 animate-slide-down">
+                                                                <td className="py-3 px-4 font-medium text-[#575757] text-[16px] pl-12">
                                                                     {item.name}
                                                                 </td>
-                                                                {/*<td className="py-3 px-4 text-right text-[#1D1D1D] text-lg font-medium gap-3 flex justify-end">*/}
-                                                                {/*    <span className="text-[#1D1D1D] text-lg font-medium group-hover:mr-2 transition-all duration-200">LKR {item.price.toLocaleString()} </span>*/}
-                                                                {/*    /!*<button*!/*/}
-                                                                {/*    /!*    className="text-red-500 underline text-sm hover:text-red-700 font-medium"*!/*/}
-                                                                {/*    /!*>*!/*/}
-                                                                {/*    /!*    <Image src="/close.svg" alt="" width={32} height={32} className="w-10 h-10" />*!/*/}
-                                                                {/*    /!*</button>*!/*/}
 
-                                                                {/*    <button*/}
-                                                                {/*        onClick={() => removeItem(item.id, item.type)}*/}
-                                                                {/*        className="opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-200 p-1 hover:bg-red-100 rounded-full"*/}
-                                                                {/*        title="Remove item"*/}
-                                                                {/*        aria-label={`Remove ${item.name}`}*/}
-                                                                {/*    >*/}
-                                                                {/*        <Image*/}
-                                                                {/*            src="/close.svg" // Ensure you have a generic close icon or reuse existing*/}
-                                                                {/*            alt="remove"*/}
-                                                                {/*            width={20}*/}
-                                                                {/*            height={20}*/}
-                                                                {/*            className="w-5 h-5 opacity-60 hover:opacity-100"*/}
-                                                                {/*        />*/}
-                                                                {/*    </button>*/}
-                                                                {/*</td>*/}
-
-                                                                <td className="py-3 px-4 text-right">
-                                                                    <div className="flex items-center justify-end gap-4">
-                                                                        {/* Price (Visible by default) */}
-                                                                        <span className="text-[#1D1D1D] text-lg font-medium group-hover:mr-2 transition-all duration-200">
-                                                        LKR {item.price.toLocaleString()}
-                                                    </span>
-
-                                                                        {/* Remove Button (Visible on Hover) */}
+                                                                <td className="py-3 px-4 text-right pr-6">
+                                                                    <div
+                                                                        className="flex items-center justify-end gap-4">
                                                                         <button
-                                                                            onClick={() => removeItem(item.id, item.type)}
-                                                                            className="opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-200 p-1 hover:bg-red-100 rounded-full"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                removeItem(item.id, item.type)
+                                                                            }}
+                                                                            className="opacity-0 group-hover:opacity-100 cursor-pointer transform translate-x-2 group-hover:translate-x-0 transition-all duration-200 p-1 hover:bg-red-100 rounded-full"
                                                                             title="Remove item"
                                                                             aria-label={`Remove ${item.name}`}
                                                                         >
@@ -1459,9 +1160,13 @@ const ServicePark = () => {
                                                                                 alt="remove"
                                                                                 width={32}
                                                                                 height={32}
-                                                                                className="w-8 h-8 opacity-100"
+                                                                                className="w-7 h-7 opacity-100"
                                                                             />
                                                                         </button>
+                                                                        <span
+                                                                            className="text-[#575757] text-[16px] font-medium group-hover:mr-2 transition-all duration-200">
+                                                                            LKR {item.price.toLocaleString()}
+                                                                        </span>
                                                                     </div>
                                                                 </td>
                                                             </tr>
@@ -1501,7 +1206,7 @@ const ServicePark = () => {
                                                         <button
                                                             onClick={handleApplyGlobalPromo}
                                                             disabled={isPromoValidating || !promoInput}
-                                                            className="font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2 hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            className="font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2 hover:bg-gray-800 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
                                                             {isPromoValidating ? "..." : "Apply"}
                                                         </button>
@@ -1523,67 +1228,28 @@ const ServicePark = () => {
                                             </tr>
 
                                             {activePromo && (
-                                            <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
-                                                <td className="py-4 px-4 text-[#1D1D1D]">Applied Promo Code</td>
-                                                <td className="py-4 px-4 text-right text-[#1D1D1D] gap-3 flex items-center justify-end"><span>{activePromo.code}</span>
-                                                <button
-                                                    onClick={removePromo}
-                                                    className="text-red-500 underline text-sm hover:text-red-700 font-medium"
-                                                >
-                                                    <Image src="/close.svg" alt="" width={32} height={32} className="w-10 h-10" />
-                                                </button>
-                                                </td>
-                                            </tr>
+                                                <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                                    <td className="py-4 px-4 text-[#1D1D1D]">Applied Promo Code</td>
+                                                    <td className="py-4 px-4 text-right text-[#1D1D1D] gap-3 flex items-center justify-end">
+                                                        <span>{activePromo.code}</span>
+                                                        <button
+                                                            onClick={removePromo}
+                                                            className="text-red-500 underline text-sm hover:text-red-700 font-medium"
+                                                        >
+                                                            <Image src="/close.svg" alt="" width={32} height={32}
+                                                                   className="w-10 h-10"/>
+                                                        </button>
+                                                    </td>
+                                                </tr>
                                             )}
 
-
-                                            {/*<tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">*/}
-                                            {/*    <td className="py-4 px-4 text-[#1D1D1D]">Applied Promo Code</td>*/}
-                                            {/*    <td className="py-4 px-4 text-right text-[#1D1D1D]">NEWSERVICE500</td>*/}
-                                            {/*</tr>*/}
-                                            {/*<tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">*/}
-                                            {/*    <td className="py-4 px-4 text-[#1D1D1D]">Discount Amount</td>*/}
-                                            {/*    <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR 30,000</td>*/}
-                                            {/*</tr>*/}
-
                                             <>
-                                                {/*<tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">*/}
-                                                {/*    <td className="py-4 px-4 text-[#1D1D1D]">Applied Code</td>*/}
-                                                {/*    <td className="py-4 px-4 text-right text-green-600 font-bold">{promo.code}</td>*/}
-                                                {/*</tr>*/}
                                                 <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
                                                     <td className="py-4 px-4 text-[#1D1D1D]">Discount Amount</td>
                                                     <td className="py-4 px-4 text-right text-red-600">
                                                         {totals.discount > 0 ? `- LKR ${totals.discount.toLocaleString()}` : "LKR 0"}
                                                     </td>
                                                 </tr>
-
-                                                {/*{activePromo && (*/}
-                                                {/*    <tr className="bg-green-50/50">*/}
-                                                {/*        <td className="py-4 px-4">*/}
-                                                {/*            <div className="flex items-center gap-4">*/}
-                                                {/*    <span className="text-green-600 font-bold">*/}
-                                                {/*        Promo Applied: {activePromo.code}*/}
-                                                {/*    </span>*/}
-                                                {/*                <button*/}
-                                                {/*                    onClick={removePromo}*/}
-                                                {/*                    className="text-red-500 underline text-sm hover:text-red-700 font-medium"*/}
-                                                {/*                >*/}
-                                                {/*                    Remove*/}
-                                                {/*                </button>*/}
-                                                {/*            </div>*/}
-                                                {/*            <div className="text-xs text-green-600 mt-1">*/}
-                                                {/*                {activePromo.applicableTypes.includes("ALL")*/}
-                                                {/*                    ? "Applicable to all items"*/}
-                                                {/*                    : `Applicable to: ${activePromo.applicableTypes.join(", ")}`}*/}
-                                                {/*            </div>*/}
-                                                {/*        </td>*/}
-                                                {/*        <td className="py-4 px-4 text-right text-red-600 font-bold text-lg">*/}
-                                                {/*            - LKR {totals.discount.toLocaleString()}*/}
-                                                {/*        </td>*/}
-                                                {/*    </tr>*/}
-                                                {/*)}*/}
-
                                             </>
 
 
@@ -1600,7 +1266,7 @@ const ServicePark = () => {
                                                 <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold ">
                                                     <button
                                                         onClick={handleBookNow}
-                                                        className="font-bold text-[#FFFFFF] bg-[#DB2727] rounded-[20] px-14 py-2">
+                                                        className="font-bold text-[#FFFFFF] bg-[#DB2727] cursor-pointer rounded-[20] px-14 py-2">
                                                         Book Now
                                                     </button>
                                                 </td>
@@ -1615,7 +1281,7 @@ const ServicePark = () => {
 
                         <section
                             className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                            <form className="flex flex-col">
+                            <form className="flex flex-col" style={{width: "-webkit-fill-available"}}>
                                 <div className="flex-1 space-y-6">
                                     <div className="flex flex-row items-center justify-between">
                                         <h2 className="font-semibold text-[22px] text-[#000000] mb-6">Assign to
@@ -1624,7 +1290,7 @@ const ServicePark = () => {
                                             <button
                                                 onClick={handleSaleSubmit(handleAssignToSales)}
                                                 disabled={assignToSale.isPending}
-                                                className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition disabled:bg-gray-400">
+                                                className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition disabled:bg-gray-400 cursor-pointer">
                                                 {assignToSale.isPending ? "Submitting..." : "Send"}
                                             </button>
                                         </div>
