@@ -22,7 +22,7 @@ import Toast from "@/components/Toast";
 import {useToast} from "@/hooks/useToast";
 import {useCurrentUser} from "@/utils/auth";
 import {useServiceCart, CartItem} from "@/hooks/useServiceCart";
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {useRouter} from 'next/navigation';
 import {setBookingData} from "@/redux/slices/bookingSlice";
 
@@ -148,6 +148,9 @@ const ServicePark = () => {
     const user = useCurrentUser();
     const userId = Number(user?.id) || 1;
 
+
+    const bookingState = useSelector((state: any) => state.booking);
+
     const dispatch = useDispatch();
     const router = useRouter();
 
@@ -258,6 +261,7 @@ const ServicePark = () => {
         register: registerVehicle,
         handleSubmit: handleVehicleSubmit,
         reset: resetVehicle,
+        setValue: setVehicleValue,
         formState: {errors: vehicleErrors},
         getValues
     } = useForm<z.infer<typeof vehicleHistorySchema>>({
@@ -328,6 +332,57 @@ const ServicePark = () => {
         value: branch.name,
         label: branch.name
     })) || [];
+
+
+    // useEffect(() => {
+    //     if (bookingState?.vehicleData) {
+    //         // We verify if there is data, then reset the form with that data
+    //         resetVehicle({
+    //             vehicle_no: bookingState.vehicleData.vehicle_no || "",
+    //             odometer: bookingState.vehicleData.odometer || "",
+    //             owner_name: bookingState.vehicleData.owner_name || "",
+    //             contact_no: bookingState.vehicleData.contact_no || "",
+    //             email: bookingState.vehicleData.email || "",
+    //             address: bookingState.vehicleData.address || "",
+    //             mileage: bookingState.vehicleData.mileage || "",
+    //             oil_type: bookingState.vehicleData.oil_type || "",
+    //             service_center: bookingState.vehicleData.service_center || "",
+    //             service_advisor: bookingState.vehicleData.service_advisor || "",
+    //         });
+    //
+    //         // If you need to set the vehicleCustomerData state too
+    //         // You might need to store customer_id/vehicle_id in Redux if you aren't already
+    //         // strictly for the purpose of "Assign to Sale" continuing to work.
+    //     }
+    // }, [bookingState, resetVehicle]);
+
+    useEffect(() => {
+        // If we have vehicle data in Redux, populate the form immediately
+        if (bookingState?.vehicleData) {
+            const vData = bookingState.vehicleData;
+
+            // Using reset is cleaner than individual setValues for the whole form
+            resetVehicle({
+                vehicle_no: vData.vehicle_no || "",
+                odometer: vData.odometer || "",
+                owner_name: vData.owner_name || "",
+                contact_no: vData.contact_no || "",
+                email: vData.email || "",
+                address: vData.address || "",
+                mileage: vData.mileage || "",
+                oil_type: vData.oil_type || "",
+                service_center: vData.service_center || "",
+                service_advisor: vData.service_advisor || "",
+            });
+
+            // If you need to restore the dropdown selected ID state
+            if (vData.service_center) {
+                // Logic to find branch ID based on name if needed
+                const branch = branches?.find((b: any) => b.name === vData.service_center);
+                if (branch) setSelectedBranchId(branch.id);
+            }
+        }
+    }, [bookingState, resetVehicle, branches]);
 
 
     const handleBranchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -640,14 +695,6 @@ const ServicePark = () => {
                                             register={registerVehicle("oil_type")}
                                             error={vehicleErrors.oil_type}
                                         />
-                                        {/*<FormField*/}
-                                        {/*    label="Service Center"*/}
-                                        {/*    type="select"*/}
-                                        {/*    placeholder="Service Center"*/}
-                                        {/*    register={registerVehicle("service_center")}*/}
-                                        {/*    error={vehicleErrors.service_center}*/}
-                                        {/*/>*/}
-
                                         <FormField
                                             label="Service Center"
                                             type="select"
@@ -1530,8 +1577,7 @@ const ServicePark = () => {
                 </div>
             </div>
         </>
-    )
-        ;
+    );
 }
 
 export default ServicePark;

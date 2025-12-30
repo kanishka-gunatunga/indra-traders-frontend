@@ -3,7 +3,7 @@
 "use client"
 import Image from "next/image";
 import React, {useEffect, useMemo, useState} from "react";
-import {Badge, Calendar, ConfigProvider, Select, Spin} from "antd";
+import {Badge, Calendar, ConfigProvider, Select} from "antd";
 import dayjs from "dayjs";
 import {useSelector, useDispatch} from "react-redux";
 import {useToast} from "@/hooks/useToast";
@@ -58,6 +58,38 @@ const generateTimeSlots = (): TimeSlot[] => {
 
 const TIME_SLOTS = generateTimeSlots();
 
+const getGroupKeyFromServiceType = (serviceType: string | null): string | null => {
+    if (!serviceType) return null;
+    const normalized = serviceType.toLowerCase();
+
+    switch (normalized) {
+        case 'repair':
+            return 'repairs';
+        case 'paint':
+            return 'paints';
+        case 'package':
+            return 'packages';
+        case 'maintenance':
+            return 'maintenance';
+        case 'addon':
+            return 'addOns';
+        default:
+            return null;
+    }
+};
+
+
+const RedSpinner = () => (
+    <div className="flex justify-center items-center w-full py-20">
+        <div
+            className="w-12 h-12 border-4 border-gray-200 rounded-full animate-spin"
+            style={{ borderTopColor: '#DB2727' }}
+            role="status"
+            aria-label="loading"
+        />
+    </div>
+);
+
 const ServiceParkBooking = () => {
     const {toast, showToast, hideToast} = useToast();
     const dispatch = useDispatch();
@@ -70,9 +102,12 @@ const ServiceParkBooking = () => {
     const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
     const [selectedServiceType, setSelectedServiceType] = useState<string | null>(null);
     const [selectedLineId, setSelectedLineId] = useState<number | null>(null);
-    const [selectedSlots, setSelectedSlots] = useState<string[]>([]); // Array of start times
+    const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
 
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+    const isSlotSelectionEnabled = !!selectedBranchId && !!selectedServiceType && !!selectedLineId;
+
 
     const handleConfirmClick = () => {
         if (!selectedBranchId || !selectedLineId || selectedSlots.length === 0) {
@@ -194,6 +229,8 @@ const ServiceParkBooking = () => {
     };
 
     const toggleSlot = (start: string) => {
+        if (!isSlotSelectionEnabled) return;
+
         const {status} = getSlotStatus(start);
         if (status === 'booked') return;
         setSelectedSlots(prev => prev.includes(start) ? prev.filter(s => s !== start) : [...prev, start]);
@@ -227,7 +264,16 @@ const ServiceParkBooking = () => {
     };
 
     const branchName = branches?.find((b: any) => b.id === selectedBranchId)?.name || "Unknown Branch";
-    const lineLabel = serviceLines.find((l: any) => l.value === selectedLineId)?.label || "Unknown Line";
+
+    // const branchName = branches?.find((b: any) => b.id === selectedBranchId)?.name || "Unknown Branch";
+
+    const selectedLineRaw = useMemo(() => {
+        if (!branchDetails?.serviceLines || !selectedLineId) return null;
+        return branchDetails.serviceLines.find((l: any) => l.id === selectedLineId);
+    }, [branchDetails, selectedLineId]);
+
+    const lineLabel = selectedLineRaw?.name || "Unknown Line";
+    const advisorName = selectedLineRaw?.advisor || "Jane Cooper";
 
     return (
         <div
@@ -252,10 +298,28 @@ const ServiceParkBooking = () => {
                     </section>
 
                     {Object.entries(groupedItems).map(([key, items]: [string, any[]]) => {
+                        // if (!items || items.length === 0) return null;
+                        //
+                        // const categorySubTotal = items.reduce((sum, item) => sum + item.price, 0);
+                        //
+                        // const title = categoryTitles[key] || key.charAt(0).toUpperCase() + key.slice(1);
+
                         if (!items || items.length === 0) return null;
 
-                        const categorySubTotal = items.reduce((sum, item) => sum + item.price, 0);
+                        // --- NEW FILTER LOGIC STARTS HERE ---
+                        // We check if the user has selected a service type in the Schedule dropdown.
+                        // If selected, we ONLY show the section that matches that type.
+                        if (selectedServiceType) {
+                            const targetKey = getGroupKeyFromServiceType(selectedServiceType);
+                            // If we have a target key (e.g. 'repairs') and the current loop key (e.g. 'paints')
+                            // does not match, we return null to hide it.
+                            if (targetKey && key == targetKey) {
+                                return null;
+                            }
+                        }
+                        // --- NEW FILTER LOGIC ENDS HERE ---
 
+                        const categorySubTotal = items.reduce((sum, item) => sum + item.price, 0);
                         const title = categoryTitles[key] || key.charAt(0).toUpperCase() + key.slice(1);
 
                         return (
@@ -335,58 +399,61 @@ const ServiceParkBooking = () => {
 
                         <div className="flex items-center justify-between gap-[80px] mb-12">
                             <div className="flex flex-row items-center gap-[80px]">
-                            <h2 className="font-semibold text-[22px] text-[#000000]">Service Schedule</h2>
+                                <h2 className="font-semibold text-[22px] text-[#000000]">Service Schedule</h2>
 
-                            <div className="flex gap-4">
-                                <Select
-                                    className="w-30 h-10 custom-select"
-                                    placeholder="Select Branch"
-                                    bordered={false}
-                                    suffixIcon={<svg className="" width="10" height="6"
-                                                     viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                              fill="#575757"/>
-                                    </svg>}
-                                    options={branches?.map((b: any) => ({value: b.id, label: b.name}))}
-                                    value={selectedBranchId}
-                                    onChange={(val) => {
-                                        setSelectedBranchId(val);
-                                        setSelectedServiceType(null);
-                                        setSelectedLineId(null);
-                                    }}
-                                />
-                                <Select
-                                    className="w-30 h-10 custom-select"
-                                    placeholder="Service Type"
-                                    bordered={false}
-                                    disabled={!selectedBranchId}
-                                    suffixIcon={<svg className="" width="10" height="6"
-                                                     viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                              fill="#575757"/>
-                                    </svg>}
-                                    options={serviceTypes}
-                                    value={selectedServiceType}
-                                    onChange={(val) => {
-                                        setSelectedServiceType(val);
-                                        setSelectedLineId(null);
-                                    }}
-                                />
-                                <Select
-                                    className="w-30 h-10 custom-select"
-                                    placeholder="Select Line"
-                                    bordered={false}
-                                    disabled={!selectedServiceType}
-                                    suffixIcon={<svg className="" width="10" height="6"
-                                                     viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                              fill="#575757"/>
-                                    </svg>}
-                                    options={serviceLines}
-                                    value={selectedLineId}
-                                    onChange={setSelectedLineId}
-                                />
-                            </div>
+                                <div className="flex gap-4">
+                                    <Select
+                                        className="w-30 h-10 custom-select"
+                                        placeholder="Select Branch"
+                                        bordered={false}
+                                        suffixIcon={<svg className="" width="10" height="6"
+                                                         viewBox="0 0 10 6" fill="none"
+                                                         xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
+                                                  fill="#575757"/>
+                                        </svg>}
+                                        options={branches?.map((b: any) => ({value: b.id, label: b.name}))}
+                                        value={selectedBranchId}
+                                        onChange={(val) => {
+                                            setSelectedBranchId(val);
+                                            setSelectedServiceType(null);
+                                            setSelectedLineId(null);
+                                        }}
+                                    />
+                                    <Select
+                                        className="w-30 h-10 custom-select"
+                                        placeholder="Service Type"
+                                        bordered={false}
+                                        disabled={!selectedBranchId}
+                                        suffixIcon={<svg className="" width="10" height="6"
+                                                         viewBox="0 0 10 6" fill="none"
+                                                         xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
+                                                  fill="#575757"/>
+                                        </svg>}
+                                        options={serviceTypes}
+                                        value={selectedServiceType}
+                                        onChange={(val) => {
+                                            setSelectedServiceType(val);
+                                            setSelectedLineId(null);
+                                        }}
+                                    />
+                                    <Select
+                                        className="w-30 h-10 custom-select"
+                                        placeholder="Select Line"
+                                        bordered={false}
+                                        disabled={!selectedServiceType}
+                                        suffixIcon={<svg className="" width="10" height="6"
+                                                         viewBox="0 0 10 6" fill="none"
+                                                         xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
+                                                  fill="#575757"/>
+                                        </svg>}
+                                        options={serviceLines}
+                                        value={selectedLineId}
+                                        onChange={setSelectedLineId}
+                                    />
+                                </div>
                             </div>
 
                             <div className="justify-end">
@@ -427,11 +494,13 @@ const ServiceParkBooking = () => {
                                                         {current.format('MMMM YYYY')}
                                                     </span>
                                                     <div className="flex gap-4">
-                                                        <button className="cursor-pointer" onClick={() => onChange(current.subtract(1, 'month'))}>
+                                                        <button className="cursor-pointer"
+                                                                onClick={() => onChange(current.subtract(1, 'month'))}>
                                                             <Image src="/prev-arrow.svg" alt="prev" width={24}
                                                                    height={24} className="w-4 h-4"/>
                                                         </button>
-                                                        <button className="cursor-pointer" onClick={() => onChange(current.add(1, 'month'))}>
+                                                        <button className="cursor-pointer"
+                                                                onClick={() => onChange(current.add(1, 'month'))}>
                                                             <Image src="/next-arrow.svg" alt="next" width={24}
                                                                    height={24} className="w-4 h-4"/>
                                                         </button>
@@ -442,29 +511,43 @@ const ServiceParkBooking = () => {
                                     />
                                 </ConfigProvider>
 
-                            {/* Legend */}
-                            <div className="flex gap-6 mt-8 pl-4 justify-center">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-[#DB2727]"></span>
-                                    <span className="text-sm font-medium text-gray-600">Booked</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-[#FF961B]"></span>
-                                    <span className="text-sm font-medium text-gray-600">Pending</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-[#039855]"></span>
-                                    <span className="text-sm font-medium text-gray-600">Available</span>
+                                {/* Legend */}
+                                <div className="flex gap-6 mt-8 pl-4 justify-center">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-[#DB2727]"></span>
+                                        <span className="text-sm font-medium text-gray-600">Booked</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-[#FF961B]"></span>
+                                        <span className="text-sm font-medium text-gray-600">Pending</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2.5 h-2.5 rounded-full bg-[#039855]"></span>
+                                        <span className="text-sm font-medium text-gray-600">Available</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="w-full lg:w-7/12 relative">
-                            <div className="absolute left-[60px] top-0 bottom-0 w-[1px] bg-gray-200 hidden md:block"></div>
+                            <div className="w-full lg:w-7/12 relative">
+                                <div
+                                    className="absolute left-[60px] top-0 bottom-0 w-[1px] bg-gray-200 hidden md:block"></div>
 
                                 <div className="space-y-6 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
-                                    {loadingSlots ? (
-                                        <div className="flex justify-center py-20"><Spin size="large"/></div>
+                                    {/*{!isSlotSelectionEnabled ? (*/}
+                                    {/*    <div*/}
+                                    {/*        className="flex flex-col items-center justify-center h-[400px] text-gray-400">*/}
+                                    {/*        /!* You can add a placeholder icon here *!/*/}
+                                    {/*        <p className="text-lg font-medium text-center px-8">*/}
+                                    {/*            Please select a Branch, Service Type, and Service Line to view available*/}
+                                    {/*            time slots.*/}
+                                    {/*        </p>*/}
+                                    {/*    </div>*/}
+                                    {/*) : (*/}
+                                    {/*    loadingSlots ? (*/}
+                                    {/*        <div className="flex justify-center py-20"><Spin size="large"/></div>*/}
+                                    {/*    ) : (*/}
+                                    {isSlotSelectionEnabled && loadingSlots ? (
+                                        <RedSpinner/>
                                     ) : (
                                         TIME_SLOTS.map((slot) => {
                                             const {status, data} = getSlotStatus(slot.start);
@@ -474,61 +557,92 @@ const ServiceParkBooking = () => {
                                             let badgeText = "Available";
                                             let badgeTextColor = "text-[#1D1D1D]";
                                             let iconColorClass = "bg-[#A7FFA7]";
+                                            let isClickable = true;
 
-                                            if (status === 'booked') {
-                                                cardBg = "bg-[#FFA7A780]";
-                                                badgeBg = "bg-[#FF9191]";
-                                                badgeText = "Booked";
-                                                badgeTextColor = "text-[#1D1D1D]";
-                                                iconColorClass = "bg-[#FF9191]";
-                                            } else if (status === 'pending') {
-                                                cardBg = "bg-[#FFCBA780]";
-                                                badgeBg = "bg-[#FFCBA7]";
-                                                badgeText = "Pending";
-                                                badgeTextColor = "text-[#1D1D1D]";
-                                                iconColorClass = "bg-[#FFCBA7]";
+                                            if (!isSlotSelectionEnabled) {
+                                                // --- DISABLED STATE STYLING ---
+                                                cardBg = "bg-gray-100 opacity-60 grayscale";
+                                                badgeBg = "bg-gray-200";
+                                                badgeText = "Locked";
+                                                badgeTextColor = "text-gray-400";
+                                                iconColorClass = "bg-gray-300 text-gray-100";
+                                                isClickable = false;
+                                            } else {
+                                                // --- ENABLED STATE STYLING ---
+                                                if (status === 'booked') {
+                                                    cardBg = "bg-[#FFA7A780]";
+                                                    badgeBg = "bg-[#FF9191]";
+                                                    badgeText = "Booked";
+                                                    badgeTextColor = "text-[#1D1D1D]";
+                                                    iconColorClass = "bg-[#FF9191]";
+                                                    isClickable = false;
+                                                } else if (status === 'pending') {
+                                                    cardBg = "bg-[#FFCBA780]";
+                                                    badgeBg = "bg-[#FFCBA7]";
+                                                    badgeText = "Pending";
+                                                    badgeTextColor = "text-[#1D1D1D]";
+                                                    iconColorClass = "bg-[#FFCBA7]";
+                                                }
                                             }
 
                                             return (
                                                 <div key={slot.start}
-                                                     className="flex items-center gap-6 relative group">
+                                                     className={`flex items-center gap-6 relative group ${!isClickable ? 'cursor-not-allowed' : ''}`}>
                                                     <div
-                                                        className="w-[60px] text-right font-medium text-gray-500 text-lg">
+                                                        className={`w-[60px] text-right font-medium text-lg ${!isSlotSelectionEnabled ? 'text-gray-300' : 'text-gray-500'}`}>
                                                         {slot.start}
                                                     </div>
 
                                                     <div
-                                                        onClick={() => toggleSlot(slot.start)}
-                                                        className={`flex-1 rounded-[20px] p-4 flex justify-between items-center transition-all duration-200 ${cardBg} ${status !== 'booked' ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-90'}`}
+                                                        onClick={() => isClickable && toggleSlot(slot.start)}
+                                                        className={`flex-1 rounded-[20px] p-4 flex justify-between items-center transition-all duration-200 ${cardBg} ${isClickable ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed'}`}
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <div
                                                                 className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm text-white font-bold text-lg ${iconColorClass}`}>
-                                                                {status === 'available' ? '+' : (data ? dayjs(data.booking_date).date() : selectedDate.date())}
+                                                                {!isSlotSelectionEnabled ? '-' : status === 'available' ? '+' : (data ? dayjs(data.booking_date).date() : selectedDate.date())}
                                                             </div>
 
+                                                            {/*<div>*/}
+                                                            {/*    <h4 className="font-semibold text-[16px] text-[#1D1D1D]">*/}
+                                                            {/*        {status === 'booked'*/}
+                                                            {/*            ? `${(data as any)?.vehicle_no || 'Unknown'}`*/}
+                                                            {/*            : status === 'pending'*/}
+                                                            {/*                ? `${bookingState.vehicleData?.vehicle_no || 'You'}`*/}
+                                                            {/*                : 'Available'}*/}
+                                                            {/*    </h4>*/}
+                                                            {/*    <p className="text-gray-600 text-sm font-medium">{slot.label}</p>*/}
+                                                            {/*</div>*/}
+
                                                             <div>
-                                                                <h4 className="font-semibold text-[16px] text-[#1D1D1D]">
-                                                                    {status === 'booked'
-                                                                        ? `${(data as any)?.vehicle_no || 'Unknown'}`
-                                                                        : status === 'pending'
-                                                                            ? `${bookingState.vehicleData?.vehicle_no || 'You'}`
-                                                                            : 'Available'}
+                                                                <h4 className={`font-semibold text-[16px] ${!isSlotSelectionEnabled ? 'text-gray-400' : 'text-[#1D1D1D]'}`}>
+                                                                    {!isSlotSelectionEnabled
+                                                                        ? 'Select Details'
+                                                                        : status === 'booked'
+                                                                            ? `${(data as any)?.vehicle_no || 'Unknown'}`
+                                                                            : status === 'pending'
+                                                                                ? `${bookingState.vehicleData?.vehicle_no || 'You'}`
+                                                                                : 'Available'
+                                                                    }
                                                                 </h4>
-                                                                <p className="text-gray-600 text-sm font-medium">{slot.label}</p>
+                                                                <p className={`text-sm font-medium ${!isSlotSelectionEnabled ? 'text-gray-300' : 'text-gray-600'}`}>{slot.label}</p>
                                                             </div>
+
                                                         </div>
 
                                                         <div
                                                             className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-2 ${badgeBg} ${badgeTextColor}`}>
                                                             {badgeText}
-                                                            <svg className="" width="10" height="6"
-                                                                 viewBox="0 0 10 6" fill="none"
-                                                                 xmlns="http://www.w3.org/2000/svg">
-                                                                <path
-                                                                    d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                                    fill="#575757"/>
-                                                            </svg>
+
+                                                            {isSlotSelectionEnabled && (
+                                                                <svg className="" width="10" height="6"
+                                                                     viewBox="0 0 10 6" fill="none"
+                                                                     xmlns="http://www.w3.org/2000/svg">
+                                                                    <path
+                                                                        d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
+                                                                        fill="#575757"/>
+                                                                </svg>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -545,97 +659,109 @@ const ServiceParkBooking = () => {
 
             {isConfirmModalOpen && (
                 <Modal
-                    title="Confirm Booking Details"
+                    title="Service Summary"
                     onClose={() => setIsConfirmModalOpen(false)}
                     actionButton={{
-                        label: bookingMutation.isPending ? "Booking..." : "Submit",
+                        label: bookingMutation.isPending ? "Processing..." : "Confirm",
                         onClick: handleSubmitBooking,
                         disabled: bookingMutation.isPending,
                     }}
                 >
-                    <div className="space-y-8 px-2">
-                        <div className="grid grid-cols-2 gap-8 border-b border-gray-200 pb-6">
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Customer Details</h3>
-                                <p className="text-lg font-semibold text-gray-900">{bookingState.vehicleData?.owner_name || "N/A"}</p>
-                                <p className="text-gray-600">{bookingState.vehicleData?.contact_no}</p>
-                                <p className="text-gray-600">{bookingState.vehicleData?.email}</p>
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Vehicle Details</h3>
-                                <div className="flex items-center gap-3">
-                                    <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium border border-gray-300">
-                                        {bookingState.vehicleData?.vehicle_no}
-                                    </span>
-                                    <span className="text-gray-600">
-                                        {bookingState.vehicleData?.vehicle_make} {bookingState.vehicleData?.vehicle_model}
-                                    </span>
-                                </div>
-                                <p className="text-gray-500 text-sm mt-1">Mileage: {bookingState.vehicleData?.mileage || "N/A"}</p>
+                    <div className="w-[900px] rounded-[45px] border border-[#E7E7E7] px-8 relative box-border">
+                        <div className="flex flex-col md:flex-row md:items-center gap-6 mb-8">
+                            {/*<h2 className="font-semibold text-[22px] leading-[27px] text-black">Service Summary</h2>*/}
+
+                            <div className="flex items-center gap-[10px]">
+                                {/* Invoice Badge */}
+                                {/*<div className="flex flex-row justify-center items-center px-[15px] py-[5px] gap-[13px] bg-[#DFDFDF] rounded-[20px] h-[28px]">*/}
+                                {/*    <span className="font-medium text-[15px] leading-[18px] text-[#1D1D1D]">INV34556</span>*/}
+                                {/*</div>*/}
+
+                                {/* Date Badge */}
+                                {/*<div className="flex flex-row justify-center items-center px-[15px] py-[5px] gap-[13px] bg-[#039855] rounded-[20px] h-[28px]">*/}
+                                {/*    <span className="font-medium text-[15px] leading-[18px] text-white">*/}
+                                {/*        {selectedDate.format('DD MMM YYYY')}*/}
+                                {/*    </span>*/}
+                                {/*</div>*/}
                             </div>
                         </div>
 
-                        {/* 2. Booking Specifics */}
-                        <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-                            <h3 className="text-blue-800 font-bold mb-4 flex items-center gap-2">
-                                <Image src="/calendar.svg" alt="calendar" width={20} height={20} /> {/* Ensure you have an icon or remove */}
-                                Appointment Schedule
-                            </h3>
-                            <div className="grid grid-cols-3 gap-6">
-                                <div>
-                                    <p className="text-xs text-blue-500 font-bold uppercase">Date</p>
-                                    <p className="text-lg font-medium text-blue-900">{selectedDate.format('dddd, DD MMMM YYYY')}</p>
+                        {/* Metadata Section (Advisor, Branch, Line) - Bullet list style */}
+                        <div className="flex flex-col items-start gap-[10px] mb-8">
+                            {/* Advisor */}
+                            <div className="w-full flex items-center text-[18px] leading-[22px]">
+                                <ul className="list-disc pl-5 marker:text-[#1D1D1D]">
+                                    <li>
+                                        <span className="font-medium text-[#1D1D1D] mr-2">Service Advisor:</span>
+                                        <span className="font-medium text-[#575757]">{advisorName}</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* Branch */}
+                            <div className="w-full flex items-center text-[18px] leading-[22px]">
+                                <ul className="list-disc pl-5 marker:text-[#1D1D1D]">
+                                    <li>
+                                        <span className="font-medium text-[#1D1D1D] mr-2">Branch:</span>
+                                        <span className="font-medium text-[#575757]">{branchName}</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* Line */}
+                            <div className="w-full flex items-center text-[18px] leading-[22px]">
+                                <ul className="list-disc pl-5 marker:text-[#1D1D1D]">
+                                    <li>
+                                        <span className="font-medium text-[#1D1D1D] mr-2">Line:</span>
+                                        <span className="font-medium text-[#575757]">{lineLabel}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Table Section */}
+                        <div className="flex flex-col items-start w-full mt-[30px]">
+                            {/* Table Header */}
+                            <div
+                                className="flex flex-row items-center w-full px-[10px] pb-[20px] mb-[10px] border-b-[1.5px] border-[#CCCCCC]">
+                                <span
+                                    className="font-medium text-[18px] leading-[22px] text-[#575757] flex-grow">Repairs</span>
+                                <div className="w-[233px] text-left">
+                                    <span className="font-medium text-[18px] leading-[22px] text-[#575757]">Price</span>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-blue-500 font-bold uppercase">Location</p>
-                                    <p className="text-lg font-medium text-blue-900">{branchName}</p>
-                                    <p className="text-sm text-blue-700">{lineLabel}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-blue-500 font-bold uppercase">Time Slots</p>
-                                    <div className="flex flex-wrap gap-2 mt-1">
-                                        {selectedSlots.sort().map(slot => (
-                                            <span key={slot} className="bg-white text-blue-600 px-2 py-1 rounded-md text-sm font-bold shadow-sm">
-                                                {slot}
+                            </div>
+
+                            {/* Table Body - Dynamic Items */}
+                            <div className="flex flex-col w-full gap-0">
+                                {bookingState.selectedServices?.map((item: any) => (
+                                    <div key={`${item.type}-${item.id}`}
+                                         className="flex flex-row items-center w-full px-[10px] h-[42px] mb-[10px]">
+                                        <span
+                                            className="font-medium text-[18px] leading-[22px] text-[#1D1D1D] flex-grow">
+                                            {item.name}
+                                        </span>
+                                        <div className="w-[233px] text-left">
+                                            <span className="font-medium text-[18px] leading-[22px] text-[#1D1D1D]">
+                                                LKR {item.price.toLocaleString()}
                                             </span>
-                                        ))}
+                                        </div>
                                     </div>
+                                ))}
+                            </div>
+
+                            {/* Total Price Section */}
+                            <div
+                                className="flex flex-row items-center w-full px-[10px] h-[62px] border-y border-[#575757] mt-4">
+                                <span className="font-bold text-[18px] leading-[22px] text-[#1D1D1D] flex-grow">
+                                    Total Estimate Price
+                                </span>
+                                <div className="w-[233px] text-left">
+                                    <span className="font-bold text-[18px] leading-[22px] text-[#1D1D1D]">
+                                        LKR {bookingState.totals.total.toLocaleString()}
+                                    </span>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* 3. Financial Summary */}
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">Payment Summary</h3>
-                            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
-                                {/* List of items */}
-                                <div className="space-y-3 mb-6 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {bookingState.selectedServices?.map((item: any) => (
-                                        <div key={`${item.type}-${item.id}`} className="flex justify-between text-sm">
-                                            <span className="text-gray-700">{item.name}</span>
-                                            <span className="font-medium text-gray-900">LKR {item.price.toLocaleString()}</span>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Totals */}
-                                <div className="border-t border-gray-300 pt-4 space-y-2">
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Subtotal</span>
-                                        <span>LKR {bookingState.totals.subTotal.toLocaleString()}</span>
-                                    </div>
-                                    {bookingState.totals.discount > 0 && (
-                                        <div className="flex justify-between text-green-600 font-medium">
-                                            <span>Discount</span>
-                                            <span>- LKR {bookingState.totals.discount.toLocaleString()}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between text-xl font-bold text-[#DB2727] pt-2 mt-2 border-t border-gray-200">
-                                        <span>Total Amount</span>
-                                        <span>LKR {bookingState.totals.total.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </Modal>
@@ -668,8 +794,8 @@ const ServiceParkBooking = () => {
                     scrollbar-width: thin;
                     scrollbar-color: rgba(29, 29, 29, 0.2) rgba(0, 0, 0, 0.05);
                 }
-                
-                
+
+
                 .glass-calendar .ant-picker-calendar-header {
                     padding-bottom: 20px;
                 }
@@ -682,7 +808,7 @@ const ServiceParkBooking = () => {
                     height: 50px !important;
                     width: 60%;
                 }
-                
+
                 .custom-select .ant-select-selector {
                     background-color: transparent !important;
                     border: none !important;
