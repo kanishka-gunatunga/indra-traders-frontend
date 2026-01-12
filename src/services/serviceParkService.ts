@@ -13,17 +13,12 @@ export const createAssignToSale = async (data: any) => {
     return res.data;
 };
 
-// export const listVehicleSales = async () => {
-//     const res = await axiosInstance.get("/service-park/sales");
-//     return res.data;
-// };
-
 export const listVehicleSales = async (status?: string, userId?: number, userRole?: string) => {
     const res = await axiosInstance.get("/service-park/sales", {
         params: {
-            ...(status ? { status } : {}),
-            ...(userId ? { userId } : {}),
-            ...(userRole ? { userRole } : {})
+            ...(status ? {status} : {}),
+            ...(userId ? {userId} : {}),
+            ...(userRole ? {userRole} : {})
         },
     });
     return res.data;
@@ -83,10 +78,128 @@ export const updatePriority = async (id: number, data: { priority: number }) => 
 }
 
 export const promote = async (id: number, userId: number) => {
-    return await axiosInstance.put(`/service-park/${id}/promote`, { userId });
+    return await axiosInstance.put(`/service-park/${id}/promote`, {userId});
 }
 
 export const getHistory = async (id: number) => {
     return await axiosInstance.get(`/service-park/${id}/history`);
 }
 
+
+
+export const createService = async (data: { name: string; type: string; description?: string; base_price: number }) => {
+    const res = await axiosInstance.post("/service-park/services", data);
+    return res.data;
+};
+
+export const getAllServices = async () => {
+    const res = await axiosInstance.get("/service-park/services");
+    return res.data;
+};
+
+export const createPackage = async (data: { name: string; description?: string; serviceIds: number[] }) => {
+    const res = await axiosInstance.post("/service-park/packages", data);
+    return res.data;
+};
+
+export const createBranch = async (data: {
+    name: string;
+    location_code: string;
+    contact_number: string;
+    address: string
+}) => {
+    const res = await axiosInstance.post("/service-park/branches", data);
+    return res.data;
+};
+
+export const listBranches = async () => {
+    const res = await axiosInstance.get("/service-park/branches");
+    return res.data;
+};
+
+export const getBranchDetails = async (id: number) => {
+    const res = await axiosInstance.get(`/service-park/branches/${id}`);
+    return res.data;
+};
+
+export const addServiceToBranch = async (branchId: number, data: { service_id: number; custom_price: number }) => {
+    const res = await axiosInstance.post(`/service-park/branches/${branchId}/services`, data);
+    return res.data;
+};
+
+export const createServiceLine = async (branchId: number, data: { name: string; type: string; advisor: number }) => {
+    const res = await axiosInstance.post(`/service-park/branches/${branchId}/lines`, data);
+    return res.data;
+};
+
+
+export const getAllPackages = async () => {
+    const res = await axiosInstance.get("/service-park/packages");
+    return res.data;
+};
+
+export const updateService = async ({id, data}: { id: number, data: any }) => {
+    const res = await axiosInstance.put(`/service-park/services/${id}`, data);
+    return res.data;
+};
+
+export const deleteService = async (id: number) => {
+    const res = await axiosInstance.delete(`/service-park/services/${id}`);
+    return res.data;
+};
+
+export const updatePackage = async ({id, data}: { id: number, data: any }) => {
+    const res = await axiosInstance.put(`/service-park/packages/${id}`, data);
+    return res.data;
+};
+
+export const deletePackage = async (id: number) => {
+    const res = await axiosInstance.delete(`/service-park/packages/${id}`);
+    return res.data;
+};
+
+export const updateBranch = async ({ id, data }: { id: number; data: any }) => {
+    const res = await axiosInstance.put(`/service-park/branches/${id}`, data);
+    return res.data;
+};
+
+export const deleteBranch = async (id: number) => {
+    const res = await axiosInstance.delete(`/service-park/branches/${id}`);
+    return res.data;
+};
+
+export const getBranchCatalog = async (branchId: number) => {
+    const res = await axiosInstance.get(`/service-park/branches/${branchId}/catalog`);
+    return res.data;
+};
+
+
+export const validatePromo = async (code: string) => {
+    const res = await axiosInstance.post(`/service-park/validate-promo`, { code });
+    return res.data;
+};
+
+export const getPromos = async () => {
+    const res = await axiosInstance.get("/service-park/promos");
+    return res.data;
+};
+
+
+export const getBookingAvailability = async (branchId: number, lineId: number, month: string) => {
+    const res = await axiosInstance.get('/service-park/bookings/availability', {
+        params: { branchId, serviceLineId: lineId, month }
+    });
+    return res.data;
+};
+
+export const getDailyBookings = async (branchId: number, lineId: number, date: string) => {
+    const res = await axiosInstance.get('/service-park/bookings/daily', {
+        params: { branchId, serviceLineId: lineId, date }
+    });
+    return res.data;
+};
+
+export const submitBooking = async (data: any) => {
+    const res = await axiosInstance.post('/service-park/bookings', data);
+    return res.data;
+};

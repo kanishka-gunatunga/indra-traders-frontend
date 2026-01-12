@@ -1,11 +1,35 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {
+    addServiceToBranch,
     assignToSalesAgent,
-    createAssignToSale, createFollowup, createReminder, getHistory, getNearestReminders,
-    getSaleDetails, getSaleDetailsByTicket,
+    createAssignToSale,
+    createBranch,
+    createFollowup,
+    createPackage,
+    createReminder,
+    createService,
+    createServiceLine,
+    getAllServices,
+    getBranchDetails,
+    getHistory,
+    getNearestReminders,
+    getSaleDetails,
+    getSaleDetailsByTicket,
     getVehicleHistoryByNumber,
     handleServiceIntake,
-    listVehicleHistories, listVehicleSales, promote, updatePriority, updateStatus
+    listBranches,
+    listVehicleHistories,
+    listVehicleSales,
+    promote,
+    updatePriority,
+    updateStatus,
+    getAllPackages,
+    updatePackage,
+    updateService,
+    deletePackage,
+    deleteService,
+    updateBranch, deleteBranch, getBranchCatalog, validatePromo, getPromos, getDailyBookings, submitBooking,
+    getBookingAvailability
 } from "@/services/serviceParkService";
 
 
@@ -164,3 +188,199 @@ export const useSaleHistory = (saleId: number) =>
     });
 
 
+
+
+export const useAllServices = () =>
+    useQuery({
+        queryKey: ["serviceParkConfig", "services"],
+        queryFn: getAllServices,
+    });
+
+export const useBranches = () =>
+    useQuery({
+        queryKey: ["serviceParkConfig", "branches"],
+        queryFn: listBranches,
+    });
+
+export const useBranchDetails = (branchId: number) =>
+    useQuery({
+        queryKey: ["serviceParkConfig", "branch", branchId],
+        queryFn: () => getBranchDetails(branchId),
+        enabled: !!branchId,
+    });
+
+export const usePackages = () =>
+    useQuery({
+        queryKey: ["serviceParkConfig", "packages"],
+        queryFn: getAllPackages
+    });
+
+// --- MUTATIONS ---
+
+export const useCreateService = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createService,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "services"]});
+        },
+    });
+};
+
+export const useCreatePackage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createPackage,
+        // Optional: Invalidate packages list if you have one
+        // onSuccess: () => queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "packages"] }),
+    });
+};
+
+export const useCreateBranch = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: createBranch,
+        onSuccess: () => {
+            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branches"]});
+        },
+    });
+};
+
+export const useAddServiceToBranch = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({branchId, data}: { branchId: number; data: { service_id: number; custom_price: number } }) =>
+            addServiceToBranch(branchId, data),
+        onSuccess: (_, variables) => {
+            // Invalidate specific branch details to reflect updated pricing
+            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branch", variables.branchId]});
+        },
+    });
+};
+
+export const useCreateServiceLine = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({branchId, data}: { branchId: number; data: { name: string; type: string; advisor: number } }) =>
+            createServiceLine(branchId, data),
+        onSuccess: (_, variables) => {
+            // Invalidate specific branch details to show new line
+            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branch", variables.branchId]});
+        },
+    });
+};
+
+export const useUpdateService = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateService,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "services"] }),
+    });
+};
+
+export const useDeleteService = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: deleteService,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "services"] }),
+    });
+};
+
+export const useUpdatePackage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updatePackage,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "packages"] }),
+    });
+};
+
+export const useDeletePackage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: deletePackage,
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "packages"] }),
+    });
+};
+
+
+export const useUpdateBranch = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateBranch,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "branches"] });
+            // Also invalidate specific details
+            queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "branch"] });
+        },
+    });
+};
+
+export const useDeleteBranch = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: deleteBranch,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "branches"] });
+        },
+    });
+};
+
+export const useBranchCatalog = (branchId: number | null) =>
+    useQuery({
+        queryKey: ["branchCatalog", branchId],
+        queryFn: () => getBranchCatalog(branchId!),
+        enabled: !!branchId
+    });
+
+
+export const useValidatePromo = () => {
+    return useMutation({
+        mutationFn: validatePromo
+    });
+};
+
+
+export const useAvailablePromos = () =>
+    useQuery({
+        queryKey: ["servicePark", "promos"],
+        queryFn: getPromos
+    });
+
+
+
+export const useBookingAvailability = (
+    branchId: number | null,
+    lineId: number | null,
+    month: string
+) => {
+    return useQuery({
+        queryKey: ['bookingAvailability', branchId, lineId, month],
+        queryFn: () => getBookingAvailability(branchId!, lineId!, month),
+        enabled: !!branchId && !!lineId && !!month,
+        staleTime: 5 * 60 * 1000,
+    });
+};
+
+export const useDailyBookings = (
+    branchId: number | null,
+    lineId: number | null,
+    date: string
+) => {
+    return useQuery({
+        queryKey: ['dailyBookings', branchId, lineId, date],
+        queryFn: () => getDailyBookings(branchId!, lineId!, date),
+        enabled: !!branchId && !!lineId && !!date,
+    });
+};
+
+export const useSubmitBooking = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: submitBooking,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['dailyBookings'] });
+            queryClient.invalidateQueries({ queryKey: ['bookingAvailability'] });
+        },
+    });
+};
