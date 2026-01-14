@@ -3,7 +3,7 @@ export default function InfoRow({
   value,
 }: {
   label: string;
-  value: string;
+  value: string | React.ReactNode;
 }) {
   return (
     <div className="mt-3 flex w-full gap-3">

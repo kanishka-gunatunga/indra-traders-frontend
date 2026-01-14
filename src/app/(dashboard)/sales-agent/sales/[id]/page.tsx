@@ -53,6 +53,7 @@ export default function SalesDetailsPage() {
     const [isActivityModalOpen, setActivityModalOpen] = useState(false);
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
     const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
+    const [isLeasingModalOpen, setLeasingModalOpen] = useState(false);
 
     const [activityText, setActivityText] = useState("");
     const [reminderTitle, setReminderTitle] = useState("");
@@ -195,6 +196,13 @@ export default function SalesDetailsPage() {
             alert("Failed to promote lead.");
         }
     };
+
+
+    const formatCurrency = (amount: number | string | null | undefined) => {
+        if (amount === null || amount === undefined || amount === "") return "N/A";
+        return `${Number(amount).toLocaleString()} LKR`;
+    };
+
 
     if (isLoading) {
         return (
@@ -366,6 +374,32 @@ export default function SalesDetailsPage() {
                             <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "N/A"}/>
                             <InfoRow label="Contact No:" value={sale.customer?.phone_number || "N/A"}/>
                             <InfoRow label="Email:" value={sale.customer?.email || "N/A"}/>
+                            <InfoRow
+                                label="Request Leasing:"
+                                value={
+                                    sale.enable_leasing ? (
+                                        <span className="flex items-center gap-2">
+                                            Yes
+                                          {/*<button*/}
+                                          {/*    onClick={() => setLeasingModalOpen(true)}*/}
+                                          {/*    className="text-[#4655FF] underline text-[18px] font-medium font-montserrat hover:text-blue-800 transition-colors"*/}
+                                          {/*>*/}
+                                          {/*  click for more details*/}
+                                          {/*</button>*/}
+
+                                            <button
+                                                onClick={() => setLeasingModalOpen(true)}
+                                                // Added: bg-transparent, border-none, cursor-pointer, p-0
+                                                className="bg-transparent border-none cursor-pointer p-0 text-[#4655FF] underline text-[18px] font-medium font-montserrat hover:text-blue-800 transition-colors"
+                                            >
+                    click for more details
+                </button>
+                                        </span>
+                                    ) : (
+                                        "No"
+                                    )
+                                }
+                            />
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Vehicle Details
@@ -422,6 +456,73 @@ export default function SalesDetailsPage() {
                     </div>
                 </section>
             </main>
+
+
+            {isLeasingModalOpen && (
+                <Modal
+                    title="Leasing Details"
+                    onClose={() => setLeasingModalOpen(false)}
+                    isPriorityAvailable={false}
+                >
+                    <div className="w-[400px] px-2 pb-4 font-montserrat text-[#1D1D1D]">
+                        <div className="flex justify-between items-center mb-4">
+                                <span className="text-[18px] font-medium">Vehicle Price:</span>
+                                <span className="text-[18px] text-left font-medium text-[#575757]">
+                                    {formatCurrency(sale.leasing_vehicle_price)}
+                                  </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Down payment:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                            {formatCurrency(sale.down_payment)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Bank:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                            {sale.leasing_bank || "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Time Period:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {sale.leasing_time_period
+                                    ? `${sale.leasing_time_period} Months`
+                                    : "N/A"}
+                              </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Promo Code:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {sale.leasing_promo_code || "N/A"}
+                              </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Interest Rate:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                            {sale.leasing_interest_rate
+                                ? `${sale.leasing_interest_rate}% p.a.`
+                                : "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                              <span className="text-[18px] font-medium">
+                                Monthly Installment:
+                              </span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {formatCurrency(sale.leasing_monthly_installment)}
+                              </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[18px] font-medium">Total Amount:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                            {formatCurrency(sale.leasing_total_amount)}
+                          </span>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
 
             {isHistoryModalOpen && (
                 <Modal
