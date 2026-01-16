@@ -39,35 +39,67 @@ import {
   SALES_DEPT_CONFIG,
 } from "@/utils/role-routes";
 
-export async function middleware(req: any) {
-  // const publicRoutes = ["/login", "/", "/admin", "/admin/star-rating", "/chat-bot"];
+// Helper to determine user's dashboard
+function getDashboard(token: any) {
+  if (token.system === 'service-booking') {
+    return "/service-booking/dashboard";
+  }
 
+  const userRole = token?.user_role as keyof typeof ROLE_DASHBOARDS;
+  const userDept = token?.department as string;
+
+  let dashboard = ROLE_DASHBOARDS[userRole] || "/";
+
+  if (
+    (userRole === "SALES01" ||
+      userRole === "SALES02" ||
+      userRole === "SALES03") &&
+    SALES_DEPT_CONFIG[userDept]
+  ) {
+    dashboard = SALES_DEPT_CONFIG[userDept].dashboard;
+  }
+
+  return dashboard;
+}
+
+export async function middleware(req: any) {
   const { pathname } = req.nextUrl;
 
   // Service Booking Sub-system Middleware
   if (pathname.startsWith("/service-booking")) {
-    const sbToken = req.cookies.get("service_booking_token")?.value;
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     const isLoginPage = pathname === "/service-booking/login";
 
-    // Handle root path access specifically to avoid 404
+    // CROSS-AUTH PROTECTION: If user is logged into the WRONG system, redirect them
+    if (token && token.system !== 'service-booking') {
+      const destination = getDashboard(token);
+      return NextResponse.redirect(new URL(destination, req.url));
+    }
+
+    // Handle root path access
     if (pathname === "/service-booking" || pathname === "/service-booking/") {
-        if (sbToken) {
-            return NextResponse.redirect(new URL("/service-booking/dashboard", req.url));
-        } else {
-            return NextResponse.redirect(new URL("/service-booking/login", req.url));
-        }
+      if (token) {
+        return NextResponse.redirect(new URL("/service-booking/dashboard", req.url));
+      } else {
+        return NextResponse.redirect(new URL("/service-booking/login", req.url));
+      }
     }
 
     // Protect other routes
-    if (!sbToken && !isLoginPage) {
-        return NextResponse.redirect(new URL("/service-booking/login", req.url));
+    if (!token && !isLoginPage) {
+      return NextResponse.redirect(new URL("/service-booking/login", req.url));
     }
 
-    if (sbToken && isLoginPage) {
-         return NextResponse.redirect(new URL("/service-booking/dashboard", req.url));
+    if (token && isLoginPage) {
+      return NextResponse.redirect(new URL("/service-booking/dashboard", req.url));
     }
-    
-    // Return next() to skip the main app's NextAuth middleware for this subsystem
+
+    // Allow the login page to load
+    if (isLoginPage) {
+      return NextResponse.next();
+    }
+
+    // If authenticated and on a service-booking route, allow access
     return NextResponse.next();
   }
 
@@ -78,6 +110,12 @@ export async function middleware(req: any) {
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const isAuth = !!token;
+
+  // CROSS-AUTH PROTECTION: If a service-booking user tries to access general admin routes
+  if (isAuth && token.system === 'service-booking') {
+    const destination = getDashboard(token);
+    return NextResponse.redirect(new URL(destination, req.url));
+  }
 
   if (!isAuth) {
     if (isPublicRoute) {
@@ -90,18 +128,7 @@ export async function middleware(req: any) {
   const userDept = token?.department as string;
 
   if (pathname === "/login") {
-    let destination = ROLE_DASHBOARDS[userRole] || "/";
-
-    if (
-      (userRole === "SALES01" ||
-        userRole === "SALES02" ||
-        userRole === "SALES03") &&
-      SALES_DEPT_CONFIG[userDept]
-    ) {
-      destination = SALES_DEPT_CONFIG[userDept].dashboard;
-    }
-
-    // const destination = ROLE_DASHBOARDS[userRole] || "/";
+    const destination = getDashboard(token);
     return NextResponse.redirect(new URL(destination, req.url));
   }
 
@@ -115,15 +142,7 @@ export async function middleware(req: any) {
   );
 
   if (!isAllowedRole) {
-    let destination = ROLE_DASHBOARDS[userRole] || "/";
-    if (
-      (userRole === "SALES01" ||
-        userRole === "SALES02" ||
-        userRole === "SALES03") &&
-      SALES_DEPT_CONFIG[userDept]
-    ) {
-      destination = SALES_DEPT_CONFIG[userDept].dashboard;
-    }
+    const destination = getDashboard(token);
     return NextResponse.redirect(new URL(destination, req.url));
   }
 

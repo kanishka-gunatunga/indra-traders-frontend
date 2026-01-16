@@ -43,6 +43,7 @@ declare module "next-auth" {
             department: string;
             branch: string;
             accessToken: string;
+            system?: 'admin' | 'service-booking';
         } & DefaultSession["user"];
     }
 
@@ -53,6 +54,7 @@ declare module "next-auth" {
         department: string;
         branch: string;
         accessToken: string;
+        system?: 'admin' | 'service-booking';
     }
 }
 
@@ -65,5 +67,6 @@ declare module "next-auth/jwt" {
         department: string;
         branch: string;
         accessToken: string;
+        system?: 'admin' | 'service-booking';
     }
 }
