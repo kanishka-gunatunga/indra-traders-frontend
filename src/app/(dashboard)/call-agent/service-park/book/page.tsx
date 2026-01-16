@@ -247,13 +247,23 @@ const ServiceParkBooking = () => {
             return {start: slotObj?.start, end: slotObj?.end};
         });
 
+        const vehicleData = bookingState.vehicleData || {};
+
         bookingMutation.mutate({
             branch_id: selectedBranchId,
             service_line_id: selectedLineId,
             booking_date: selectedDateString,
             slots: slotsPayload,
-            vehicle_no: bookingState.vehicleData?.vehicle_no,
-            customer_id: bookingState.vehicleData?.customer_id,
+            // vehicle_no: bookingState.vehicleData?.vehicle_no,
+            // customer_id: bookingState.vehicleData?.customer_id,
+
+            customer_id: vehicleData.customer_id,
+
+            vehicle_no: vehicleData.vehicle_no,
+            owner_name: vehicleData.owner_name,
+            contact_no: vehicleData.contact_no,
+            email: vehicleData.email,
+            address: vehicleData.address,
         }, {
             onSuccess: () => {
                 showToast("Booking created successfully", "success");
@@ -263,6 +273,8 @@ const ServiceParkBooking = () => {
             onError: (err: any) => showToast(err.response?.data?.message || "Failed", "error")
         });
     };
+
+    console.log("customer ID: ", bookingState.vehicleData?.customer_id );
 
     const branchName = branches?.find((b: any) => b.id === selectedBranchId)?.name || "Unknown Branch";
 
