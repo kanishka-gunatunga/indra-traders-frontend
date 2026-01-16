@@ -203,3 +203,8 @@ export const submitBooking = async (data: any) => {
     const res = await axiosInstance.post('/service-park/bookings', data);
     return res.data;
 };
+
+export const getServiceBookingBranches = async () => {
+    const res = await axiosInstance.get('/service-booking/branches');
+    return res.data;
+}
