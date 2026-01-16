@@ -15,6 +15,7 @@ import {
     AlertOctagon,
     Sparkles
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 const AutoScrollColumn = ({ children }: { children: React.ReactNode }) => {
     const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -287,8 +288,7 @@ export default function ServiceBookingDashboard() {
                             </div>
                         <button 
                             onClick={() => {
-                                document.cookie = "service_booking_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-                                router.push("/service-booking/login");
+                                signOut({callbackUrl: "/service-booking/login"})
                             }}
                             className="flex items-center gap-3 px-5 py-2.5 bg-[#FFFFFF66] rounded-lg text-[#1D1D1D] hover:bg-gray-50 montserrat transition-colors shadow-sm font-semibold text-sm"
                         >

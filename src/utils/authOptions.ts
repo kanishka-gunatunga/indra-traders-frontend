@@ -1,4 +1,4 @@
-import {NextAuthOptions} from 'next-auth';
+import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 const backendURL = process.env.NEXT_PUBLIC_API_URL;
@@ -8,8 +8,8 @@ export const authOptions: NextAuthOptions = {
         CredentialsProvider({
             name: 'Credentials',
             credentials: {
-                email: {label: 'Email', type: 'email'},
-                password: {label: 'Password', type: 'password'},
+                email: { label: 'Email', type: 'email' },
+                password: { label: 'Password', type: 'password' },
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
@@ -25,7 +25,7 @@ export const authOptions: NextAuthOptions = {
 
                     const response = await fetch(`${backendURL}/users/login`, {
                         method: "POST",
-                        headers: {"Content-Type": "application/json"},
+                        headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             email: credentials.email,
                             password: credentials.password,
@@ -40,13 +40,14 @@ export const authOptions: NextAuthOptions = {
                     const data = await response.json();
                     console.log('Authorize: Backend response:', data);
 
-                    const {accessToken, user} = data;
+                    const { accessToken, user } = data;
 
                     if (user && accessToken) {
                         return {
                             ...user,
                             id: user.id.toString(),
                             accessToken: accessToken,
+                            system: 'admin'
                         };
                     }
 
@@ -54,6 +55,56 @@ export const authOptions: NextAuthOptions = {
                     return null;
                 } catch (error) {
                     console.error("Authorize: Login error:", error);
+                    throw new Error(error instanceof Error ? error.message : "Invalid credentials");
+                }
+            },
+        }),
+        CredentialsProvider({
+            id: 'service-booking',
+            name: 'Service Booking',
+            credentials: {
+                username: { label: 'Username', type: 'text' },
+                password: { label: 'Password', type: 'password' },
+                branch: { label: 'Branch', type: 'text' },
+            },
+            async authorize(credentials) {
+                if (!credentials?.username || !credentials?.password || !credentials?.branch) {
+                    throw new Error('Username, password and branch are required');
+                }
+                if (!backendURL) {
+                    console.error("BACKEND_API_URL is not set in environment variables");
+                    throw new Error("Server configuration error");
+                }
+
+                try {
+                    const response = await fetch(`${backendURL}/service-booking/login`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            username: credentials.username,
+                            password: credentials.password,
+                            branch_id: credentials.branch,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Invalid credentials");
+                    }
+
+                    const data = await response.json();
+                    const { accessToken, user } = data;
+
+                    if (user && accessToken) {
+                        return {
+                            ...user,
+                            id: user.id.toString(),
+                            accessToken: accessToken,
+                            branch: credentials.branch, // Store branch in user object
+                            system: 'service-booking'
+                        };
+                    }
+                    return null;
+                } catch (error) {
                     throw new Error(error instanceof Error ? error.message : "Invalid credentials");
                 }
             },
@@ -74,7 +125,7 @@ export const authOptions: NextAuthOptions = {
     // },
 
     callbacks: {
-        async jwt({token, user}) {
+        async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
                 token.email = user.email!;
@@ -83,10 +134,11 @@ export const authOptions: NextAuthOptions = {
                 token.department = user.department;
                 token.branch = user.branch;
                 token.accessToken = user.accessToken;
+                token.system = user.system;
             }
             return token;
         },
-        async session({session, token}) {
+        async session({ session, token }) {
             session.user = {
                 // id: token.id,
                 // email: token.email,
@@ -103,6 +155,7 @@ export const authOptions: NextAuthOptions = {
                 department: token.department,
                 branch: token.branch,
                 accessToken: token.accessToken,
+                system: token.system,
             };
             return session;
         },
