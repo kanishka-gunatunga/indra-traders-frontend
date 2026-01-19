@@ -42,6 +42,8 @@ declare module "next-auth" {
             user_role: "SALES01" | "SALES02" | "SALES03" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
             department: string;
             branch: string;
+            branchId?: string;
+            branchName?: string;
             accessToken: string;
             system?: 'admin' | 'service-booking';
         } & DefaultSession["user"];
@@ -53,6 +55,8 @@ declare module "next-auth" {
         user_role: "SALES01" | "SALES02" | "SALES03" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
         department: string;
         branch: string;
+        branchId?: string;
+        branchName?: string;
         accessToken: string;
         system?: 'admin' | 'service-booking';
     }
@@ -66,6 +70,8 @@ declare module "next-auth/jwt" {
         user_role: "SALES01" | "SALES02" | "SALES03" | "CALLAGENT" | "ADMIN" | "TELEMARKETER";
         department: string;
         branch: string;
+        branchId?: string;
+        branchName?: string;
         accessToken: string;
         system?: 'admin' | 'service-booking';
     }
