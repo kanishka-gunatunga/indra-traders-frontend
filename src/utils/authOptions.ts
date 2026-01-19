@@ -99,7 +99,9 @@ export const authOptions: NextAuthOptions = {
                             ...user,
                             id: user.id.toString(),
                             accessToken: accessToken,
-                            branch: credentials.branch, // Store branch in user object
+                            branch: credentials.branch,
+                            branchId: credentials.branch, // branch ID for API calls
+                            branchName: user.branch || user.branch_name, // branch name from backend for display
                             system: 'service-booking'
                         };
                     }
@@ -133,6 +135,8 @@ export const authOptions: NextAuthOptions = {
                 token.user_role = user.user_role;
                 token.department = user.department;
                 token.branch = user.branch;
+                token.branchId = user.branchId;
+                token.branchName = user.branchName;
                 token.accessToken = user.accessToken;
                 token.system = user.system;
             }
@@ -154,6 +158,8 @@ export const authOptions: NextAuthOptions = {
                 user_role: token.user_role,
                 department: token.department,
                 branch: token.branch,
+                branchId: token.branchId,
+                branchName: token.branchName,
                 accessToken: token.accessToken,
                 system: token.system,
             };
