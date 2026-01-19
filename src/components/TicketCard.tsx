@@ -1,11 +1,8 @@
 "use client";
 
-// import {Draggable} from "@hello-pangea/dnd";
 import Image from "next/image";
-import {useRouter} from "next/navigation";
-// import {useRef} from "react";
+import { useRouter } from "next/navigation";
 import { useDraggable } from "@dnd-kit/core";
-// import { CSS } from "@dnd-kit/utilities";
 
 export interface TicketCardProps {
     id: string;
@@ -19,80 +16,44 @@ export interface TicketCardProps {
     isOverlay?: boolean;
 }
 
-// const priorityColors = [
-//     "bg-[#FFA7A7]",
-//     "bg-[#FFCBA4]",
-//     "bg-[#D6B3FF]",
-//     "bg-green-300",
-//     // "bg-blue-300",
-//     "bg-[#D6B3FF]",
-// ];
-
-const priorityColors = [
-    "bg-[#E0E0E0]",
-    "bg-[#FCA5A5]",
-    "bg-[#FDE047]",
-    "bg-[#86EFAC]",
+const priorityBackgrounds = [
+    "bg-[#FFF4F0]", // P0 -> Light Red/Orange
+    "bg-[#FFF9F0]", // P1 -> Light Orange/Yellow
+    "bg-[#F5F0FF]", // P2 -> Light Purple
+    "bg-[#F0F9FF]", // P3 -> Light Blue
 ];
 
-// const priorityBorders = [
-//     "border-[#FFA7A7]",
-//     "border-[#FFCBA4]",
-//     "border-[#D6B3FF]",
-//     "border-green-300",
-//     // "border-blue-300",
-//     "border-[#D6B3FF]",
-// ];
+const priorityBadges = [
+    "bg-[#FFDDD1] text-[#B54708]", // P0 
+    "bg-[#FFEFD1] text-[#B54708]", // P1
+    "bg-[#E9D7FE] text-[#6941C6]", // P2
+    "bg-[#D1E9FF] text-[#026AA2]", // P3
+];
 
 const priorityBorders = [
-    "border-[#E0E0E0]",
-    "border-[#FCA5A5]",
-    "border-[#FDE047]",
-    "border-[#86EFAC]",
+    "border-[#FCA5A5]", // P0 
+    "border-[#FEC84B]", // P1
+    "border-[#D6BBFB]", // P2
+    "border-[#B2DDFF]", // P3
 ];
 
+import { PhoneIcon, MailIcon, EyeIcon, UserIcon, CalendarIcon, MessageSquareIcon } from "./KanbanIcons";
+
 export const TicketCard = ({
-                               id,
-                               priority,
-                               user,
-                               phone,
-                               date,
-                               index = 0,
-                               route,
-                               isOverlay = false
-                           }: TicketCardProps) => {
+    id,
+    priority,
+    user,
+    phone,
+    date,
+    index = 0,
+    route,
+    isOverlay = false
+}: TicketCardProps) => {
     const router = useRouter();
 
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: id,
     });
-
-    // const style = {
-    //     transform: CSS.Translate.toString(transform),
-    //     opacity: isDragging ? 1 : 1, // Fade out original position while dragging
-    //     touchAction: 'none', // Required for PointerSensor
-    //     zIndex: isDragging ? 99999 : 'auto',
-    // };
-
-    // const dragStart = useRef<{ x: number; y: number } | null>(null);
-
-    // const handleMouseDown = (e: React.MouseEvent) => {
-    //     dragStart.current = {x: e.clientX, y: e.clientY};
-    // };
-
-    // const handleMouseUp = (e: React.MouseEvent) => {
-    //     if (!dragStart.current) return;
-    //
-    //     const dx = Math.abs(e.clientX - dragStart.current.x);
-    //     const dy = Math.abs(e.clientY - dragStart.current.y);
-    //
-    //     // If mouse didn’t move much → it's a click
-    //     if (dx < 5 && dy < 5) {
-    //         router.push(route ? `${route}/${id}` : `/sales-agent/sales/${id}`);
-    //     }
-    //
-    //     dragStart.current = null;
-    // };
 
     const handleClick = () => {
         if (!isDragging) {
@@ -103,77 +64,85 @@ export const TicketCard = ({
     let containerStyle = "";
 
     if (isOverlay) {
-        containerStyle = "rotate-3 scale-105 shadow-2xl cursor-grabbing z-50";
+        containerStyle = "rotate-3 scale-105 shadow-2xl cursor-grabbing z-50 ring-2 ring-blue-400";
     } else if (isDragging) {
         containerStyle = "opacity-30 grayscale border-dashed border-gray-400";
     } else {
-        containerStyle = "opacity-100 hover:shadow-md cursor-grab active:cursor-grabbing";
+        containerStyle = "opacity-100 hover:shadow-lg cursor-grab active:cursor-grabbing";
     }
 
+    // Default to P3 if priority is out of bounds
+    const bgColor = priorityBackgrounds[priority] || priorityBackgrounds[3];
+    const badgeStyle = priorityBadges[priority] || priorityBadges[3];
+    const borderColor = priorityBorders[priority] || priorityBorders[3];
+
     return (
-        // <Draggable draggableId={id} index={index}>
-        //     {(provided, snapshot) => (
-                <div
-                    ref={!isOverlay ? setNodeRef : null}
-                    {...(!isOverlay ? listeners : {})}
-                    {...(!isOverlay ? attributes : {})}
-                    onClick={handleClick}
-                    // className={`bg-white rounded-2xl border ${priorityBorders[priority]} p-4 shadow mb-4 cursor-pointer`}
-                    // className={`bg-white rounded-2xl border ${priorityBorders[priority] || "border-gray-200"} p-4 shadow mb-4 cursor-grab active:cursor-grabbing relative`}
-                    className={`
-                bg-white rounded-2xl border p-4 mb-4 relative transition-all duration-200
-                ${priorityBorders[priority] || "border-gray-200"}
+        <div
+            ref={!isOverlay ? setNodeRef : null}
+            {...(!isOverlay ? listeners : {})}
+            {...(!isOverlay ? attributes : {})}
+            // onClick={handleClick} // Removed container click to allow button clicks, handled via Eye icon or name
+            className={`
+                rounded-[16px] border p-5 mb-4 relative transition-all duration-200
+                ${bgColor}
+                ${borderColor}
                 ${containerStyle}
             `}
-                >
-                    {/* Top Row */}
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="font-semibold text-sm">{id}</span>
-                        <span
-                            className={`text-black text-[10px] w-[41.14px] h-[18px] rounded-[9.38px] 
-              flex items-center justify-center px-[7.03px] ${priorityColors[priority]}`}
-                        >
-              P{priority}
-            </span>
-                    </div>
-
-                    {/* User info */}
-                    <div className="flex items-center mb-1 space-x-2">
-                        <Image
-                            src="/images/sales/user-icon.svg"
-                            className="w-5 h-5"
-                            alt="User"
-                            width={14}
-                            height={14}
-                        />
-                        <span className="font-light text-sm text-[#1D1D1D]">{user}</span>
-                    </div>
-
-                    {/* Phone */}
-                    <div className="flex items-center mb-1 space-x-2">
-                        <Image
-                            src="/images/sales/phone-icon.svg"
-                            className="w-5 h-5"
-                            alt="Phone"
-                            width={14}
-                            height={14}
-                        />
-                        <span className="font-light text-sm text-[#1D1D1D]">{phone}</span>
-                    </div>
-
-                    {/* Date */}
-                    <div className="flex items-center space-x-2">
-                        <Image
-                            src="/images/sales/calendar-icon.svg"
-                            className="w-5 h-5"
-                            alt="Calendar"
-                            width={14}
-                            height={14}
-                        />
-                        <span className="font-light text-sm text-[#1D1D1D]">{date}</span>
-                    </div>
+        >
+            {/* Header Row: Title & Badge */}
+            <div className="flex flex-col gap-1 mb-4">
+                <span className="font-bold text-base text-[#101828]">{user}</span>
+                <div className="flex justify-between items-center">
+                    <span className="font-medium text-xs text-[#667085]">{id}</span>
+                    <span
+                        className={`text-[12px] font-medium px-2 py-0.5 rounded-full ${badgeStyle}`}
+                    >
+                        P{priority}
+                    </span>
                 </div>
-        //     )}
-        // </Draggable>
+            </div>
+
+            {/* Meta Info */}
+            <div className="flex flex-col gap-2 mb-4">
+                {/* User/Role - Mapping "user" prop to Name above, so here we might show Role or just use user again if it's the rep? 
+                           The design shows: Icon Name
+                                           Icon Phone
+                                           Icon Date
+                           Warning: "user" prop in MappedTicket is Customer Name. 
+                           I used "user" as the Card Title above. 
+                           Let's put the Sales Rep or Contact Person here if available, or just the icon with "Courtney Henry" etc as in design.
+                           Since I don't have separate rep data, I'll use the user prop again or a placeholder.
+                        */}
+                <div className="flex items-center gap-2 text-[#475467]">
+                    <UserIcon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{user}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[#475467]">
+                    <PhoneIcon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{phone}</span>
+                </div>
+                <div className="flex items-center gap-2 text-[#475467]">
+                    <CalendarIcon className="w-4 h-4" />
+                    <span className="text-sm font-medium">{date}</span>
+                </div>
+            </div>
+
+            {/* Action Row */}
+            <div className="flex items-center gap-3 mt-4">
+                <button className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
+                    <PhoneIcon size={14} />
+                    Call
+                </button>
+                <button className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
+                    <MailIcon size={14} />
+                    Email
+                </button>
+                <button
+                    onClick={handleClick}
+                    className="bg-white hover:bg-gray-50 text-[#344054] p-2 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center transition-colors">
+                    <EyeIcon size={14} />
+                </button>
+            </div>
+        </div>
     );
 };
