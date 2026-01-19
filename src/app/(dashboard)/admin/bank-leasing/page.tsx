@@ -187,7 +187,7 @@ export default function BankLeasing() {
                 <section
                     className="relative mb-5 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
                     <div className="w-full flex justify-between items-center">
-                        <span className="font-semibold text-[22px]">User Management</span>
+                        <span className="font-semibold text-[22px]">Bank Details Management</span>
                         <div className="flex gap-5">
                             <button
                                 className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
@@ -280,74 +280,6 @@ export default function BankLeasing() {
             </main>
 
             {isAddModalOpen && (
-                // <Modal
-                //     title="Add New Leasing Bank"
-                //     onClose={() => setIsAddModalOpen(false)}
-                //     actionButton={{
-                //         label: createBankMutation.isPending ? "Adding..." : "Add Bank",
-                //         onClick: handleCreate,
-                //     }}
-                // >
-                //     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                //         <div>
-                //             <label className="block mb-2 font-medium">Bank Name</label>
-                //             <input
-                //                 type="text"
-                //                 value={bankName}
-                //                 onChange={(e) => setBankName(e.target.value)}
-                //                 className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                //                 placeholder="e.g. Sampath Bank"
-                //             />
-                //         </div>
-                //         <div>
-                //             <label className="block mb-2 font-medium">Interest Rate (%)</label>
-                //             <input
-                //                 type="number"
-                //                 step="0.01"
-                //                 value={interestRate}
-                //                 onChange={(e) => setInterestRate(e.target.value)}
-                //                 className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                //                 placeholder="e.g. 18.5"
-                //             />
-                //         </div>
-                //     </div>
-                //
-                //     <div className="w-full mt-6">
-                //         <label className="block mb-3 font-medium">Available Lease Durations (Months)</label>
-                //         <div className="flex gap-3 flex-wrap">
-                //             {STANDARD_MONTHS.map((month) => {
-                //                 const isSelected = selectedMonths.includes(month);
-                //                 return (
-                //                     <button
-                //                         key={month}
-                //                         type="button"
-                //                         onClick={() => toggleMonthSelection(month)}
-                //                         className={`px-6 py-2 rounded-full border text-sm font-medium transition shadow-sm
-                //                             ${isSelected
-                //                             ? "bg-[#DB2727] text-white border-[#DB2727]"
-                //                             : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                //                         }
-                //                         `}
-                //                     >
-                //                         {month} Months
-                //                     </button>
-                //                 )
-                //             })}
-                //         </div>
-                //     </div>
-                //
-                //     <div className="w-full mt-6 flex items-center gap-3">
-                //         <input
-                //             type="checkbox"
-                //             id="isActive"
-                //             checked={isActive}
-                //             onChange={(e) => setIsActive(e.target.checked)}
-                //             className="w-5 h-5 accent-[#DB2727]"
-                //         />
-                //         <label htmlFor="isActive" className="font-medium cursor-pointer">Bank is Active (Visible in Calculator)</label>
-                //     </div>
-                // </Modal>
-
                 <Modal
                     title="Add New Leasing Bank"
                     onClose={() => setIsAddModalOpen(false)}
@@ -440,72 +372,6 @@ export default function BankLeasing() {
             )}
 
             {isEditModalOpen && selectedBank && (
-                // <Modal
-                //     title="Edit Bank Details"
-                //     onClose={() => setIsEditModalOpen(false)}
-                //     actionButton={{
-                //         label: updateBankMutation.isPending ? "Updating..." : "Update Bank",
-                //         onClick: handleUpdate,
-                //     }}
-                // >
-                //     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                //         <div>
-                //             <label className="block mb-2 font-medium">Bank Name</label>
-                //             <input
-                //                 type="text"
-                //                 value={bankName}
-                //                 onChange={(e) => setBankName(e.target.value)}
-                //                 className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                //             />
-                //         </div>
-                //         <div>
-                //             <label className="block mb-2 font-medium">Interest Rate (%)</label>
-                //             <input
-                //                 type="number"
-                //                 step="0.01"
-                //                 value={interestRate}
-                //                 onChange={(e) => setInterestRate(e.target.value)}
-                //                 className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                //             />
-                //         </div>
-                //     </div>
-                //
-                //     <div className="w-full mt-6">
-                //         <label className="block mb-3 font-medium">Available Lease Durations (Months)</label>
-                //         <div className="flex gap-3 flex-wrap">
-                //             {STANDARD_MONTHS.map((month) => {
-                //                 const isSelected = selectedMonths.includes(month);
-                //                 return (
-                //                     <button
-                //                         key={month}
-                //                         type="button"
-                //                         onClick={() => toggleMonthSelection(month)}
-                //                         className={`px-6 py-2 rounded-full border text-sm font-medium transition shadow-sm
-                //                             ${isSelected
-                //                             ? "bg-[#DB2727] text-white border-[#DB2727]"
-                //                             : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                //                         }
-                //                         `}
-                //                     >
-                //                         {month} Months
-                //                     </button>
-                //                 )
-                //             })}
-                //         </div>
-                //     </div>
-                //
-                //     <div className="w-full mt-6 flex items-center gap-3">
-                //         <input
-                //             type="checkbox"
-                //             id="isActiveEdit"
-                //             checked={isActive}
-                //             onChange={(e) => setIsActive(e.target.checked)}
-                //             className="w-5 h-5 accent-[#DB2727]"
-                //         />
-                //         <label htmlFor="isActiveEdit" className="font-medium cursor-pointer">Bank is Active (Visible in Calculator)</label>
-                //     </div>
-                // </Modal>
-
                 <Modal
                     title="Edit Bank Details"
                     onClose={() => setIsEditModalOpen(false)}
