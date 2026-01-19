@@ -15,6 +15,21 @@ import {useToast} from "@/hooks/useToast";
 import {useCurrentUser} from "@/utils/auth";
 
 
+interface BranchStock {
+    location: string;
+    availability: 'Physical' | 'On Order';
+    count: number;
+}
+
+interface StockItem {
+    name: string;
+    price: string;
+    physicalStock: number;
+    onOrderStock: number;
+    branches: BranchStock[];
+}
+
+
 export const spareSaleSchema = z.object({
     date: z.string().min(1, "Date is required"),
     // customer_id: z.string().min(1, "Customer ID is required"),
@@ -121,7 +136,12 @@ const SpareParts = () => {
     };
 
 
-    const [showStockAvailability, setShowStockAvailability] = useState(false);
+    const [showStockAvailability, setShowStockAvailability] = useState(true);
+
+    const [isStockDetailsModalOpen, setIsStockDetailsModalOpen] = useState(false);
+    const [selectedStockItem, setSelectedStockItem] = useState<StockItem | null>(null);
+    const [isHoveringShare, setIsHoveringShare] = useState(false);
+
     const [isSpareAvailabilityModalOpen, setIsSpareAvailabilityModalOpen] = useState(false);
     const [showLoyaltyAndPromotions, setShowLoyaltyAndPromotions] = useState(false);
 
@@ -161,6 +181,32 @@ const SpareParts = () => {
             compatibility: 'DOT 4 standard for hydraulic brake systems',
         },
     ];
+
+
+    const getBranchDataForItem = (itemName: string, price: string): StockItem => {
+        return {
+            name: itemName,
+            price: price,
+            physicalStock: 62,
+            onOrderStock: 55,
+            branches: [
+                {location: "Colombo Main", availability: "Physical", count: 24},
+                {location: "Kandy Branch", availability: "Physical", count: 18},
+                {location: "Matara Branch", availability: "Physical", count: 12},
+                {location: "Jaffna Branch", availability: "Physical", count: 8},
+                {location: "Galle Branch", availability: "On Order", count: 30},
+                {location: "Negombo Branch", availability: "On Order", count: 25},
+            ]
+        };
+    };
+
+
+    const handleViewStockClick = (item: any, e: React.MouseEvent) => {
+        e.stopPropagation(); // Stop click from propagating to the row
+        const itemDetails = getBranchDataForItem(item.name, item.price);
+        setSelectedStockItem(itemDetails);
+        setIsStockDetailsModalOpen(true);
+    };
 
 
     const vehicleData = [
@@ -206,6 +252,32 @@ const SpareParts = () => {
                 console.error('Failed to copy: ', err);
             });
     };
+
+
+    const generateShareText = (item: StockItem) => {
+        return `Stock Availability Update:\n\nItem: ${item.name}\nPrice: ${item.price}\n\nTotal Physical Stock: ${item.physicalStock}\nTotal On Order: ${item.onOrderStock}\n\n*These details are valid for 24 hours.*`;
+    };
+
+    const handleShareWhatsapp = () => {
+        if (!selectedStockItem) return;
+        const text = encodeURIComponent(generateShareText(selectedStockItem));
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+    };
+
+    const handleShareEmail = () => {
+        if (!selectedStockItem) return;
+        const subject = encodeURIComponent(`Stock Inquiry: ${selectedStockItem.name}`);
+        const body = encodeURIComponent(generateShareText(selectedStockItem));
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    };
+
+    const handleShareMessage = () => {
+        if (!selectedStockItem) return;
+        const body = encodeURIComponent(generateShareText(selectedStockItem));
+        // Note: 'sms:' protocol behavior varies by OS (iOS vs Android separator & body param)
+        window.location.href = `sms:?&body=${body}`;
+    };
+
 
     const handleStockItemClick = () => {
         setShowLoyaltyAndPromotions(true);
@@ -268,13 +340,13 @@ const SpareParts = () => {
                                 <h2 className="font-semibold text-[22px] mb-6">Filters</h2>
                                 <div>
                                     <button
-                                        className="ml-auto mt-8 md:mt-0 text-[#DB2727] text-base font-medium rounded-full px-9 py-2 hover:text-white transition">
+                                        className="ml-auto mt-8 md:mt-0 text-[#DB2727] text-base font-medium rounded-full px-9 py-2 hover:text-red-700 transition cursor-pointer">
                                         Clear all
                                     </button>
                                     <button
                                         id="applyBtn"
                                         onClick={() => setShowStockAvailability(true)}
-                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition">
+                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition cursor-pointer">
                                         Apply
                                     </button>
                                 </div>
@@ -303,21 +375,21 @@ const SpareParts = () => {
                                     <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Stock
                                         Availability</h2>
                                     <div className="flex flex-row gap-2">
-                                        <button
-                                            className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
-                                            <Image src="/message.svg" alt="availability" height={36}
-                                                   width={36} className="h-12 w-12"/>
-                                        </button>
-                                        <button
-                                            className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
-                                            <Image src="/whatsapp.svg" alt="availability" height={36}
-                                                   width={36} className="h-12 w-12"/>
-                                        </button>
-                                        <button
-                                            className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
-                                            <Image src="/mail.svg" alt="availability" height={36}
-                                                   width={36} className="h-12 w-12"/>
-                                        </button>
+                                        {/*<button*/}
+                                        {/*    className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">*/}
+                                        {/*    <Image src="/message.svg" alt="availability" height={36}*/}
+                                        {/*           width={36} className="h-12 w-12"/>*/}
+                                        {/*</button>*/}
+                                        {/*<button*/}
+                                        {/*    className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">*/}
+                                        {/*    <Image src="/whatsapp.svg" alt="availability" height={36}*/}
+                                        {/*           width={36} className="h-12 w-12"/>*/}
+                                        {/*</button>*/}
+                                        {/*<button*/}
+                                        {/*    className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">*/}
+                                        {/*    <Image src="/mail.svg" alt="availability" height={36}*/}
+                                        {/*           width={36} className="h-12 w-12"/>*/}
+                                        {/*</button>*/}
                                         <button
                                             onClick={() => setIsSpareAvailabilityModalOpen(true)}
                                             className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
@@ -334,9 +406,10 @@ const SpareParts = () => {
                                         <tr
                                             className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg justify-between">
                                             <th className="py-5 px-4 text-left w-[25%]">Spare Part</th>
-                                            <th className="py-5 px-4 text-left w-[20%]">Stock</th>
+                                            {/*<th className="py-5 px-4 text-left w-[20%]">Stock</th>*/}
                                             <th className="py-5 px-4 text-left w-[20%]">Price</th>
                                             <th className="py-5 px-4 text-left w-[35%]">Compatibility</th>
+                                            <th className="py-5 px-4 text-left w-[20%]">Stock</th>
                                         </tr>
                                         </thead>
                                         <tbody>
@@ -344,9 +417,17 @@ const SpareParts = () => {
                                             <tr key={index} onClick={handleStockItemClick}
                                                 className="text-lg font-medium text-[#1D1D1D]">
                                                 <td className="py-4 px-4 cursor-pointer">{item.name}</td>
-                                                <td className="py-4 px-4 cursor-pointer">{item.stock}</td>
+                                                {/*<td className="py-4 px-4 cursor-pointer">{item.stock}</td>*/}
                                                 <td className="py-4 px-4 cursor-pointer">{item.price}</td>
                                                 <td className="py-4 px-4 cursor-pointer">{item.compatibility}</td>
+                                                <td className="py-4 px-4 cursor-pointer">
+                                                    <button
+                                                        id="stockViewBtn"
+                                                        onClick={(e) => handleViewStockClick(item, e)}
+                                                        className="ml-auto mt-8 md:mt-0 bg-[#DB2727] text-white text-base font-medium rounded-full px-9 py-2 hover:bg-red-600 transition cursor-pointer">
+                                                        View
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                         </tbody>
@@ -444,7 +525,8 @@ const SpareParts = () => {
                     <section
                         id="assign-to-sale-section"
                         className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
+                        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col"
+                              style={{width: "-webkit-fill-available"}}>
                             <div className="space-y-6">
                                 <div className="flex flex-row items-center justify-between">
                                     <h2 className="font-semibold text-[22px] mb-6">Assign to Sales</h2>
@@ -624,6 +706,117 @@ const SpareParts = () => {
                         </div>
                     </section>
                 </main>
+
+                {isStockDetailsModalOpen && selectedStockItem && (
+                    <Modal
+                        title="Stock Availability"
+                        onClose={() => setIsStockDetailsModalOpen(false)}
+                        isPriorityAvailable={false}
+                    >
+                        <div className="min-w-[900px] px-2 pb-6 font-montserrat text-[#1D1D1D]">
+
+                            {/* Item Header */}
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-4">
+                                    <h2 className="text-[24px] font-semibold">{selectedStockItem.name}</h2>
+                                    <span
+                                        className="text-[20px] text-[#575757] font-medium">{selectedStockItem.price}</span>
+                                </div>
+                                {/*<div className="flex gap-3">*/}
+                                {/*    <button className="opacity-60 hover:opacity-100 transition"><Image src="/message.svg" width={36} height={36} alt="chat" className="h-12 w-12" /></button>*/}
+                                {/*    <button className="opacity-60 hover:opacity-100 transition"><Image src="/whatsapp.svg" width={36} height={36} alt="whatsapp" className="h-12 w-12" /></button>*/}
+                                {/*    <button className="opacity-60 hover:opacity-100 transition"><Image src="/mail.svg" width={36} height={36} alt="mail" className="h-12 w-12" /></button>*/}
+                                {/*</div>*/}
+
+                                <div
+                                    className="flex -mt-20 gap-3 relative"
+                                    onMouseEnter={() => setIsHoveringShare(true)}
+                                    onMouseLeave={() => setIsHoveringShare(false)}
+                                >
+                                    {/* Warning Banner */}
+                                    <div
+                                        className={`absolute right-full mr-4 top-1/2 -translate-y-1/2 flex items-center bg-white border border-[#DB272780] border-2 rounded-[20px] px-4 py-1.5 shadow-sm whitespace-nowrap transition-all duration-300 ease-in-out ${
+                                            isHoveringShare ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'
+                                        }`}
+                                    >
+                                        <div
+                                            className="w-5 h-5 rounded-full border-2 border-[#DB2727] text-[#DB2727] flex items-center justify-center text-xs font-bold mr-2">i
+                                        </div>
+                                        <span className="text-[#DB2727] font-medium text-sm">These details are valid for 24 hours after sharing</span>
+                                    </div>
+
+                                    {/* Share Buttons */}
+                                    <button
+                                        onClick={handleShareMessage}
+                                        className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+                                        title="Share via SMS"
+                                    >
+                                        <Image src="/message.svg" width={36} height={36} alt="chat"
+                                               className="h-12 w-12"/>
+                                    </button>
+                                    <button
+                                        onClick={handleShareWhatsapp}
+                                        className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+                                        title="Share via WhatsApp"
+                                    >
+                                        <Image src="/whatsapp.svg" width={36} height={36} alt="whatsapp"
+                                               className="h-12 w-12"/>
+                                    </button>
+                                    <button
+                                        onClick={handleShareEmail}
+                                        className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
+                                        title="Share via Email"
+                                    >
+                                        <Image src="/mail.svg" width={36} height={36} alt="mail" className="h-12 w-12"/>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Stock Indicators */}
+                            <div className="flex gap-6 mb-8 text-[14px] font-medium">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full bg-[#4CAF50]"></span>
+                                    <span className="text-[#575757] text-sm">Physical Stock: <span
+                                        className="text-[#1D1D1D] font-semibold">{selectedStockItem.physicalStock} units</span></span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-full bg-[#FF9800]"></span>
+                                    <span className="text-[#575757] text-sm">On Order: <span
+                                        className="text-[#1D1D1D] font-semibold">{selectedStockItem.onOrderStock} units</span></span>
+                                </div>
+                            </div>
+
+                            {/* Branch Table */}
+                            <div className="w-full">
+                                <div
+                                    className="flex border-b border-[#E7E7E7] pb-3 mb-4 text-[#575757] text-[16px] font-medium">
+                                    <div className="w-1/2">Branch Location</div>
+                                    <div className="w-1/4 text-center">Availability</div>
+                                    <div className="w-1/4 text-right">Stock Count</div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {selectedStockItem.branches.map((branch, index) => (
+                                        <div key={index}
+                                             className="flex items-center text-[16px] font-medium text-[#1D1D1D]">
+                                            <div className="w-1/2">{branch.location}</div>
+                                            <div className="w-1/4 flex justify-center">
+                                                <span
+                                                    className={`px-4 py-1 rounded-full text-white text-[14px] font-semibold ${
+                                                        branch.availability === 'Physical' ? 'bg-[#4CAF50]' : 'bg-[#FF9800]'
+                                                    }`}
+                                                >
+                                                    {branch.availability}
+                                                </span>
+                                            </div>
+                                            <div className="w-1/4 text-right">{branch.count} units</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
 
                 {isSpareAvailabilityModalOpen && (
                     <Modal

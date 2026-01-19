@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -171,8 +174,8 @@ export default function ServiceBookingDashboard() {
                     <div className="flex items-center gap-4">
                         <Image src="/indra-logo.png" alt="Logo" width={48} height={48} className="object-contain w-[3rem] h-[3rem]" />
                         <div>
-                            <h1 className="text-xl font-bold text-[#1D1D1D] montserrat">{session?.user?.branchName} Service Park</h1>
-                            <p className="text-[0.8125rem] text-[#575757] montserrat font-medium">Today&apos;s Service Schedule</p>
+                            <h1 className="text-xl font-bold text-[#1D1D1D] montserrat">Colombo Service Park</h1>
+                            <p className="text-[0.8125rem] text-[#575757] montserrat font-medium">Today&#39;s Service Schedule</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-8">

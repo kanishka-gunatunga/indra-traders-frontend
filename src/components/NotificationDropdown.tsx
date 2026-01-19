@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
@@ -8,15 +11,17 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 interface NotificationDropdownProps {
-    userId?: number;
+    userId?: string;
 }
 
 export default function NotificationDropdown({ userId }: NotificationDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    const user = Number(userId)
+
     // Use our custom hook
-    const { data, markAsRead } = useNotifications(userId);
+    const { data, markAsRead } = useNotifications(user);
 
     // Close on click outside
     useEffect(() => {

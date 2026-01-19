@@ -1,11 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client"
 import Image from "next/image";
-import React, {useState} from "react";
+import React, {useState, useEffect, useMemo} from "react";
 import Modal from "@/components/Modal";
 import {z} from "zod";
 import {useCreateVehicleSale} from "@/hooks/useVehicleSales";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {useForm} from "react-hook-form";
+import {useForm, useWatch} from "react-hook-form";
 import FormField from "@/components/FormField";
 import {useCreateUnavailableVehicleSale} from "@/hooks/useUnavailable";
 import {useToast} from "@/hooks/useToast";
@@ -13,6 +16,8 @@ import Toast from "@/components/Toast";
 import {useCurrentUser} from "@/utils/auth";
 import VehicleGallery from "@/components/VehicleGallery";
 import LeasingCalculator from "@/components/LeasingCalculator";
+import {useActiveBanks} from "@/hooks/useLeasing";
+import {calculateLeasingDetails} from "@/utils/leasing";
 
 
 export const vehicleSaleSchema = z.object({
@@ -30,6 +35,15 @@ export const vehicleSaleSchema = z.object({
     additional_note: z.string().optional(),
     contact_number: z.string().min(1, "Contact number is required"),
     customer_name: z.string().min(1, "Customer name is required"),
+
+    enable_leasing: z.boolean().optional(),
+    leasing_vehicle_price: z.string().optional(),
+    leasing_bank: z.string().optional(),
+    leasing_time_period: z.string().optional(),
+    leasing_promo_code: z.string().optional(),
+    leasing_interest_rate: z.string().optional(),
+    leasing_monthly_installment: z.string().optional(),
+    leasing_total_amount: z.string().optional(),
 });
 
 export type VehicleSaleFormData = z.infer<typeof vehicleSaleSchema>;
@@ -55,13 +69,20 @@ const VehicleSales = () => {
     const user = useCurrentUser();
     const userId = user?.id;
 
+    console.log("user id", userId);
+
+    const {data: banks = [], isLoading: isBanksLoading} = useActiveBanks();
+
     const {mutate: createSale, isPending} = useCreateVehicleSale();
     // const [submitSuccess, setSubmitSuccess] = useState(false);
 
     const {mutate: createUnavailableSale, isPending: isUnavailablePending} = useCreateUnavailableVehicleSale();
     const [unavailableSubmitSuccess, setUnavailableSubmitSuccess] = useState(false);
 
-    const [showVehicleDetailsAndLoyaltyAndPromotions , setShowVehicleDetailsAndLoyaltyAndPromotions] = useState(false);
+    const [showVehicleDetailsAndLoyaltyAndPromotions, setShowVehicleDetailsAndLoyaltyAndPromotions] = useState(false);
+
+    const [externalCalculatorData, setExternalCalculatorData] = useState<any>(null);
+
 
     const [copiedIndex, setCopiedIndex] = useState<null | number>(null);
 
@@ -71,6 +92,9 @@ const VehicleSales = () => {
         register,
         handleSubmit,
         formState: {errors},
+        setValue,
+        getValues,
+        control,
         reset,
     } = useForm<VehicleSaleFormData>({
         resolver: zodResolver(vehicleSaleSchema),
@@ -78,6 +102,7 @@ const VehicleSales = () => {
             date: new Date().toISOString().split("T")[0], // Default to today
             call_agent_id: Number(userId) || 1,
             customer_id: "CUS1760976040167",
+            enable_leasing: false,
             vehicle_make: "",
             vehicle_model: "",
             manufacture_year: "",
@@ -157,6 +182,15 @@ const VehicleSales = () => {
     };
 
 
+    useEffect(() => {
+        if (userId) {
+            console.log("Updating form with Logged In User ID:", userId);
+            setValue("call_agent_id", Number(userId));
+        }
+    }, [userId, setValue]);
+
+
+
     const [showStockAvailability, setShowStockAvailability] = useState(false);
     const [isVehicleAvailabilityModalOpen, setIsVehicleAvailabilityModalOpen] = useState(false);
 
@@ -176,6 +210,111 @@ const VehicleSales = () => {
     ) => {
         setter(value === "" ? 0 : Math.max(0, value - 1));
     };
+
+
+    const isLeasingEnabled = useWatch({control, name: "enable_leasing"});
+    const watchedLeasingPrice = useWatch({control, name: "leasing_vehicle_price"});
+    const watchedLeasingDownPayment = useWatch({control, name: "down_payment"});
+    const watchedInterestRate = useWatch({control, name: "leasing_interest_rate"});
+    const watchedTimePeriod = useWatch({control, name: "leasing_time_period"});
+
+    const watchedLeasingBank = useWatch({control, name: "leasing_bank"});
+
+    const bankOptions = useMemo(() => {
+        return banks.map((bank) => ({
+            value: bank.bank_name,
+            label: bank.bank_name
+        }));
+    }, [banks]);
+
+    const timePeriodOptions = useMemo(() => {
+        const selectedBank = banks.find(b => b.bank_name === watchedLeasingBank);
+
+        if (!selectedBank) {
+            // Default options if no bank selected
+            return [12, 24, 36, 48, 60].map(m => ({value: m.toString(), label: `${m} Months`}));
+        }
+
+        let months = selectedBank.available_months;
+        // Parse string JSON if necessary (e.g. "[12, 24]")
+        if (typeof months === "string") {
+            try {
+                months = JSON.parse(months);
+            } catch (error) {
+                console.error("Error parsing months:", error);
+                months = [12, 24, 36, 48, 60];
+            }
+        }
+
+        const monthArray = Array.isArray(months) ? months : [12, 24, 36, 48, 60];
+
+        return monthArray.map((m: number) => ({
+            value: m.toString(),
+            label: `${m} Months`
+        }));
+    }, [watchedLeasingBank, banks]);
+
+
+    useEffect(() => {
+        if (!watchedLeasingBank) return;
+
+        const selectedBank = banks.find(b => b.bank_name === watchedLeasingBank);
+        if (selectedBank) {
+            setValue("leasing_interest_rate", selectedBank.interest_rate.toString());
+        }
+    }, [watchedLeasingBank, banks, setValue]);
+
+
+    const handleCalculatorSuccess = (data: any) => {
+        setExternalCalculatorData(data);
+
+        if (isLeasingEnabled) {
+            applyCalculatorDataToForm(data);
+        }
+    };
+
+    const applyCalculatorDataToForm = (data: any) => {
+        setValue("leasing_bank", data.bankName);
+        setValue("leasing_time_period", data.months.toString());
+        setValue("leasing_interest_rate", data.interestRate.toString());
+        setValue("down_payment", data.downPayment.toString());
+
+        // We assume the calculator used the vehicle price provided (or entered).
+        // Since Calculator component prop 'vehiclePrice' was hardcoded to 1000000 in your example:
+        setValue("leasing_vehicle_price", "1000000");
+
+        // Results
+        setValue("leasing_monthly_installment", data.monthlyInstallment.toString());
+        setValue("leasing_total_amount", data.totalAmount.toString());
+
+        showToast("Leasing details applied from calculator", "success");
+    }
+
+    useEffect(() => {
+        if (isLeasingEnabled && externalCalculatorData) {
+            applyCalculatorDataToForm(externalCalculatorData);
+        }
+    }, [isLeasingEnabled, externalCalculatorData, setValue]);
+
+    useEffect(() => {
+        // Only run calculation if leasing is enabled and we have the necessary inputs
+        if (!isLeasingEnabled) return;
+
+        const price = parseFloat(watchedLeasingPrice || "0");
+        const down = parseFloat(watchedLeasingDownPayment || "0");
+        const rate = parseFloat(watchedInterestRate || "0");
+        const months = parseFloat(watchedTimePeriod || "0");
+
+        // Avoid infinite loops or unnecessary calcs if fields are empty
+        if (price > 0 && months > 0) {
+            const {monthly, total} = calculateLeasingDetails(price, down, rate, months);
+
+            // Update read-only fields
+            setValue("leasing_monthly_installment", monthly.toString());
+            setValue("leasing_total_amount", total.toString());
+        }
+    }, [watchedLeasingPrice, watchedLeasingDownPayment, watchedInterestRate, watchedTimePeriod, isLeasingEnabled, setValue]);
+
 
     const stockData = [
         {
@@ -424,9 +563,9 @@ const VehicleSales = () => {
                         <section
                             className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
                             <div className="w-full flex justify-between items-center">
-              <span className="font-semibold text-[22px]">
-                  2025 Honda Civic Hatchback
-              </span>
+                                  <span className="font-semibold text-[22px]">
+                                      2025 Honda Civic Hatchback
+                                  </span>
                                 <div className="flex gap-3">
                                     <button
                                         className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
@@ -472,11 +611,11 @@ const VehicleSales = () => {
                                     />
                                 </div>
                                 <div className="w-1/2 px-10 flex flex-col">
-                <span className="text-[20px] font-semibold tracking-wide">
-                  Vehicle Details
-                </span>
+                                    <span className="text-[20px] font-semibold tracking-wide">
+                                      Vehicle Details
+                                    </span>
                                     <div className="text-[23px] mb-3 font-semibold tracking-wide text-[#DB2727] mt-5">
-                                        Rs. {'N/A'}
+                                        Rs. {'N/A'} -  Rs. {'N/A'}
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {/*{vehicle ? (*/}
@@ -592,7 +731,7 @@ const VehicleSales = () => {
 
                     {showStockAvailability && showVehicleDetailsAndLoyaltyAndPromotions && (
                         <section className="w-full">
-                            <LeasingCalculator vehiclePrice={1000000} />
+                            <LeasingCalculator onCalculationSuccess={handleCalculatorSuccess} vehiclePrice={1000000}/>
                         </section>
                     )}
 
@@ -730,9 +869,9 @@ const VehicleSales = () => {
                                     />
 
                                     <div className="flex flex-col space-y-2 font-medium text-gray-900">
-                                <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
-                                  Price Range
-                                </span>
+                                        <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
+                                          Price Range
+                                        </span>
 
                                         <div className="flex gap-4">
                                             {/* Price From */}
@@ -844,6 +983,87 @@ const VehicleSales = () => {
                                     register={register("additional_note")}
                                     error={errors.additional_note}
                                 />
+
+                                {/*<form action="/submit-page" method="post" className="my-8">*/}
+                                {/*    <input type="checkbox" className="mr-5 text-[#DB2727]" id="subscribe" name="subscribe" value="yes"/>*/}
+                                {/*    <label htmlFor="subscribe" className="text-[19px] font-semibold">Leasing Details</label><br/>*/}
+                                {/*</form>*/}
+
+                                <div className="my-8 flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-4 accent-[#DB2727] h-4 w-4 cursor-pointer"
+                                        id="enable-leasing"
+                                        {...register("enable_leasing")}
+                                        // name="subscribe"
+                                        // value="yes"
+                                    />
+                                    <label htmlFor="enable-leasing" className="text-[19px] font-semibold">
+                                        Leasing Details
+                                    </label>
+                                    <br/>
+                                </div>
+
+                                {isLeasingEnabled && (
+                                    <div className="animate-fade-in transition-all duration-300">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                            <FormField
+                                                label="Vehicle Price"
+                                                type="number"
+                                                placeholder="Vehicle Price"
+                                                register={register("leasing_vehicle_price")}
+                                                error={errors.leasing_vehicle_price}
+                                            />
+                                            <FormField
+                                                label="Select Bank"
+                                                type="select"
+                                                isIcon={true}
+                                                options={bankOptions} // Pass dynamic options
+                                                register={register("leasing_bank")}
+                                                error={errors.leasing_bank}
+                                            />
+                                            <FormField
+                                                label="Time Period"
+                                                type="select"
+                                                isIcon={false}
+                                                options={timePeriodOptions}
+                                                register={register("leasing_time_period")}
+                                                error={errors.leasing_time_period}
+                                            />
+                                            <FormField
+                                                label="Promo Code"
+                                                type="text"
+                                                placeholder="Promo Code"
+                                                register={register("leasing_promo_code")}
+                                                error={errors.leasing_promo_code}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-10">
+                                            <FormField
+                                                label="Interest Rate"
+                                                type="number"
+                                                placeholder="Interest Rate"
+                                                register={register("leasing_interest_rate")}
+                                                error={errors.leasing_interest_rate}
+                                            />
+                                            <FormField
+                                                label="Monthly Installment"
+                                                type="text"
+                                                placeholder="Monthly Installment"
+                                                register={register("leasing_monthly_installment")}
+                                                error={errors.leasing_monthly_installment}
+                                            />
+                                            <FormField
+                                                label="Total Amount"
+                                                type="text"
+                                                placeholder="Total Amount"
+                                                register={register("leasing_total_amount")}
+                                                error={errors.leasing_total_amount}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             {/*{submitSuccess && (*/}
                             {/*    <div className="text-green-600 text-sm mt-4">Vehicle sale created successfully!</div>*/}
@@ -940,7 +1160,6 @@ const VehicleSales = () => {
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                {/*<VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make" isIcon={true}/>*/}
                                 <FormField
                                     label="Vehicle Make"
                                     type="select"
@@ -949,8 +1168,6 @@ const VehicleSales = () => {
                                     register={registerUnavailable("vehicle_make")}
                                     error={unavailableErrors.vehicle_make}
                                 />
-                                {/*<VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"*/}
-                                {/*                      isIcon={true}/>*/}
 
                                 <FormField
                                     label="Vehicle Model"
@@ -961,9 +1178,6 @@ const VehicleSales = () => {
                                     error={unavailableErrors.vehicle_model}
                                 />
 
-                                {/*<VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"*/}
-                                {/*                      isIcon={true}/>*/}
-
                                 <FormField
                                     label="Manufacture Year"
                                     type="select"
@@ -972,8 +1186,6 @@ const VehicleSales = () => {
                                     register={registerUnavailable("manufacture_year")}
                                     error={unavailableErrors.manufacture_year}
                                 />
-                                {/*<VerificationDropdown label="Transmission" placeholder="Select Transmission"*/}
-                                {/*                      isIcon={true}/>*/}
 
                                 <FormField
                                     label="Transmission"
@@ -982,8 +1194,6 @@ const VehicleSales = () => {
                                     register={registerUnavailable("transmission")}
                                     error={unavailableErrors.transmission}
                                 />
-                                {/*<VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type"*/}
-                                {/*                      isIcon={false}/>*/}
 
                                 <FormField
                                     label="Fuel Type"
@@ -992,20 +1202,6 @@ const VehicleSales = () => {
                                     register={registerUnavailable("fuel_type")}
                                     error={unavailableErrors.fuel_type}
                                 />
-
-                                {/*<div>*/}
-                                {/*    <label className="flex flex-col space-y-2 font-medium text-gray-900">*/}
-                                {/*        <span*/}
-                                {/*            className="text-[#1D1D1D] font-medium text-[17px] montserrat">Down Payment</span>*/}
-                                {/*        <div className="relative">*/}
-                                {/*            <input*/}
-                                {/*                type="text"*/}
-                                {/*                placeholder="Enter Down Payment"*/}
-                                {/*                className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}*/}
-                                {/*            />*/}
-                                {/*        </div>*/}
-                                {/*    </label>*/}
-                                {/*</div>*/}
 
                                 <FormField
                                     label="Down Payment"
@@ -1117,10 +1313,6 @@ const VehicleSales = () => {
                                     </div>
                                 </div>
                             </div>
-                            {/*{unavailableSubmitSuccess && (*/}
-                            {/*    <div className="text-green-600 text-sm mt-4">Unavailable vehicle sale created*/}
-                            {/*        successfully!</div>*/}
-                            {/*)}*/}
                         </form>
                     </Modal>
                 )}
