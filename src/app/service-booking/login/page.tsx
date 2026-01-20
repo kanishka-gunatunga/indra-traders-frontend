@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ChevronDown, Check, Loader2 } from "lucide-react";
+import { ChevronDown, Check, Loader2, WifiOff, AlertCircle } from "lucide-react";
 import { getServiceBookingBranches } from "@/services/serviceParkService";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -81,20 +81,80 @@ export default function ServiceParkLoginPage() {
       return;
     }
 
-    const result = await signIn("service-booking", {
-      username,
-      password,
-      branch: selectedBranch.id,
-      redirect: false,
-    })
+    try {
+      const result = await signIn("service-booking", {
+        username,
+        password,
+        branch: selectedBranch.id,
+        redirect: false,
+      })
 
-    if (result?.error) {
-      toast.error("Invalid username or password");
+      if (result?.error) {
+        
+        const errorMessage = result.error.toLowerCase();
+        
+        if (errorMessage.includes("network") || errorMessage.includes("fetch") || errorMessage.includes("connection")) {
+          toast.error(
+            <div className="flex items-center gap-2">
+              <WifiOff className="w-4 h-4" />
+              <span>Unable to connect to server. Please check your network connection.</span>
+            </div>,
+            { 
+              duration: 5000,
+              style: {
+                background: '#fee2e2',
+                color: '#991b1b',
+                border: '1px solid #fca5a5',
+              }
+            }
+          );
+        } else if (errorMessage.includes("server") || errorMessage.includes("500")) {
+          toast.error(
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>Server error. Please try again later.</span>
+            </div>,
+            { 
+              duration: 5000,
+              style: {
+                background: '#fee2e2',
+                color: '#991b1b',
+                border: '1px solid #fca5a5',
+              }
+            }
+          );
+        } else {
+          toast.error("Invalid username or password", {
+            style: {
+              background: '#fee2e2',
+              color: '#991b1b',
+              border: '1px solid #fca5a5',
+            }
+          });
+        }
+        setLoading(false);
+      } else {
+        toast.success("Login successful! Redirecting...");
+        
+        router.push("/service-booking/dashboard");
+      }
+    } catch (error) {
+      
+      toast.error(
+        <div className="flex items-center gap-2">
+          <WifiOff className="w-4 h-4" />
+          <span>Connection error. Unable to reach the server.</span>
+        </div>,
+        { 
+          duration: 5000,
+          style: {
+            background: '#fee2e2',
+            color: '#991b1b',
+            border: '1px solid #fca5a5',
+          }
+        }
+      );
       setLoading(false);
-    } else {
-      toast.success("Login successful! Redirecting...");
-      // Keep loading true during redirect to prevent double-clicks
-      router.push("/service-booking/dashboard");
     }
   };
 
