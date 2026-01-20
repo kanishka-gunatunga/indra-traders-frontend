@@ -87,8 +87,22 @@ export const authOptions: NextAuthOptions = {
                         }),
                     });
 
+                    // Check for network errors (no response received)
+                    if (!response) {
+                        throw new Error("NETWORK_ERROR");
+                    }
+
+                    // Check for connection errors (fetch failed)
+                    if (response.status === 0 || response.type === 'error') {
+                        throw new Error("NETWORK_ERROR");
+                    }
+
                     if (!response.ok) {
-                        throw new Error("Invalid credentials");
+                        // If backend is reachable but returns error, it's an auth issue
+                        if (response.status >= 500) {
+                            throw new Error("SERVER_ERROR");
+                        }
+                        throw new Error("INVALID_CREDENTIALS");
                     }
 
                     const data = await response.json();
@@ -107,7 +121,21 @@ export const authOptions: NextAuthOptions = {
                     }
                     return null;
                 } catch (error) {
-                    throw new Error(error instanceof Error ? error.message : "Invalid credentials");
+                    // Re-throw network/server errors with specific codes
+                    if (error instanceof TypeError && error.message.includes('fetch')) {
+                        throw new Error("NETWORK_ERROR");
+                    }
+                    if (error instanceof Error && error.message === "NETWORK_ERROR") {
+                        throw error;
+                    }
+                    if (error instanceof Error && error.message === "SERVER_ERROR") {
+                        throw error;
+                    }
+                    if (error instanceof Error && error.message === "INVALID_CREDENTIALS") {
+                        throw error;
+                    }
+                    // Default to invalid credentials for unknown errors
+                    throw new Error("INVALID_CREDENTIALS");
                 }
             },
         }),
