@@ -1,6 +1,36 @@
 import axiosInstance from "@/utils/axiosinstance";
 import { ScheduledServiceResponse } from "@/types/serviceBooking";
 
+export interface ServiceLine {
+    id: number;
+    name: string;
+    type?: string;
+    advisor?: number;
+}
+
+export const fetchServiceLines = async (branchId: number): Promise<ServiceLine[]> => {
+    try {
+        const res = await axiosInstance.get(`/service-park/branches/${branchId}/lines`);
+        return res.data;
+    } catch (error: unknown) {
+        const axiosError = error as { 
+            message?: string; 
+            response?: { 
+                status?: number; 
+                statusText?: string; 
+            } 
+        };
+        
+        console.error('[ServiceBookingService] Failed to fetch service lines:', {
+            message: axiosError.message,
+            status: axiosError.response?.status,
+            statusText: axiosError.response?.statusText
+        });
+        
+        throw error;
+    }
+};
+
 export const fetchScheduledServices = async (
     branchId: number, 
     date?: string

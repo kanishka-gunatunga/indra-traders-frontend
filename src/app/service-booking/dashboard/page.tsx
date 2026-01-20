@@ -9,9 +9,11 @@ import {
     Users,
     CheckCircle2,
     Clock,
-    Calendar,
     LogOut,
-    Sparkles
+    Sparkles,
+    Info,
+    Loader2,
+    AlertCircle
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
@@ -121,7 +123,7 @@ export default function ServiceBookingDashboard() {
     const getStatusBadge = (status: string) => {
         if (status === 'Completed') return <div className="flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full text-green-700 text-[0.75rem] font-bold shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Completed</div>
         if (status === 'In Progress') return <div className="flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full text-orange-700 text-[0.75rem] font-bold shadow-sm"><Clock className="w-3.5 h-3.5" /> In Progress</div>
-        return <div className="flex items-center gap-1 text-gray-400 text-[0.75rem] font-semibold"><Calendar className="w-3.5 h-3.5" /> Upcoming</div>
+        return <div className="flex items-center gap-1 text-gray-400 text-[0.75rem] font-semibold"><Info className="w-3.5 h-3.5" /> Upcoming</div>
     };
 
     // Transform stats object into array format for UI
@@ -143,9 +145,9 @@ export default function ServiceBookingDashboard() {
         {
             label: "Upcoming",
             count: stats.upcoming,
-            icon: Calendar,
-            badgeColor: "bg-[#FFFFFF99] text-[#575757]",
-            iconColor: "text-[#575757]"
+            icon: Info,
+            badgeColor: "bg-[#DB272733] text-[#DB2727]",
+            iconColor: "text-[#DB2727]"
         },
         {
             label: "Available Slots",
@@ -157,11 +159,44 @@ export default function ServiceBookingDashboard() {
     ];
 
     if (loading) {
-        return <div className="flex items-center justify-center h-screen">Loading...</div>;
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-[#F0F2F5]">
+                <div className="bg-white rounded-[2rem] p-12 shadow-lg flex flex-col items-center gap-6 min-w-[20rem]">
+                    <div className="relative">
+                        <Loader2 className="w-16 h-16 text-[#DB2727] animate-spin" />
+                        <div className="absolute inset-0 rounded-full border-4 border-[#DB2727]/20"></div>
+                    </div>
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-[#1D1D1D] montserrat mb-2">Loading Services</h3>
+                        <p className="text-sm text-[#575757] montserrat">Please wait while we fetch your data...</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
     
     if (error) {
-        return <div className="flex items-center justify-center h-screen text-red-600">Error: {error}</div>;
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-[#F0F2F5] px-4">
+                <div className="bg-white rounded-[2rem] p-12 shadow-lg flex flex-col items-center gap-6 max-w-md w-full">
+                    <div className="relative">
+                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
+                            <AlertCircle className="w-10 h-10 text-[#DB2727]" />
+                        </div>
+                    </div>
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-[#1D1D1D] montserrat mb-2">Unable to Load Data</h3>
+                        <p className="text-sm text-[#575757] montserrat mb-4">{error}</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-6 py-3 bg-[#DB2727] text-white rounded-xl font-semibold montserrat hover:bg-[#C21F1F] transition-colors shadow-sm"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (

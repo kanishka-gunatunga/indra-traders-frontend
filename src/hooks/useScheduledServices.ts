@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { fetchScheduledServices } from "@/services/serviceBookingService";
+import { fetchScheduledServices, fetchServiceLines } from "@/services/serviceBookingService";
 import {
     determineStatus,
     getThemeFromStatus,
@@ -45,7 +45,15 @@ export function useScheduledServices() {
                 setError(null);
 
                 const today = new Date().toISOString().split('T')[0];
-                const rawServices = await fetchScheduledServices(branchId, today);
+                
+                // Fetch service lines (bays) and scheduled services in parallel
+                const [rawServices, lines] = await Promise.all([
+                    fetchScheduledServices(branchId, today),
+                    fetchServiceLines(branchId)
+                ]);
+
+                // Extract bay names from service lines
+                const bayNames = lines.map(line => line.name);
 
                 const processedServices: ProcessedScheduledService[] = rawServices.map(service => {
                     const status = determineStatus(service);
@@ -57,8 +65,17 @@ export function useScheduledServices() {
                     };
                 });
 
+                // Sort services: In Progress → Upcoming → Completed
+                const statusOrder = { "In Progress": 0, "Upcoming": 1, "Completed": 2 };
+                processedServices.sort((a, b) => {
+                    const orderA = statusOrder[a.status] ?? 999;
+                    const orderB = statusOrder[b.status] ?? 999;
+                    return orderA - orderB;
+                });
+
                 const calculatedStats = calculateStats(processedServices);
-                const calculatedSlots = calculateAvailableSlots(processedServices);
+                // Pass bay names to calculateAvailableSlots
+                const calculatedSlots = calculateAvailableSlots(processedServices, bayNames);
                 calculatedStats.availableSlots = calculatedSlots.length;
 
                 setScheduledServices(processedServices);
