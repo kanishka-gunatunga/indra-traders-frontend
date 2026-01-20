@@ -6,8 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { signOut } from "next-auth/react";
-import {useCurrentUser} from "@/utils/auth";
-import {usePathname} from "next/navigation";
+import { useCurrentUser } from "@/utils/auth";
+import { usePathname } from "next/navigation";
 import NotificationDropdown from "@/components/NotificationDropdown";
 
 const callAgentTabs = [
@@ -16,6 +16,7 @@ const callAgentTabs = [
     { label: "Service Park", href: "/call-agent/service-park" },
     { label: "Spare Parts", href: "/call-agent/spare-parts" },
     { label: "Fast Track", href: "/call-agent/fast-track" },
+    { label: "BYD Sales", href: "/call-agent/byd-sales" }
 ];
 
 const saleAgentTabs = [
@@ -89,24 +90,23 @@ const Navbar = () => {
                     {/* Navigation Tabs */}
                     <div className="flex-1 flex justify-center">
                         {tabs.length > 1 && (
-                        <nav className="flex gap-4 overflow-x-auto no-scrollbar">
-                            {tabs.map(({ label, href }) => {
-                                const isActive = pathname === href || (pathname.startsWith(href) && href !== "/" && href.length > 1);
+                            <nav className="flex gap-4 overflow-x-auto no-scrollbar">
+                                {tabs.map(({ label, href }) => {
+                                    const isActive = pathname === href || (pathname.startsWith(href) && href !== "/" && href.length > 1);
 
-                                return (
-                                    <Link
-                                        key={href}
-                                        href={href}
-                                        // onClick={() => setActiveTab(href)}
-                                        className={`rounded-full px-5 py-3 text-[15px] font-medium whitespace-nowrap transition-colors ${
-                                            isActive ? "bg-[#DB2727] text-white" : "text-[#1D1D1D] hover:bg-gray-100"
-                                        }`}
-                                    >
-                                        {label}
-                                    </Link>
-                                );
-                            })}
-                        </nav>
+                                    return (
+                                        <Link
+                                            key={href}
+                                            href={href}
+                                            // onClick={() => setActiveTab(href)}
+                                            className={`rounded-full px-5 py-3 text-[15px] font-medium whitespace-nowrap transition-colors ${isActive ? "bg-[#DB2727] text-white" : "text-[#1D1D1D] hover:bg-gray-100"
+                                                }`}
+                                        >
+                                            {label}
+                                        </Link>
+                                    );
+                                })}
+                            </nav>
                         )}
                     </div>
 

@@ -11,34 +11,35 @@ import React, { useEffect, useState, useRef } from "react";
 import Select from "react-select";
 import { Role } from "@/types/role";
 import {
-    useSpareSales,
-    useSpareCreateSale,
-    useNearestReminders,
-    useUpdateSaleStatus,
-    useAssignToMe
-} from "@/hooks/useSparePartSales";
-import { useToast } from "@/hooks/useToast";
+    useCreateBydSale,
+    useUpdateBydSaleStatus,
+    useBydSales,
+    useNearestBydReminders,
+    useAssignBydSale
+} from "@/hooks/useBydSales";
 import {
     DndContext,
     DragEndEvent,
-    DragOverlay,
-    DragStartEvent,
-    PointerSensor,
     useSensor,
-    useSensors
+    useSensors,
+    PointerSensor,
+    DragStartEvent,
+    DragOverlay,
 } from "@dnd-kit/core";
 import { createPortal } from "react-dom";
+import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/Toast";
 import { useCurrentUser } from "@/utils/auth";
-import { z } from "zod";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { setPriority } from "node:os";
 import FormField from "@/components/FormField";
-import { MoreHorizontal, Phone, Mail, Eye, Search, LayoutGrid } from "lucide-react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import StatCard from "@/components/StatCard";
 import { Table, Dropdown, MenuProps } from "antd";
+import { MoreHorizontal, Phone, Mail, Eye, Search, LayoutGrid } from "lucide-react";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import StatCard from "@/components/StatCard";
 
 dayjs.extend(isBetween);
 
@@ -49,7 +50,6 @@ const vehicleMakes = [
     { value: "Nissan", label: "Nissan" },
     { value: "Honda", label: "Honda" },
 ];
-
 const vehicleModels = [
     { value: "Corolla", label: "Corolla" },
     { value: "Civic", label: "Civic" },
@@ -61,6 +61,11 @@ const partNos = [
     { value: "BP-002", label: "BP-002" },
 ];
 
+const upcomingEventsData = [
+    { customerName: "Rajitha Perera", date: "2024-10-25", eventType: "Test Drive" },
+    { customerName: "Saman Kumara", date: "2024-10-26", eventType: "Meeting" },
+];
+
 type MappedTicket = {
     id: string;
     dbId: number;
@@ -68,9 +73,25 @@ type MappedTicket = {
     user: string;
     phone: string;
     date: string;
-    rawDate: string;
+    rawDate: Date;
     status: "New" | "Ongoing" | "Won" | "Lost";
 };
+
+
+export const selfAssignSaleSchema = z.object({
+    customer_name: z.string().min(1, "Customer Name is required"),
+    contact_number: z.string().min(10, "Valid Contact Number is required"),
+    email: z.string().email("Invalid email").optional().or(z.literal("")),
+    city: z.string().min(1, "City is required"),
+    lead_source: z.string().min(1, "Lead Source is required"),
+    vehicle_type: z.string().optional(),
+    vehicle_make: z.string().min(1, "Make is required"),
+    vehicle_model: z.string().min(1, "Model is required"),
+    remark: z.string().optional(),
+    priority: z.number().optional(),
+});
+
+export type SelfAssignSaleFormData = z.infer<typeof selfAssignSaleSchema>;
 
 const mapStatus = (apiStatus: string): MappedTicket["status"] => {
     switch (apiStatus) {
@@ -109,26 +130,9 @@ const mapApiToTicket = (apiSale: any): MappedTicket => ({
     user: apiSale.customer?.customer_name || "Unknown",
     phone: apiSale.customer?.phone_number || "",
     date: new Date(apiSale.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-    rawDate: apiSale.date,
+    rawDate: new Date(apiSale.date),
     status: mapStatus(apiSale.status),
 });
-
-
-export const selfAssignSaleSchema = z.object({
-    customer_name: z.string().min(1, "Customer Name is required"),
-    contact_number: z.string().min(10, "Valid Contact Number is required"),
-    email: z.string().email("Invalid email").optional().or(z.literal("")),
-    city: z.string().min(1, "City is required"),
-    lead_source: z.string().min(1, "Lead Source is required"),
-    part_no: z.string().optional(),
-    vehicle_make: z.string().min(1, "Make is required"),
-    vehicle_model: z.string().min(1, "Model is required"),
-    remark: z.string().optional(),
-    priority: z.number().optional(),
-});
-
-export type SelfAssignSaleFormData = z.infer<typeof selfAssignSaleSchema>;
-
 
 export default function SalesDashboard() {
     const [role, setRole] = useState<Role>(
@@ -137,39 +141,47 @@ export default function SalesDashboard() {
 
     const user = useCurrentUser();
 
-    const userId = Number(user?.id) || 1;
+    const userId = Number(user?.id || 1);
     const userRole = user?.user_role;
     const isLevel1 = userRole === "SALES01";
 
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddSaleModalOpen, setIsAddSaleModalOpen] = useState(false);
 
-
+    // Form States
+    const [saleDate, setSaleDate] = useState(new Date().toISOString().split("T")[0]);
+    const [customerId, setCustomerId] = useState("");
+    const [callAgentId, setCallAgentId] = useState(1);
+    const [vehicleMake, setVehicleMake] = useState("");
+    const [vehicleModel, setVehicleModel] = useState("");
+    const [partNo, setPartNo] = useState("");
+    const [yearOfManufacture, setYearOfManufacture] = useState("");
+    const [additionalNote, setAdditionalNote] = useState("");
+    const [selectedMake, setSelectedMake] = useState<OptionType | null>(null);
+    const [selectedModel, setSelectedModel] = useState<OptionType | null>(null);
+    const [selectedPartNo, setSelectedPartNo] = useState<OptionType | null>(null);
     const [priority, setPriority] = useState("P0");
 
+    // UI States
     const [isMounted, setIsMounted] = useState(false);
-
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
 
-    // Filter & View State
+    // Filter States
     const [searchTerm, setSearchTerm] = useState("");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filterStatus, setFilterStatus] = useState("All Status");
     const [filterPriority, setFilterPriority] = useState("All Priority");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
-    const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
     const filterRef = useRef<HTMLDivElement>(null);
 
     const { toast, showToast, hideToast } = useToast();
 
-
-    const { data: apiSales, isLoading } = useSpareSales(undefined, userId, userRole);
-    const createSaleMutation = useSpareCreateSale();
-
-    const updateStatusMutation = useUpdateSaleStatus();
-    const assignMutation = useAssignToMe();
-
+    const { data: apiSales, isLoading, error } = useBydSales(undefined, userId, userRole);
+    const createSaleMutation = useCreateBydSale();
+    const updateStatusMutation = useUpdateBydSaleStatus();
+    const assignMutation = useAssignBydSale();
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -179,8 +191,7 @@ export default function SalesDashboard() {
         })
     );
 
-    const { data: reminderData, isLoading: reminderLoading, error: reminderError } = useNearestReminders(userId);
-
+    const { data: reminderData, isLoading: reminderLoading, error: reminderError } = useNearestBydReminders(userId);
 
     useEffect(() => {
         setIsMounted(true);
@@ -195,52 +206,53 @@ export default function SalesDashboard() {
         };
     }, []);
 
-
     useEffect(() => {
         if (apiSales) {
             setTickets(apiSales.map(mapApiToTicket));
         }
     }, [apiSales]);
 
-    // Derived State for Filters & Stats
-    const filteredTickets = tickets.filter((ticket) => {
-        const matchesSearch =
+    // Derived States
+    const totalLeads = apiSales ? apiSales.length : 0;
+    const newLeads = apiSales ? apiSales.filter((s: any) => mapStatus(s.status) === "New").length : 0;
+    const wonDeals = apiSales ? apiSales.filter((s: any) => mapStatus(s.status) === "Won").length : 0;
+    const lostDeals = apiSales ? apiSales.filter((s: any) => mapStatus(s.status) === "Lost").length : 0;
+
+    const filteredTickets = tickets.filter(ticket => {
+        const matchesSearch = searchTerm === "" ||
             ticket.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ticket.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ticket.phone.includes(searchTerm);
+            ticket.phone.includes(searchTerm) ||
+            ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesStatus =
-            filterStatus === "All Status" || ticket.status === filterStatus;
+        const matchesStatus = filterStatus === "All Status" || ticket.status === filterStatus;
+        const matchesPriority = filterPriority === "All Priority" || `P${ticket.priority}` === filterPriority;
 
-        const matchesPriority =
-            filterPriority === "All Priority" ||
-            `P${ticket.priority}` === filterPriority;
-
-        const matchesDate =
-            (!dateFrom || dayjs(ticket.rawDate).isAfter(dayjs(dateFrom).subtract(1, 'day'))) &&
-            (!dateTo || dayjs(ticket.rawDate).isBefore(dayjs(dateTo).add(1, 'day')));
+        let matchesDate = true;
+        if (dateFrom && dateTo) {
+            const ticketDate = dayjs(ticket.rawDate);
+            matchesDate = ticketDate.isBetween(dateFrom, dateTo, 'day', '[]');
+        } else if (dateFrom) {
+            matchesDate = dayjs(ticket.rawDate).isAfter(dayjs(dateFrom).subtract(1, 'day'));
+        } else if (dateTo) {
+            matchesDate = dayjs(ticket.rawDate).isBefore(dayjs(dateTo).add(1, 'day'));
+        }
 
         return matchesSearch && matchesStatus && matchesPriority && matchesDate;
     });
 
-    const totalLeads = tickets.length;
-    const newLeads = tickets.filter(t => t.status === "New").length;
-    const wonDeals = tickets.filter(t => t.status === "Won").length;
-    const lostDeals = tickets.filter(t => t.status === "Lost").length;
-
     const allowedTransitions: Record<MappedTicket["status"], MappedTicket["status"][]> = {
         New: ["Ongoing"],
         Ongoing: ["Won", "Lost"],
-        Won: [],
-        Lost: [],
+        Won: ["Ongoing"],
+        Lost: ["Ongoing"],
     };
-
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string);
     };
 
-    const updateTicketStatus = (ticketId: string, newStatus: MappedTicket["status"]) => {
+    const handleStatusChange = (ticketId: string, newStatus: MappedTicket["status"]) => {
+        // Find ticket
         const ticketIndex = tickets.findIndex((t) => t.id === ticketId);
         if (ticketIndex === -1) return;
 
@@ -250,7 +262,6 @@ export default function SalesDashboard() {
         if (currentStatus === newStatus) return;
 
         const isAllowed = allowedTransitions[currentStatus]?.includes(newStatus);
-
         if (!isAllowed) {
             console.warn(`Invalid transition: ${currentStatus} -> ${newStatus}`);
             showToast("Invalid status transition", "error");
@@ -261,35 +272,24 @@ export default function SalesDashboard() {
         updatedTickets[ticketIndex] = { ...ticket, status: newStatus };
         setTickets(updatedTickets);
 
-
         if (currentStatus === "New" && newStatus === "Ongoing") {
             assignMutation.mutate(
+                { id: ticket.dbId, salesUserId: userId },
                 {
-                    id: ticket.dbId,
-                    userId: userId
-                },
-                {
-                    onSuccess: () => {
-                        showToast("Lead assigned successfully.", "success");
-                        console.log("Lead assigned successfully");
-                    },
+                    onSuccess: () => showToast("Lead assigned successfully.", "success"),
                     onError: (error) => {
                         console.error("Failed to assign lead:", error);
-                        setTickets(tickets);
+                        setTickets(tickets); // Revert
                         showToast("Failed to assign lead", "error");
                     }
                 }
             );
         } else {
             updateStatusMutation.mutate(
-                {
-                    id: ticket.dbId,
-                    status: mapStatusToApi(newStatus) as "WON" | "LOST"
-                },
+                { id: ticket.dbId, status: mapStatusToApi(newStatus) },
                 {
                     onError: () => {
-                        // Revert on failure
-                        setTickets(tickets);
+                        setTickets(tickets); // Revert
                         showToast("Failed to update status", "error");
                     }
                 }
@@ -299,38 +299,27 @@ export default function SalesDashboard() {
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-
         setActiveId(null);
-
         if (!over) return;
 
         const ticketId = active.id as string;
         const newStatus = over.id as MappedTicket["status"];
 
-        updateTicketStatus(ticketId, newStatus);
-    };
-
-    const handleStatusChange = (ticketId: string, newStatus: MappedTicket["status"]) => {
-        updateTicketStatus(ticketId, newStatus);
+        handleStatusChange(ticketId, newStatus);
     };
 
     const activeTicket = tickets.find((t) => t.id === activeId);
 
-    const columns: MappedTicket["status"][] = [
-        "New",
-        "Ongoing",
-        "Won",
-        "Lost",
-    ];
-
+    const columns: MappedTicket["status"][] = ["New", "Ongoing", "Won", "Lost"];
 
     const {
         register,
         handleSubmit,
         reset,
-        formState: { errors, isSubmitting }
+        formState: { errors, isSubmitting },
     } = useForm<SelfAssignSaleFormData>({
-        resolver: zodResolver(selfAssignSaleSchema)
+        resolver: zodResolver(selfAssignSaleSchema),
+        defaultValues: { vehicle_type: "", remark: "", email: "" }
     });
 
     const handleSelfAssignSubmit = (data: SelfAssignSaleFormData) => {
@@ -346,8 +335,8 @@ export default function SalesDashboard() {
             onSuccess: () => {
                 showToast("Lead created and assigned successfully!", "success");
                 setIsAddSaleModalOpen(false);
+                setPriority("P0");
                 reset();
-                setPriority("P0")
             },
             onError: (err) => {
                 console.error(err);
@@ -463,7 +452,7 @@ export default function SalesDashboard() {
             key: 'priority',
             render: (priority: number) => {
                 const priorityBadges = [
-                    "bg-[#FFDDD1] text-[#B54708]", // P0 
+                    "bg-[#FFDDD1] text-[#B54708]", // P0
                     "bg-[#FFEFD1] text-[#B54708]", // P1
                     "bg-[#E9D7FE] text-[#6941C6]", // P2
                     "bg-[#D1E9FF] text-[#026AA2]", // P3
@@ -507,32 +496,6 @@ export default function SalesDashboard() {
         }
     ];
 
-
-
-
-    const upcomingEventsData = [
-        {
-            customerName: "Emily Charlotte",
-            date: "March 15",
-            eventType: "BirthDay",
-        },
-        {
-            customerName: "Albert Flore",
-            date: "March 16",
-            eventType: "Reminder",
-        },
-        {
-            customerName: "Guy Hawkins",
-            date: "May 12",
-            eventType: "Reminder",
-        },
-        {
-            customerName: "Wade Warren",
-            date: "May 6",
-            eventType: "BirthDay",
-        },
-    ];
-
     if (isLoading) {
         return <div>Loading...</div>;
     }
@@ -540,8 +503,7 @@ export default function SalesDashboard() {
     if (!isMounted) return null;
 
     return (
-        <div
-            className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
+        <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden pb-10">
 
             <Toast
                 message={toast.message}
@@ -554,7 +516,7 @@ export default function SalesDashboard() {
                 <Header
                     name={user?.full_name || "Sophie Eleanor"}
                     location={user?.branch || "Bambalapitiya"}
-                    title="Indra Motor Spare Sales Dashboard"
+                    title="BYD Sales Dashboard"
                 />
 
                 {/* Stats Section */}
@@ -583,10 +545,7 @@ export default function SalesDashboard() {
                         <div className="flex items-center gap-3 w-full md:w-auto">
                             {/* Filter Toggle */}
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsFilterOpen(!isFilterOpen);
-                                }}
+                                onClick={() => setIsFilterOpen(!isFilterOpen)}
                                 className={`flex items-center gap-2 px-6 py-3 border rounded-[20px] transition-colors ${isFilterOpen
                                     ? 'bg-red-50 border-red-200 text-red-700'
                                     : 'bg-white border-[#E0E0E0] text-[#344054] hover:bg-gray-50'
@@ -612,7 +571,7 @@ export default function SalesDashboard() {
 
                     {/* Expandable Filter Section */}
                     {isFilterOpen && (
-                        <div ref={filterRef} className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-medium text-gray-500">Status</label>
@@ -675,7 +634,7 @@ export default function SalesDashboard() {
                     )}
                 </div>
 
-                {/* Leads Section */}
+                {/* Content Section */}
                 <section className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] p-6 min-h-[500px]">
                     <div className="w-full flex justify-between items-center mb-6 px-4">
                         <div className="flex flex-col">
@@ -713,27 +672,22 @@ export default function SalesDashboard() {
                                     <TicketColumn
                                         key={col}
                                         title={col}
-                                        route={"/sales-agent/spare-parts"}
+                                        route={"/sales-agent/byd-sales"}
                                         tickets={filteredTickets.filter((t) => t.status === col)}
                                     />
                                 ))}
                             </div>
-
                             {isMounted && typeof document !== "undefined"
                                 ? createPortal(
                                     <DragOverlay>
                                         {activeTicket ? (
-                                            <TicketCard
-                                                {...activeTicket}
-                                                isOverlay={true}
-                                            />
+                                            <TicketCard {...activeTicket} isOverlay={true} />
                                         ) : null}
                                     </DragOverlay>,
                                     document.body
                                 )
                                 : null
                             }
-
                         </DndContext>
                     ) : (
                         <div className="flex flex-col gap-6">
@@ -763,6 +717,8 @@ export default function SalesDashboard() {
 
                                     {Array.from({ length: Math.min(5, totalPages || 1) }).map((_, idx) => {
                                         const pageNum = idx + 1;
+                                        // Logic to show near current page would go here for many pages
+                                        // For now, simpler list
                                         return (
                                             <button
                                                 key={pageNum}
@@ -788,10 +744,9 @@ export default function SalesDashboard() {
                             </div>
                         </div>
                     )}
-
                 </section>
 
-                {/* Next action and Upcomming events */}
+                {/* Next action and Upcoming events */}
                 <section className="relative flex flex-wrap w-full mb-5 gap-3 justify-center items-center">
                     <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
                         <span className="font-semibold text-[22px]">Next Action</span>
@@ -856,27 +811,22 @@ export default function SalesDashboard() {
                         </div>
                     </div>
                 </section>
+
             </main>
-
-            {/* Add Lead Modal */}
-
-
-
 
             {isAddSaleModalOpen && (
                 <Modal
                     title="Add New Sale"
                     onClose={() => setIsAddSaleModalOpen(false)}
-                    isPriorityAvailable={true}
-                    priority={priority}
-                    onPriorityChange={setPriority}
                     actionButton={{
                         label: isSubmitting ? "Adding..." : "Add",
                         onClick: handleSubmit(handleSelfAssignSubmit),
-                        // disabled: createSaleMutation.isPending,
                     }}
+                    priority={priority}
+                    onPriorityChange={setPriority}
+                    isPriorityAvailable={true}
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
                         <FormField label="Customer Name" placeholder="Customer Name"
                             register={register("customer_name")} error={errors.customer_name} />
                         <FormField label="Contact No" placeholder="Contact No" register={register("contact_number")}
@@ -884,7 +834,8 @@ export default function SalesDashboard() {
                         <FormField label="Email" placeholder="Email" register={register("email")} error={errors.email} />
                         <FormField label="City" placeholder="City" register={register("city")} error={errors.city} />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
                         <FormField
                             label="Lead Source"
                             type="select"
@@ -895,11 +846,17 @@ export default function SalesDashboard() {
                             register={register("lead_source")}
                             error={errors.lead_source}
                         />
-                        {/* Make & Model */}
+                        <FormField
+                            label="Vehicle Type"
+                            type="select"
+                            options={[{ value: "SUV", label: "SUV" }, { value: "Sedan", label: "Sedan" }]}
+                            register={register("vehicle_type")}
+                            error={errors.vehicle_type}
+                        />
                         <FormField
                             label="Vehicle Make"
                             type="select"
-                            isIcon={true} // Magnifying glass icon
+                            isIcon={true}
                             options={vehicleMakes}
                             register={register("vehicle_make")}
                             error={errors.vehicle_make}
@@ -912,18 +869,10 @@ export default function SalesDashboard() {
                             register={register("vehicle_model")}
                             error={errors.vehicle_model}
                         />
-                        <FormField
-                            label="Part No"
-                            type="select"
-                            isIcon={true}
-                            options={partNos}
-                            register={register("part_no")}
-                            error={errors.part_no}
-                        />
                     </div>
                     {/* Additional Note */}
                     <div className="w-full">
-                        <label className="block my-2 font-medium text-[#1D1D1D] text-[17px] montserrat">Remark</label>
+                        <label className="block mb-2 font-medium text-gray-700">Remark</label>
                         <textarea
                             {...register("remark")}
                             className="w-full h-[100px] rounded-[20px] bg-[#FFFFFF80] border border-gray-300 p-4 focus:outline-none"
@@ -935,4 +884,3 @@ export default function SalesDashboard() {
         </div>
     );
 }
-

@@ -93,7 +93,7 @@ export const TicketCard = ({
             <div className="flex flex-col gap-1 mb-4">
                 <span className="font-bold text-base text-[#101828]">{user}</span>
                 <div className="flex justify-between items-center">
-                    <span className="font-medium text-xs text-[#667085]">{id}</span>
+                    {/*<span className="font-medium text-xs text-[#667085]">{id}</span>*/}
                     <span
                         className={`text-[12px] font-medium px-2 py-0.5 rounded-full ${badgeStyle}`}
                     >
@@ -129,18 +129,19 @@ export const TicketCard = ({
 
             {/* Action Row */}
             <div className="flex items-center gap-3 mt-4">
-                <button className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
-                    <PhoneIcon size={14} />
-                    Call
-                </button>
+                {/*<button className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">*/}
+                {/*    <PhoneIcon size={14} />*/}
+                {/*    Call*/}
+                {/*</button>*/}
                 <button className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
                     <MailIcon size={14} />
                     Email
                 </button>
                 <button
                     onClick={handleClick}
-                    className="bg-white hover:bg-gray-50 text-[#344054] p-2 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center transition-colors">
+                    className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
                     <EyeIcon size={14} />
+                    View
                 </button>
             </div>
         </div>
