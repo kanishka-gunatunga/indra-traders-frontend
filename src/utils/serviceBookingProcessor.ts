@@ -107,8 +107,13 @@ export function generateTimeSlots(
     return slots;
 }
 
-export function calculateAvailableSlots(services: ProcessedScheduledService[]): AvailableSlot[] {
-    const uniqueBays = [...new Set(services.map(s => s.bay))];
+export function calculateAvailableSlots(
+    services: ProcessedScheduledService[], 
+    allBays: string[] = []
+): AvailableSlot[] {
+    // Get unique bays from services, or use all available bays if no services exist
+    const uniqueBaysFromServices = [...new Set(services.map(s => s.bay))];
+    const baysToProcess = uniqueBaysFromServices.length > 0 ? uniqueBaysFromServices : allBays;
 
     const allSlots = generateTimeSlots(
         WORKING_HOURS.START,
@@ -117,13 +122,14 @@ export function calculateAvailableSlots(services: ProcessedScheduledService[]): 
     );
 
     const availableSlots: AvailableSlot[] = [];
-    for(const bay of uniqueBays){
+    for(const bay of baysToProcess){
+        // Filter out slots that are occupied by services for this bay
         const baySlots = allSlots.filter(slot => !services.some(s => s.bay === bay && s.start_time <= slot && s.end_time > slot));
         for(const slot of baySlots){
             const slotEndTime = minutesToTime(timeToMinutes(slot) + WORKING_HOURS.SLOT_DURATION_MINUTES);
             availableSlots.push({
                 time: formatTime12Hour(slot),  // Convert to 12-hour format
-                duration: `${formatTime12Hour(slot)} - ${formatTime12Hour(slotEndTime)}`,  // Convert both to 12-hour format
+                duration: `${formatTime12Hour(slot)} - ${formatTime12Hour(slotEndTime)}`,  
                 bay: bay
             });
         }
