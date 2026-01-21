@@ -47,6 +47,7 @@ export const authOptions: NextAuthOptions = {
                             ...user,
                             id: user.id.toString(),
                             accessToken: accessToken,
+                            branchId: data.branch_id ? data.branch_id.toString() : undefined,
                             system: 'admin'
                         };
                     }

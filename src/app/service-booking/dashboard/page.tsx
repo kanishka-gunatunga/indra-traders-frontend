@@ -13,7 +13,8 @@ import {
     Sparkles,
     Info,
     Loader2,
-    AlertCircle
+    AlertCircle,
+    Calendar
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
@@ -36,9 +37,9 @@ const AutoScrollColumn = ({ children }: { children: React.ReactNode }) => {
 
             if (maxScroll <= 0) return;
 
-            // Check if we are at the bottom
+           
             if (currentScroll >= maxScroll - 5) {
-                // Wait at bottom, then reset to top
+                
                 timeoutId = setTimeout(() => {
                     scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
                     timeoutId = setTimeout(scrollStep, READ_TIME);
@@ -46,7 +47,6 @@ const AutoScrollColumn = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
 
-            // Find the next item to scroll to (slot-wise)
             const children = Array.from(scrollContainer.children) as HTMLElement[];
             const nextItem = children.find(child => child.offsetTop > currentScroll + 10);
 
@@ -123,7 +123,7 @@ export default function ServiceBookingDashboard() {
     const getStatusBadge = (status: string) => {
         if (status === 'Completed') return <div className="flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full text-green-700 text-[0.75rem] font-bold shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Completed</div>
         if (status === 'In Progress') return <div className="flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full text-orange-700 text-[0.75rem] font-bold shadow-sm"><Clock className="w-3.5 h-3.5" /> In Progress</div>
-        return <div className="flex items-center gap-1 text-gray-400 text-[0.75rem] font-semibold"><Info className="w-3.5 h-3.5" /> Upcoming</div>
+        return <div className="flex items-center gap-1 text-gray-400 text-[0.75rem] font-semibold"><Calendar className="w-3.5 h-3.5" /> Upcoming</div>
     };
 
     // Transform stats object into array format for UI
