@@ -78,7 +78,7 @@ type MappedTicket = {
 };
 
 
-export const selfAssignSaleSchema = z.object({
+const selfAssignSaleSchema = z.object({
     customer_name: z.string().min(1, "Customer Name is required"),
     contact_number: z.string().min(10, "Valid Contact Number is required"),
     email: z.string().email("Invalid email").optional().or(z.literal("")),

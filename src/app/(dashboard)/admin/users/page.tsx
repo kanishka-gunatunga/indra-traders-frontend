@@ -30,7 +30,7 @@ const ROLES = {
     TELEMARKETER: "TELEMARKETER",
 };
 
-const departments = ["ITPL", "ISP", "IMS", "IFT"];
+const departments = ["ITPL", "ISP", "IMS", "IFT", "BYD"];
 const branches = ["Bambalapitiya", "Kandy", "Jaffna", "Galle", "Negombo"];
 
 const languageOptions = [
@@ -330,7 +330,7 @@ export default function UserManagement() {
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
                     name={user?.full_name || "Sophie Eleanor"}
-                    location={user?.branch || "Bambalapitiya"}
+                    // location={user?.branch || "Bambalapitiya"}
                     title="User Management"
                 />
 

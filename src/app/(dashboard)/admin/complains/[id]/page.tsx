@@ -3,27 +3,34 @@
 
 "use client";
 
-import FlowBar, {ComplainStatus} from "@/components/FlowBar";
+import FlowBar, { ComplainStatus } from "@/components/FlowBar";
 import SalesDetailsTab from "@/components/SalesDetailsTab";
 import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
-import React, {useState} from "react";
-import {Role} from "@/types/role";
-import {useComplaintById, useUpdateComplaint} from "@/hooks/useComplaint";
-import {useParams} from "next/navigation";
-import {useCreateFollowUp} from "@/hooks/useFollowUp";
-import {useCreateReminder} from "@/hooks/useReminder";
+import React, { useState } from "react";
+import { Role } from "@/types/role";
+import { useComplaintById, useUpdateComplaint } from "@/hooks/useComplaint";
+import { useParams } from "next/navigation";
+import { useCreateFollowUp } from "@/hooks/useFollowUp";
+import { useCreateReminder } from "@/hooks/useReminder";
+import { useToast } from "@/hooks/useToast";
+import Toast from "@/components/Toast";
+import { useCurrentUser } from "@/utils/auth";
 
 export default function ComplainDetailsPage() {
+    const { showToast, hideToast, toast } = useToast();
+
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
 
+    const user = useCurrentUser();
+
     const params = useParams();
     const id = Number(params?.id);
 
-    const {data: complaint, isLoading} = useComplaintById(id);
+    const { data: complaint, isLoading } = useComplaintById(id);
 
     const updateComplaint = useUpdateComplaint();
     const createFollowUpMutation = useCreateFollowUp();
@@ -38,6 +45,38 @@ export default function ComplainDetailsPage() {
     const [reminderTitle, setReminderTitle] = useState("");
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
+
+    const [isCompleteModalOpen, setCompleteModalOpen] = useState(false);
+    const [adminNote, setAdminNote] = useState("");
+
+    // Calculate progress based on status
+    const getProgress = (status: ComplainStatus) => {
+        switch (status) {
+            case "New": return 0;
+            case "In Review": return 25;
+            case "Processing": return 50;
+            case "Approval": return 75;
+            case "Completed": return 100;
+            default: return 0;
+        }
+    };
+
+    const handleStatusChange = async (newStatus: ComplainStatus, note?: string) => {
+        const progress = getProgress(newStatus);
+        const payload: any = { status: newStatus, progress };
+
+        if (note) payload.comment = note;
+
+        try {
+            await updateComplaint.mutateAsync({ id, data: payload });
+            setStatus(newStatus);
+            showToast("Complaint updated successfully", "success");
+            if (newStatus === "Completed") setCompleteModalOpen(false);
+        } catch (error: any) {
+            console.error("Error updating complaint:", error);
+            showToast(`Failed to update complaint: ${error.message}`, "error");
+        }
+    };
 
     const handleActivitySave = async () => {
         if (!activityText.trim()) return;
@@ -86,13 +125,20 @@ export default function ComplainDetailsPage() {
         return <p className="text-center mt-10 text-gray-500">Complaint not found.</p>;
     }
 
+
+
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                visible={toast.visible}
+                onClose={hideToast}
+            />
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name || "Sophie Eleanor"}
                     title="All Complains"
                 />
 
@@ -101,16 +147,27 @@ export default function ComplainDetailsPage() {
                     {/* Header */}
                     <div className="flex w-full justify-between items-center">
                         <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
-              <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-                 Ticket No. {complaint.ticket_no}
-              </span>
+                            <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
+                                Ticket No. {complaint.ticket_no}
+                            </span>
                         </div>
                         <FlowBar<ComplainStatus>
                             variant="complains"
                             status={complaint.status as ComplainStatus}
                             onStatusChange={(newStatus) => {
-                                setStatus(newStatus);
-                                updateComplaint.mutate({id, data: {status: newStatus}});
+                                const COMPLAIN_STEPS = ["New", "In Review", "Processing", "Approval", "Completed"];
+                                const currentIndex = COMPLAIN_STEPS.indexOf(complaint.status as string);
+                                const newIndex = COMPLAIN_STEPS.indexOf(newStatus);
+
+                                if (newIndex <= currentIndex) {
+                                    return;
+                                }
+
+                                if (newStatus === "Completed") {
+                                    setCompleteModalOpen(true);
+                                } else {
+                                    handleStatusChange(newStatus);
+                                }
                             }}
                         />
                     </div>
@@ -121,18 +178,18 @@ export default function ComplainDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value={complaint?.customer.customer_name || 'N/A'}/>
-                            <InfoRow label="Contact No:" value={complaint.contact_no || 'N/A'}/>
-                            <InfoRow label="Email:" value={complaint?.customer?.email || 'N/A'}/>
+                            <InfoRow label="Customer Name:" value={complaint?.customer.customer_name || 'N/A'} />
+                            <InfoRow label="Contact No:" value={complaint.contact_no || 'N/A'} />
+                            <InfoRow label="Email:" value={complaint?.customer?.email || 'N/A'} />
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Ticket Details
                             </div>
-                            <InfoRow label="Category:" value={complaint.category || 'N/A'}/>
-                            <InfoRow label="Vehicle No." value={complaint.vehicle_no || 'N/A'}/>
-                            <InfoRow label="Title:" value={complaint.title || 'N/A'}/>
-                            <InfoRow label="Transmission:" value="Auto"/>
-                            <InfoRow label="Preferred Solution:" value={complaint.preferred_solution || 'N/A'}/>
+                            <InfoRow label="Category:" value={complaint.category || 'N/A'} />
+                            <InfoRow label="Vehicle No." value={complaint.vehicle_no || 'N/A'} />
+                            <InfoRow label="Title:" value={complaint.title || 'N/A'} />
+                            <InfoRow label="Transmission:" value="Auto" />
+                            <InfoRow label="Preferred Solution:" value={complaint.preferred_solution || 'N/A'} />
                             <InfoRow
                                 label="Description:"
                                 value={complaint.description || 'N/A'}
@@ -149,14 +206,12 @@ export default function ComplainDetailsPage() {
                                 followups={complaint?.followups || []}
                                 reminders={complaint?.reminders || []}
                             />
-                            {role === "admin" ? null : (
-                                <div className="mt-6 flex w-full justify-end">
-                                    <button
-                                        className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
-                                        Save
-                                    </button>
-                                </div>
-                            )}
+                            <div className="mt-6 flex w-full justify-end">
+                                <button
+                                    className="w-[121px] h-[41px] bg-[#DB2727] text-white rounded-[30px] flex justify-center items-center">
+                                    Save
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -224,6 +279,35 @@ export default function ComplainDetailsPage() {
                                 className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
                             />
                         </div>
+                    </div>
+                </Modal>
+            )}
+            {/* Complete Complaint Modal */}
+            {isCompleteModalOpen && (
+                <Modal
+                    title={`Ticket No. ${complaint.ticket_no}`}
+                    onClose={() => setCompleteModalOpen(false)}
+                    actionButton={{
+                        label: "Submit",
+                        onClick: () => {
+                            if (!adminNote.trim()) {
+                                showToast("Please enter a comment to close the complaint.", "error");
+                                return;
+                            }
+                            handleStatusChange("Completed", adminNote);
+                        },
+                    }}
+                >
+                    <div className="w-[800px]">
+                        <p className="mb-4 text-[18px] font-medium text-[#1D1D1D]">Give a comment for close the complain.</p>
+                        <label className="block mb-2 text-[17px] text-[#1D1D1D] font-medium">Comment</label>
+                        <textarea
+                            rows={4}
+                            placeholder="Type your Comment Here"
+                            value={adminNote}
+                            onChange={(e) => setAdminNote(e.target.value)}
+                            className="w-full text-[14px] text-[#575757] rounded-[20px] bg-[#FFFFFF80] p-4 focus:outline-none resize-none"
+                        />
                     </div>
                 </Modal>
             )}

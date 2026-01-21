@@ -6,7 +6,7 @@ import Image from "next/image";
 import React, { useState, useEffect, useMemo } from "react";
 import Modal from "@/components/Modal";
 import { z } from "zod";
-import { useCreateBydSale } from "@/hooks/useBydSales";
+import { useCreateBydSale, useCreateBydUnavailableSale } from "@/hooks/useBydSales";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import FormField from "@/components/FormField";
@@ -20,13 +20,13 @@ import { useActiveBanks } from "@/hooks/useLeasing";
 import { calculateLeasingDetails } from "@/utils/leasing";
 
 
-export const vehicleSaleSchema = z.object({
+const vehicleSaleSchema = z.object({
     date: z.string().min(1, "Date is required"),
     customer_id: z.string().min(1, "Customer ID is required"),
     call_agent_id: z.number().int().positive("Call Agent ID is required"),
     vehicle_model: z.string().min(1, "Vehicle model is required"),
     manufacture_year: z.string().min(1, "Manufacture year is required"),
-    transmission: z.string().min(1, "Transmission is required"),
+    // transmission: z.string().min(1, "Transmission is required"),
     color: z.string().min(1, "Color is required"),
     type: z.string().min(1, "Type is required"),
     down_payment: z.string().optional(),
@@ -48,17 +48,17 @@ export const vehicleSaleSchema = z.object({
 
 export type VehicleSaleFormData = z.infer<typeof vehicleSaleSchema>;
 
-export const unavailableVehicleSaleSchema = z.object({
+const unavailableVehicleSaleSchema = z.object({
     model: z.string().min(1, "Vehicle model is required"),
-    manufacture_year: z.string().min(1, "Manufacture year is required"),
-    color: z.string().min(1, "Color is required"),
-    type: z.string().min(1, "Type is required"),
+    manufacture_year: z.string().optional(),
+    color: z.string().optional(),
+    type: z.string().optional(),
     down_payment: z.string().optional(),
     price_from: z.string().optional(),
     price_to: z.string().optional(),
 });
 
-export const filterSchema = z.object({
+const filterSchema = z.object({
     byd_model: z.string().optional(),
     manufacture_year: z.string().optional(),
     color: z.string().optional(),
@@ -87,7 +87,7 @@ const BydSales = () => {
     const { mutate: createSale, isPending } = useCreateBydSale();
     // const [submitSuccess, setSubmitSuccess] = useState(false);
 
-    const { mutate: createUnavailableSale, isPending: isUnavailablePending } = useCreateUnavailableVehicleSale();
+    const { mutate: createUnavailableSale, isPending: isUnavailablePending } = useCreateBydUnavailableSale();
     const [unavailableSubmitSuccess, setUnavailableSubmitSuccess] = useState(false);
 
     const [showVehicleDetailsAndLoyaltyAndPromotions, setShowVehicleDetailsAndLoyaltyAndPromotions] = useState(false);
@@ -116,7 +116,8 @@ const BydSales = () => {
             enable_leasing: false,
             vehicle_model: "",
             manufacture_year: "",
-            transmission: "",
+            // transmission: "",
+            color: "",
             type: "",
             down_payment: "",
             price_from: "",
@@ -210,11 +211,13 @@ const BydSales = () => {
     const onUnavailableSubmit = (data: UnavailableVehicleSaleFormData) => {
         const submissionData = {
             call_agent_id: Number(userId) || 1,
-            ...data,
-            manufacture_year: parseInt(data.manufacture_year, 10),
-            down_payment: data.down_payment ? parseFloat(data.down_payment) : 0,
-            price_from: data.price_from ? parseFloat(data.price_from) : 0,
-            price_to: data.price_to ? parseFloat(data.price_to) : 0,
+            vehicle_model: data.model,
+            manufacture_year: data.manufacture_year ? parseInt(data.manufacture_year, 10) : null,
+            color: data.color,
+            type: data.type,
+            down_payment: data.down_payment ? parseFloat(data.down_payment) : null,
+            price_from: data.price_from ? parseFloat(data.price_from) : null,
+            price_to: data.price_to ? parseFloat(data.price_to) : null,
         };
         createUnavailableSale(submissionData, {
             onSuccess: () => {
@@ -942,7 +945,7 @@ const BydSales = () => {
                                         type="select"
                                         options={colorOptions}
                                         register={register("color")}
-                                        error={errors.transmission}
+                                        error={errors.color}
                                     />
 
                                     <FormField

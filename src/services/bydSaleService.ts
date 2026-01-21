@@ -54,4 +54,9 @@ export const BydSaleService = {
         axiosInstance.get(`/byd-sales/reminders/sale/${bydSaleId}`),
 
     reminderDelete: (id: number) => axiosInstance.delete(`/byd-sales/reminders/${id}`),
+
+    // Unavailable
+    createUnavailable: (data: any) => axiosInstance.post("/byd-sales/unavailable", data),
+
+    getUnavailable: () => axiosInstance.get("/byd-sales/unavailable"),
 };

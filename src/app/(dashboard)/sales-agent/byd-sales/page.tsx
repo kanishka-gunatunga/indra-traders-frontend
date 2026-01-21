@@ -45,21 +45,32 @@ dayjs.extend(isBetween);
 
 type OptionType = { value: string; label: string };
 
-const vehicleMakes = [
-    { value: "Toyota", label: "Toyota" },
-    { value: "Nissan", label: "Nissan" },
-    { value: "Honda", label: "Honda" },
+const vehicleData = [
+    { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+    { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+    { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+    { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
 ];
-const vehicleModels = [
-    { value: "Corolla", label: "Corolla" },
-    { value: "Civic", label: "Civic" },
-    { value: "Navara", label: "Navara" },
+
+const uniqueModels = Array.from(new Set(vehicleData.map(v => v.model)));
+const bydModelOptions = uniqueModels.map(model => ({ value: model, label: model }));
+
+const colorOptions = [
+    { value: "Arctic White", label: "Arctic White" },
+    { value: "Jet Black", label: "Jet Black" },
+    { value: "Metal Grey", label: "Metal Grey" },
+    { value: "Crimson Red", label: "Crimson Red" },
 ];
-const partNos = [
-    { value: "BP-001", label: "BP-001" },
-    { value: "EC-005", label: "EC-005" },
-    { value: "BP-002", label: "BP-002" },
+
+const typeOptions = [
+    { value: "E-Hybrid", label: "E-Hybrid" },
+    { value: "Electric", label: "Electric" },
 ];
+
+const manufactureYearOptions = [2020, 2021, 2022, 2023, 2024, 2025].map((year) => ({
+    value: year.toString(),
+    label: year.toString(),
+}));
 
 const upcomingEventsData = [
     { customerName: "Rajitha Perera", date: "2024-10-25", eventType: "Test Drive" },
@@ -78,16 +89,22 @@ type MappedTicket = {
 };
 
 
-export const selfAssignSaleSchema = z.object({
+const selfAssignSaleSchema = z.object({
     customer_name: z.string().min(1, "Customer Name is required"),
     contact_number: z.string().min(10, "Valid Contact Number is required"),
     email: z.string().email("Invalid email").optional().or(z.literal("")),
     city: z.string().min(1, "City is required"),
     lead_source: z.string().min(1, "Lead Source is required"),
-    vehicle_type: z.string().optional(),
-    vehicle_make: z.string().min(1, "Make is required"),
-    vehicle_model: z.string().min(1, "Model is required"),
-    remark: z.string().optional(),
+
+    vehicle_model: z.string().min(1, "Vehicle model is required"),
+    manufacture_year: z.string().min(1, "Manufacture year is required"),
+    color: z.string().min(1, "Color is required"),
+    type: z.string().min(1, "Type is required"),
+    down_payment: z.string().optional(),
+    price_from: z.string().optional(),
+    price_to: z.string().optional(),
+    additional_note: z.string().optional(),
+
     priority: z.number().optional(),
 });
 
@@ -161,6 +178,24 @@ export default function SalesDashboard() {
     const [selectedModel, setSelectedModel] = useState<OptionType | null>(null);
     const [selectedPartNo, setSelectedPartNo] = useState<OptionType | null>(null);
     const [priority, setPriority] = useState("P0");
+
+    // Price Range State
+    const [priceFrom, setPriceFrom] = useState<number | "">("");
+    const [priceTo, setPriceTo] = useState<number | "">("");
+
+    const handleIncrement = (
+        setter: React.Dispatch<React.SetStateAction<number | "">>,
+        value: number | ""
+    ) => {
+        setter(value === "" ? 1 : value + 1);
+    };
+
+    const handleDecrement = (
+        setter: React.Dispatch<React.SetStateAction<number | "">>,
+        value: number | ""
+    ) => {
+        setter(value === "" ? 0 : Math.max(0, value - 1));
+    };
 
     // UI States
     const [isMounted, setIsMounted] = useState(false);
@@ -319,7 +354,7 @@ export default function SalesDashboard() {
         formState: { errors, isSubmitting },
     } = useForm<SelfAssignSaleFormData>({
         resolver: zodResolver(selfAssignSaleSchema),
-        defaultValues: { vehicle_type: "", remark: "", email: "" }
+        defaultValues: { type: "", additional_note: "", email: "" }
     });
 
     const handleSelfAssignSubmit = (data: SelfAssignSaleFormData) => {
@@ -329,6 +364,10 @@ export default function SalesDashboard() {
             is_self_assigned: true,
             date: new Date().toISOString(),
             priority: data.priority || parseInt(priority.replace('P', '')) || 0,
+            manufacture_year: parseInt(data.manufacture_year, 10),
+            down_payment: data.down_payment ? parseFloat(data.down_payment) : 0,
+            price_from: data.price_from ? parseFloat(data.price_from) : 0,
+            price_to: data.price_to ? parseFloat(data.price_to) : 0,
         };
 
         createSaleMutation.mutate(payload, {
@@ -367,7 +406,10 @@ export default function SalesDashboard() {
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Lead ID <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Lead ID <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'id',
@@ -378,7 +420,10 @@ export default function SalesDashboard() {
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Name <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Name <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'user',
@@ -396,14 +441,18 @@ export default function SalesDashboard() {
             render: (_: any, record: MappedTicket) => (
                 <div className="flex flex-col">
                     <span className="text-gray-900 font-medium text-sm">{record.phone}</span>
-                    <span className="text-gray-500 text-xs">{(record as any).email || `${record.user.toLowerCase().replace(" ", ".")}@email.com`}</span>
+                    <span
+                        className="text-gray-500 text-xs">{(record as any).email || `${record.user.toLowerCase().replace(" ", ".")}@email.com`}</span>
                 </div>
             )
         },
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Status <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Status <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'status',
@@ -425,7 +474,8 @@ export default function SalesDashboard() {
                 // If no allowed transitions, just show pill
                 if (!menuItems.length) {
                     return (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-between w-[110px] gap-1 opacity-70 cursor-not-allowed ${colorClass}`}>
+                        <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-between w-[110px] gap-1 opacity-70 cursor-not-allowed ${colorClass}`}>
                             {status}
                         </span>
                     )
@@ -433,9 +483,13 @@ export default function SalesDashboard() {
 
                 return (
                     <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-                        <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-between w-[110px] gap-1 cursor-pointer transition-all hover:brightness-95 ${colorClass}`}>
+                        <div
+                            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-between w-[110px] gap-1 cursor-pointer transition-all hover:brightness-95 ${colorClass}`}>
                             {status}
-                            <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
                         </div>
                     </Dropdown>
                 );
@@ -445,7 +499,10 @@ export default function SalesDashboard() {
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Priority <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Priority <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'priority',
@@ -460,7 +517,8 @@ export default function SalesDashboard() {
                 const badgeStyle = priorityBadges[priority] || priorityBadges[3];
 
                 return (
-                    <span className={`px-2 py-0.5 rounded-[6px] text-xs font-medium border border-transparent ${badgeStyle}`}>
+                    <span
+                        className={`px-2 py-0.5 rounded-[6px] text-xs font-medium border border-transparent ${badgeStyle}`}>
                         P{priority}
                     </span>
                 );
@@ -470,7 +528,10 @@ export default function SalesDashboard() {
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Date <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Date <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'date',
@@ -503,7 +564,8 @@ export default function SalesDashboard() {
     if (!isMounted) return null;
 
     return (
-        <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden pb-10">
+        <div
+            className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden pb-10">
 
             <Toast
                 message={toast.message}
@@ -521,10 +583,14 @@ export default function SalesDashboard() {
 
                 {/* Stats Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard title="Total Leads" count={totalLeads} percentage="+12% from last month" icon="users" color="bg-blue-500" />
-                    <StatCard title="New Leads" count={newLeads} percentage="+8% from last week" icon="trending-up" color="bg-orange-500" />
-                    <StatCard title="Won Deals" count={wonDeals} percentage="31.5% conversion rate" icon="check-circle" color="bg-green-500" />
-                    <StatCard title="Lost Deals" count={lostDeals} percentage="-3% from last month" icon="x-circle" color="bg-red-500" />
+                    <StatCard title="Total Leads" count={totalLeads} percentage="+12% from last month" icon="users"
+                        color="bg-blue-500" />
+                    <StatCard title="New Leads" count={newLeads} percentage="+8% from last week" icon="trending-up"
+                        color="bg-orange-500" />
+                    <StatCard title="Won Deals" count={wonDeals} percentage="31.5% conversion rate" icon="check-circle"
+                        color="bg-green-500" />
+                    <StatCard title="Lost Deals" count={lostDeals} percentage="-3% from last month" icon="x-circle"
+                        color="bg-red-500" />
                 </div>
 
                 {/* Controls Section */}
@@ -532,7 +598,9 @@ export default function SalesDashboard() {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         {/* Search */}
                         <div className="relative w-full flex-1">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                            <Search
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                size={20} />
                             <input
                                 type="text"
                                 placeholder="Search leads by name, phone, or ID..."
@@ -552,7 +620,19 @@ export default function SalesDashboard() {
                                     }`}
                             >
                                 <div className="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                        strokeLinejoin="round">
+                                        <line x1="4" y1="21" x2="4" y2="14" />
+                                        <line x1="4" y1="10" x2="4" y2="3" />
+                                        <line x1="12" y1="21" x2="12" y2="12" />
+                                        <line x1="12" y1="8" x2="12" y2="3" />
+                                        <line x1="20" y1="21" x2="20" y2="16" />
+                                        <line x1="20" y1="12" x2="20" y2="3" />
+                                        <line x1="1" y1="14" x2="7" y2="14" />
+                                        <line x1="9" y1="8" x2="15" y2="8" />
+                                        <line x1="17" y1="16" x2="23" y2="16" />
+                                    </svg>
                                     <span className="font-medium">Filters</span>
                                 </div>
                             </button>
@@ -571,7 +651,8 @@ export default function SalesDashboard() {
 
                     {/* Expandable Filter Section */}
                     {isFilterOpen && (
-                        <div className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div
+                            className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-medium text-gray-500">Status</label>
@@ -587,8 +668,13 @@ export default function SalesDashboard() {
                                             <option value="Won">Won</option>
                                             <option value="Lost">Lost</option>
                                         </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                        <div
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                                strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="m6 9 6 6 6-6" />
+                                            </svg>
                                         </div>
                                     </div>
                                 </div>
@@ -606,8 +692,13 @@ export default function SalesDashboard() {
                                             <option value="P2">P2</option>
                                             <option value="P3">P3</option>
                                         </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                        <div
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                                strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="m6 9 6 6 6-6" />
+                                            </svg>
                                         </div>
                                     </div>
                                 </div>
@@ -635,7 +726,8 @@ export default function SalesDashboard() {
                 </div>
 
                 {/* Content Section */}
-                <section className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] p-6 min-h-[500px]">
+                <section
+                    className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] p-6 min-h-[500px]">
                     <div className="w-full flex justify-between items-center mb-6 px-4">
                         <div className="flex flex-col">
                             <span className="font-semibold text-[22px]">
@@ -659,7 +751,16 @@ export default function SalesDashboard() {
                                 onClick={() => setViewMode("table")}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-medium transition-all ${viewMode === "table" ? "bg-red-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                    strokeLinejoin="round">
+                                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                </svg>
                                 Table
                             </button>
                         </div>
@@ -748,7 +849,8 @@ export default function SalesDashboard() {
 
                 {/* Next action and Upcoming events */}
                 <section className="relative flex flex-wrap w-full mb-5 gap-3 justify-center items-center">
-                    <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
+                    <div
+                        className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
                         <span className="font-semibold text-[22px]">Next Action</span>
                         <div className="h-full mt-5 overflow-y-auto no-scrollbar pr-2">
                             {/* Table header */}
@@ -779,7 +881,8 @@ export default function SalesDashboard() {
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
+                    <div
+                        className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
                         <span className="font-semibold text-[22px]">Upcoming Events</span>
                         <div className="h-full mt-5 overflow-y-auto no-scrollbar pr-2">
                             {/* Table header */}
@@ -847,36 +950,155 @@ export default function SalesDashboard() {
                             error={errors.lead_source}
                         />
                         <FormField
-                            label="Vehicle Type"
-                            type="select"
-                            options={[{ value: "SUV", label: "SUV" }, { value: "Sedan", label: "Sedan" }]}
-                            register={register("vehicle_type")}
-                            error={errors.vehicle_type}
-                        />
-                        <FormField
-                            label="Vehicle Make"
+                            label="BYD Model"
                             type="select"
                             isIcon={true}
-                            options={vehicleMakes}
-                            register={register("vehicle_make")}
-                            error={errors.vehicle_make}
-                        />
-                        <FormField
-                            label="Vehicle Model"
-                            type="select"
-                            isIcon={true}
-                            options={vehicleModels}
+                            options={bydModelOptions}
                             register={register("vehicle_model")}
                             error={errors.vehicle_model}
                         />
+                        <FormField
+                            label="Manufacture Year"
+                            type="select"
+                            isIcon={true}
+                            options={manufactureYearOptions}
+                            register={register("manufacture_year")}
+                            error={errors.manufacture_year}
+                        />
+                        <FormField
+                            label="Color"
+                            type="select"
+                            options={colorOptions}
+                            register={register("color")}
+                            error={errors.color}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
+                        <FormField
+                            label="Type"
+                            type="select"
+                            options={typeOptions}
+                            register={register("type")}
+                            error={errors.type}
+                        />
+                        <FormField
+                            label="Down Payment"
+                            type="number"
+                            placeholder="Enter Down Payment"
+                            register={register("down_payment")}
+                            error={errors.down_payment}
+                        />
+
+                        <div className="col-span-2 flex flex-col space-y-2 font-medium text-gray-900">
+                            <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
+                                Price Range
+                            </span>
+
+                            <div className="flex gap-4">
+                                {/* Price From */}
+                                <div className="relative w-1/2">
+                                    <input
+                                        type="number"
+                                        placeholder="Price From"
+                                        value={priceFrom}
+                                        {...register("price_from", {
+                                            onChange: (e) =>
+                                                setPriceFrom(e.target.value === "" ? "" : Number(e.target.value)),
+                                        })}
+                                        className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                    />
+                                    {errors.price_from && <span
+                                        className="text-red-600 text-sm">{errors.price_from.message}</span>}
+                                    <div
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleIncrement(setPriceFrom, priceFrom)}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <svg
+                                                width="10"
+                                                height="6"
+                                                viewBox="0 0 10 6"
+                                                fill="none"
+                                            >
+                                                <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDecrement(setPriceFrom, priceFrom)}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <svg
+                                                width="10"
+                                                height="6"
+                                                viewBox="0 0 10 6"
+                                                fill="none"
+                                            >
+                                                <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Price To */}
+                                <div className="relative w-1/2">
+                                    <input
+                                        type="number"
+                                        placeholder="Price To"
+                                        value={priceTo}
+                                        {...register("price_to", {
+                                            onChange: (e) =>
+                                                setPriceTo(e.target.value === "" ? "" : Number(e.target.value)),
+                                        })}
+                                        className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                    />
+                                    {errors.price_to && <span
+                                        className="text-red-600 text-sm">{errors.price_to.message}</span>}
+                                    <div
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleIncrement(setPriceTo, priceTo)}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <svg
+                                                width="10"
+                                                height="6"
+                                                viewBox="0 0 10 6"
+                                                fill="none"
+                                            >
+                                                <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDecrement(setPriceTo, priceTo)}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <svg
+                                                width="10"
+                                                height="6"
+                                                viewBox="0 0 10 6"
+                                                fill="none"
+                                            >
+                                                <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     {/* Additional Note */}
                     <div className="w-full">
-                        <label className="block mb-2 font-medium text-gray-700">Remark</label>
+                        <label className="text-[#1D1D1D] font-medium text-[17px] montserrat">Additional Note</label>
                         <textarea
-                            {...register("remark")}
+                            {...register("additional_note")}
                             className="w-full h-[100px] rounded-[20px] bg-[#FFFFFF80] border border-gray-300 p-4 focus:outline-none"
-                            placeholder="Remark"
+                            placeholder="Additional Note"
                         />
                     </div>
                 </Modal>

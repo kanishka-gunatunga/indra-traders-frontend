@@ -165,3 +165,21 @@ export const useDeleteBydReminder = () => {
         },
     });
 };
+
+export const useCreateBydUnavailableSale = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: BydSaleService.createUnavailable,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["byd-sales"] }); // Optional: if there's a list of unavailable sales
+            queryClient.invalidateQueries({ queryKey: ["byd-unavailable-sales"] });
+        },
+    });
+};
+
+export const useBydUnavailableSales = () => {
+    return useQuery({
+        queryKey: ["byd-unavailable-sales"],
+        queryFn: () => BydSaleService.getUnavailable().then((res: { data: any; }) => res.data),
+    });
+};

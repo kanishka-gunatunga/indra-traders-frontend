@@ -3,24 +3,24 @@
 
 "use client"
 import Image from "next/image";
-import React, {useState, useEffect, useMemo} from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Modal from "@/components/Modal";
-import {z} from "zod";
-import {useCreateVehicleSale} from "@/hooks/useVehicleSales";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {useForm, useWatch} from "react-hook-form";
+import { z } from "zod";
+import { useCreateVehicleSale } from "@/hooks/useVehicleSales";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import FormField from "@/components/FormField";
-import {useCreateUnavailableVehicleSale} from "@/hooks/useUnavailable";
-import {useToast} from "@/hooks/useToast";
+import { useCreateUnavailableVehicleSale } from "@/hooks/useUnavailable";
+import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/Toast";
-import {useCurrentUser} from "@/utils/auth";
+import { useCurrentUser } from "@/utils/auth";
 import VehicleGallery from "@/components/VehicleGallery";
 import LeasingCalculator from "@/components/LeasingCalculator";
-import {useActiveBanks} from "@/hooks/useLeasing";
-import {calculateLeasingDetails} from "@/utils/leasing";
+import { useActiveBanks } from "@/hooks/useLeasing";
+import { calculateLeasingDetails } from "@/utils/leasing";
 
 
-export const vehicleSaleSchema = z.object({
+const vehicleSaleSchema = z.object({
     date: z.string().min(1, "Date is required"),
     customer_id: z.string().min(1, "Customer ID is required"),
     call_agent_id: z.number().int().positive("Call Agent ID is required"),
@@ -48,7 +48,7 @@ export const vehicleSaleSchema = z.object({
 
 export type VehicleSaleFormData = z.infer<typeof vehicleSaleSchema>;
 
-export const unavailableVehicleSaleSchema = z.object({
+const unavailableVehicleSaleSchema = z.object({
     vehicle_make: z.string().min(1, "Vehicle make is required"),
     vehicle_model: z.string().min(1, "Vehicle model is required"),
     manufacture_year: z.string().min(1, "Manufacture year is required"),
@@ -71,12 +71,12 @@ const VehicleSales = () => {
 
     console.log("user id", userId);
 
-    const {data: banks = [], isLoading: isBanksLoading} = useActiveBanks();
+    const { data: banks = [], isLoading: isBanksLoading } = useActiveBanks();
 
-    const {mutate: createSale, isPending} = useCreateVehicleSale();
+    const { mutate: createSale, isPending } = useCreateVehicleSale();
     // const [submitSuccess, setSubmitSuccess] = useState(false);
 
-    const {mutate: createUnavailableSale, isPending: isUnavailablePending} = useCreateUnavailableVehicleSale();
+    const { mutate: createUnavailableSale, isPending: isUnavailablePending } = useCreateUnavailableVehicleSale();
     const [unavailableSubmitSuccess, setUnavailableSubmitSuccess] = useState(false);
 
     const [showVehicleDetailsAndLoyaltyAndPromotions, setShowVehicleDetailsAndLoyaltyAndPromotions] = useState(false);
@@ -86,12 +86,12 @@ const VehicleSales = () => {
 
     const [copiedIndex, setCopiedIndex] = useState<null | number>(null);
 
-    const {toast, showToast, hideToast} = useToast();
+    const { toast, showToast, hideToast } = useToast();
 
     const {
         register,
         handleSubmit,
-        formState: {errors},
+        formState: { errors },
         setValue,
         getValues,
         control,
@@ -120,7 +120,7 @@ const VehicleSales = () => {
     const {
         register: registerUnavailable,
         handleSubmit: handleSubmitUnavailable,
-        formState: {errors: unavailableErrors},
+        formState: { errors: unavailableErrors },
         reset: resetUnavailable,
     } = useForm<UnavailableVehicleSaleFormData>({
         resolver: zodResolver(unavailableVehicleSaleSchema),
@@ -212,13 +212,13 @@ const VehicleSales = () => {
     };
 
 
-    const isLeasingEnabled = useWatch({control, name: "enable_leasing"});
-    const watchedLeasingPrice = useWatch({control, name: "leasing_vehicle_price"});
-    const watchedLeasingDownPayment = useWatch({control, name: "down_payment"});
-    const watchedInterestRate = useWatch({control, name: "leasing_interest_rate"});
-    const watchedTimePeriod = useWatch({control, name: "leasing_time_period"});
+    const isLeasingEnabled = useWatch({ control, name: "enable_leasing" });
+    const watchedLeasingPrice = useWatch({ control, name: "leasing_vehicle_price" });
+    const watchedLeasingDownPayment = useWatch({ control, name: "down_payment" });
+    const watchedInterestRate = useWatch({ control, name: "leasing_interest_rate" });
+    const watchedTimePeriod = useWatch({ control, name: "leasing_time_period" });
 
-    const watchedLeasingBank = useWatch({control, name: "leasing_bank"});
+    const watchedLeasingBank = useWatch({ control, name: "leasing_bank" });
 
     const bankOptions = useMemo(() => {
         return banks.map((bank) => ({
@@ -232,7 +232,7 @@ const VehicleSales = () => {
 
         if (!selectedBank) {
             // Default options if no bank selected
-            return [12, 24, 36, 48, 60].map(m => ({value: m.toString(), label: `${m} Months`}));
+            return [12, 24, 36, 48, 60].map(m => ({ value: m.toString(), label: `${m} Months` }));
         }
 
         let months = selectedBank.available_months;
@@ -307,7 +307,7 @@ const VehicleSales = () => {
 
         // Avoid infinite loops or unnecessary calcs if fields are empty
         if (price > 0 && months > 0) {
-            const {monthly, total} = calculateLeasingDetails(price, down, rate, months);
+            const { monthly, total } = calculateLeasingDetails(price, down, rate, months);
 
             // Update read-only fields
             setValue("leasing_monthly_installment", monthly.toString());
@@ -345,15 +345,15 @@ const VehicleSales = () => {
 
 
     const vehicleData = [
-        {make: 'Nissan', model: 'GT-R (R35)', year: 2020, transmission: 'Automatic', price: 'Rs 75,300,000'},
-        {make: 'Toyota', model: 'Supra (A90)', year: 2021, transmission: 'Automatic', price: 'Rs 54,500,000'},
-        {make: 'Ford', model: 'Mustang', year: 2020, transmission: 'Manual', price: 'Rs 40,000,000'},
-        {make: 'Chevrolet', model: 'Corvette (C8)', year: 2021, transmission: 'Automatic', price: 'Rs 75,000,000'},
-        {make: 'Porsche', model: '911 Carrera', year: 2020, transmission: 'Automatic', price: 'Rs 55,000,000'},
-        {make: 'Mazda', model: 'MX-5 Miata', year: 2021, transmission: 'Manual', price: 'Rs 35,000,000'},
-        {make: 'BMW', model: 'M4', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000'},
-        {make: 'Subaru', model: 'WRX STI', year: 2020, transmission: 'Manual', price: 'Rs 45,000,000'},
-        {make: 'Honda', model: 'NSX', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000'},
+        { make: 'Nissan', model: 'GT-R (R35)', year: 2020, transmission: 'Automatic', price: 'Rs 75,300,000' },
+        { make: 'Toyota', model: 'Supra (A90)', year: 2021, transmission: 'Automatic', price: 'Rs 54,500,000' },
+        { make: 'Ford', model: 'Mustang', year: 2020, transmission: 'Manual', price: 'Rs 40,000,000' },
+        { make: 'Chevrolet', model: 'Corvette (C8)', year: 2021, transmission: 'Automatic', price: 'Rs 75,000,000' },
+        { make: 'Porsche', model: '911 Carrera', year: 2020, transmission: 'Automatic', price: 'Rs 55,000,000' },
+        { make: 'Mazda', model: 'MX-5 Miata', year: 2021, transmission: 'Manual', price: 'Rs 35,000,000' },
+        { make: 'BMW', model: 'M4', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000' },
+        { make: 'Subaru', model: 'WRX STI', year: 2020, transmission: 'Manual', price: 'Rs 45,000,000' },
+        { make: 'Honda', model: 'NSX', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000' },
     ];
 
     const loyaltyData = [
@@ -414,15 +414,15 @@ const VehicleSales = () => {
     }));
 
     const transmissionOptions = [
-        {value: "AUTO", label: "Automatic"},
-        {value: "MANUAL", label: "Manual"},
+        { value: "AUTO", label: "Automatic" },
+        { value: "MANUAL", label: "Manual" },
     ];
 
     const fuelTypeOptions = [
-        {value: "PETROL", label: "Petrol"},
-        {value: "DIESEL", label: "Diesel"},
-        {value: "HYBRID", label: "Hybrid"},
-        {value: "ELECTRIC", label: "Electric"},
+        { value: "PETROL", label: "Petrol" },
+        { value: "DIESEL", label: "Diesel" },
+        { value: "HYBRID", label: "Hybrid" },
+        { value: "ELECTRIC", label: "Electric" },
     ];
 
 
@@ -461,20 +461,20 @@ const VehicleSales = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make"
-                                                      isIcon={true}/>
+                                    isIcon={true} />
                                 <VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"
-                                                      isIcon={true}/>
+                                    isIcon={true} />
                                 <VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"
-                                                      isIcon={true}/>
+                                    isIcon={true} />
                                 <VerificationDropdown label="Transmission" placeholder="Select Transmission"
-                                                      isIcon={false}/>
-                                <VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type" isIcon={false}/>
+                                    isIcon={false} />
+                                <VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type" isIcon={false} />
                                 <VerificationDropdown label="Down Payment" placeholder="Enter Down Payment"
-                                                      isIcon={false}/>
+                                    isIcon={false} />
                                 <div>
                                     <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Price Range</span>
+                                        <span
+                                            className="text-[#1D1D1D] font-medium text-[17px] montserrat">Price Range</span>
                                         <div className="flex flex-row gap-4">
                                             <div className="relative">
                                                 <input
@@ -487,7 +487,7 @@ const VehicleSales = () => {
                                                     width="10" height="6"
                                                     viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                          fill="#575757"/>
+                                                        fill="#575757" />
                                                 </svg>
                                             </div>
                                             <div className="relative">
@@ -501,7 +501,7 @@ const VehicleSales = () => {
                                                     width="10" height="6"
                                                     viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                          fill="#575757"/>
+                                                        fill="#575757" />
                                                 </svg>
                                             </div>
                                         </div>
@@ -526,7 +526,7 @@ const VehicleSales = () => {
                                             onClick={() => setIsVehicleAvailabilityModalOpen(true)}
                                             className="ml-auto text-white text-base font-medium rounded-full">
                                             <Image src="/dashboard/availability.svg" alt="availability" height={36}
-                                                   width={36} className="h-12 w-12"/>
+                                                width={36} className="h-12 w-12" />
                                         </button>
                                     </div>
                                 </div>
@@ -535,23 +535,23 @@ const VehicleSales = () => {
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-black">
                                         <thead>
-                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                            <th className="py-5 px-4 text-left">Physical</th>
-                                            <th className="py-5 px-4 text-left">On Order</th>
-                                            <th className="py-5 px-4 text-left">FT - Progress Level</th>
-                                            <th className="py-5 px-4 text-left">Production Line</th>
-                                        </tr>
+                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                <th className="py-5 px-4 text-left">Physical</th>
+                                                <th className="py-5 px-4 text-left">On Order</th>
+                                                <th className="py-5 px-4 text-left">FT - Progress Level</th>
+                                                <th className="py-5 px-4 text-left">Production Line</th>
+                                            </tr>
                                         </thead>
                                         <tbody>
-                                        {stockData.map((item, index) => (
-                                            <tr key={index} onClick={handleStockItemClick}
-                                                className="text-lg font-medium text-[#4353FF] underline">
-                                                <td className="py-4 px-4"><a>{item.physical}</a></td>
-                                                <td className="py-4 px-4">{item.onOrder}</td>
-                                                <td className="py-4 px-4">{item.ftProgressLevel}</td>
-                                                <td className="py-4 px-4">{item.productionLine}</td>
-                                            </tr>
-                                        ))}
+                                            {stockData.map((item, index) => (
+                                                <tr key={index} onClick={handleStockItemClick}
+                                                    className="text-lg font-medium text-[#4353FF] underline">
+                                                    <td className="py-4 px-4"><a>{item.physical}</a></td>
+                                                    <td className="py-4 px-4">{item.onOrder}</td>
+                                                    <td className="py-4 px-4">{item.ftProgressLevel}</td>
+                                                    <td className="py-4 px-4">{item.productionLine}</td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>
@@ -563,9 +563,9 @@ const VehicleSales = () => {
                         <section
                             className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
                             <div className="w-full flex justify-between items-center">
-                                  <span className="font-semibold text-[22px]">
-                                      2025 Honda Civic Hatchback
-                                  </span>
+                                <span className="font-semibold text-[22px]">
+                                    2025 Honda Civic Hatchback
+                                </span>
                                 <div className="flex gap-3">
                                     <button
                                         className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
@@ -612,7 +612,7 @@ const VehicleSales = () => {
                                 </div>
                                 <div className="w-1/2 px-10 flex flex-col">
                                     <span className="text-[20px] font-semibold tracking-wide">
-                                      Vehicle Details
+                                        Vehicle Details
                                     </span>
                                     <div className="text-[23px] mb-3 font-semibold tracking-wide text-[#DB2727] mt-5">
                                         Rs. {'N/A'} -  Rs. {'N/A'}
@@ -621,16 +621,16 @@ const VehicleSales = () => {
                                         {/*{vehicle ? (*/}
                                         {
                                             [
-                                                {label: "Millage:", value: `N/A km`},
-                                                {label: "No. of Owners:", value: 'N/A'},
-                                                {label: "Vehicle No:", value: 'N/A'},
-                                                {label: "Color:", value: 'N/A'},
-                                                {label: "Capacity:", value: `N/A cc`},
-                                                {label: "Model:", value: 'N/A'},
-                                                {label: "Fuel:", value: 'N/A'},
-                                                {label: "Transmission:", value: 'N/A'},
-                                                {label: "Year:", value: 'N/A'},
-                                                {label: "Grade:", value: 'N/A'},
+                                                { label: "Millage:", value: `N/A km` },
+                                                { label: "No. of Owners:", value: 'N/A' },
+                                                { label: "Vehicle No:", value: 'N/A' },
+                                                { label: "Color:", value: 'N/A' },
+                                                { label: "Capacity:", value: `N/A cc` },
+                                                { label: "Model:", value: 'N/A' },
+                                                { label: "Fuel:", value: 'N/A' },
+                                                { label: "Transmission:", value: 'N/A' },
+                                                { label: "Year:", value: 'N/A' },
+                                                { label: "Grade:", value: 'N/A' },
                                             ].map((detail, idx) => (
                                                 <div
                                                     key={idx}
@@ -664,34 +664,34 @@ const VehicleSales = () => {
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-black">
                                         <thead>
-                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                            <th className="py-5 px-4 text-left">Category</th>
-                                            <th className="py-5 px-4 text-left">Points (Loyalty programme)</th>
-                                            <th className="py-5 px-4 text-left">Promo Codes (Discount on leasing)</th>
-                                        </tr>
+                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                <th className="py-5 px-4 text-left">Category</th>
+                                                <th className="py-5 px-4 text-left">Points (Loyalty programme)</th>
+                                                <th className="py-5 px-4 text-left">Promo Codes (Discount on leasing)</th>
+                                            </tr>
                                         </thead>
                                         <tbody>
-                                        {loyaltyData.map((item, index) => (
-                                            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                <td className="py-4 px-4 text-[#1D1D1D]">{item.category}</td>
-                                                <td className="py-4 px-4 text-[#1D1D1D]">{item.points}</td>
-                                                <td className="py-4 px-4 items-center flex"><span
-                                                    className="mr-8">{item.promoCode}</span>
-                                                    <button
-                                                        onClick={() => handleCopy(item.promoCode, index)}
-                                                        className="font-medium rounded-full">
-                                                        <Image src="/copy.svg" alt="info" height={36}
-                                                               width={36} className="h-5 w-5"/>
-                                                    </button>
-                                                    {copiedIndex === index && (
-                                                        <span
-                                                            className="absolute right-40 transform -translate-y-1/2 ml-2 bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                                                        Copied!
-                                                    </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                            {loyaltyData.map((item, index) => (
+                                                <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
+                                                    <td className="py-4 px-4 text-[#1D1D1D]">{item.category}</td>
+                                                    <td className="py-4 px-4 text-[#1D1D1D]">{item.points}</td>
+                                                    <td className="py-4 px-4 items-center flex"><span
+                                                        className="mr-8">{item.promoCode}</span>
+                                                        <button
+                                                            onClick={() => handleCopy(item.promoCode, index)}
+                                                            className="font-medium rounded-full">
+                                                            <Image src="/copy.svg" alt="info" height={36}
+                                                                width={36} className="h-5 w-5" />
+                                                        </button>
+                                                        {copiedIndex === index && (
+                                                            <span
+                                                                className="absolute right-40 transform -translate-y-1/2 ml-2 bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                                                Copied!
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>
@@ -731,7 +731,7 @@ const VehicleSales = () => {
 
                     {showStockAvailability && showVehicleDetailsAndLoyaltyAndPromotions && (
                         <section className="w-full">
-                            <LeasingCalculator onCalculationSuccess={handleCalculatorSuccess} vehiclePrice={1000000}/>
+                            <LeasingCalculator onCalculationSuccess={handleCalculatorSuccess} vehiclePrice={1000000} />
                         </section>
                     )}
 
@@ -755,8 +755,8 @@ const VehicleSales = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                     <div>
                                         <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Ticket Number</span>
+                                            <span
+                                                className="text-[#1D1D1D] font-medium text-[17px] montserrat">Ticket Number</span>
                                             <div className="relative">
                                                 <input
                                                     type="text"
@@ -770,8 +770,8 @@ const VehicleSales = () => {
                                     </div>
                                     <div>
                                         <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Date</span>
+                                            <span
+                                                className="text-[#1D1D1D] font-medium text-[17px] montserrat">Date</span>
                                             <div className="relative">
                                                 <input
                                                     type="date"
@@ -870,7 +870,7 @@ const VehicleSales = () => {
 
                                     <div className="flex flex-col space-y-2 font-medium text-gray-900">
                                         <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
-                                          Price Range
+                                            Price Range
                                         </span>
 
                                         <div className="flex gap-4">
@@ -901,7 +901,7 @@ const VehicleSales = () => {
                                                             viewBox="0 0 10 6"
                                                             fill="none"
                                                         >
-                                                            <path d="M0 6L5 0L10 6H0Z" fill="#575757"/>
+                                                            <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
                                                         </svg>
                                                     </button>
                                                     <button
@@ -915,7 +915,7 @@ const VehicleSales = () => {
                                                             viewBox="0 0 10 6"
                                                             fill="none"
                                                         >
-                                                            <path d="M0 0L5 6L10 0H0Z" fill="#575757"/>
+                                                            <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
                                                         </svg>
                                                     </button>
                                                 </div>
@@ -948,7 +948,7 @@ const VehicleSales = () => {
                                                             viewBox="0 0 10 6"
                                                             fill="none"
                                                         >
-                                                            <path d="M0 6L5 0L10 6H0Z" fill="#575757"/>
+                                                            <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
                                                         </svg>
                                                     </button>
                                                     <button
@@ -962,7 +962,7 @@ const VehicleSales = () => {
                                                             viewBox="0 0 10 6"
                                                             fill="none"
                                                         >
-                                                            <path d="M0 0L5 6L10 0H0Z" fill="#575757"/>
+                                                            <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
                                                         </svg>
                                                     </button>
                                                 </div>
@@ -995,13 +995,13 @@ const VehicleSales = () => {
                                         className="mr-4 accent-[#DB2727] h-4 w-4 cursor-pointer"
                                         id="enable-leasing"
                                         {...register("enable_leasing")}
-                                        // name="subscribe"
-                                        // value="yes"
+                                    // name="subscribe"
+                                    // value="yes"
                                     />
                                     <label htmlFor="enable-leasing" className="text-[19px] font-semibold">
                                         Leasing Details
                                     </label>
-                                    <br/>
+                                    <br />
                                 </div>
 
                                 {isLeasingEnabled && (
@@ -1082,24 +1082,24 @@ const VehicleSales = () => {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-black">
                                     <thead>
-                                    <tr className="border-b-2 border-gray-300 text-gray-500 font-medium text-lg">
-                                        <th className="py- px-4 text-left">Vehicle Make</th>
-                                        <th className="py-5 px-4 text-left">Vehicle Model</th>
-                                        <th className="py-5 px-4 text-left">Manufacture Year</th>
-                                        <th className="py-5 px-4 text-left">Transmission</th>
-                                        <th className="py-5 px-4 text-left">Price</th>
-                                    </tr>
+                                        <tr className="border-b-2 border-gray-300 text-gray-500 font-medium text-lg">
+                                            <th className="py- px-4 text-left">Vehicle Make</th>
+                                            <th className="py-5 px-4 text-left">Vehicle Model</th>
+                                            <th className="py-5 px-4 text-left">Manufacture Year</th>
+                                            <th className="py-5 px-4 text-left">Transmission</th>
+                                            <th className="py-5 px-4 text-left">Price</th>
+                                        </tr>
                                     </thead>
                                     <tbody>
-                                    {vehicleData.map((vehicle, index) => (
-                                        <tr key={index} className="text-lg font-medium">
-                                            <td className="py-4 px-4">{vehicle.make}</td>
-                                            <td className="py-4 px-4">{vehicle.model}</td>
-                                            <td className="py-4 px-4">{vehicle.year}</td>
-                                            <td className="py-4 px-4">{vehicle.transmission}</td>
-                                            <td className="py-4 px-4">{vehicle.price}</td>
-                                        </tr>
-                                    ))}
+                                        {vehicleData.map((vehicle, index) => (
+                                            <tr key={index} className="text-lg font-medium">
+                                                <td className="py-4 px-4">{vehicle.make}</td>
+                                                <td className="py-4 px-4">{vehicle.model}</td>
+                                                <td className="py-4 px-4">{vehicle.year}</td>
+                                                <td className="py-4 px-4">{vehicle.transmission}</td>
+                                                <td className="py-4 px-4">{vehicle.price}</td>
+                                            </tr>
+                                        ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -1149,7 +1149,7 @@ const VehicleSales = () => {
                             <div className="mb-8">
                                 <div className="flex flex-col justify-center items-center">
                                     <Image src="/search.gif" alt="search" width={128} height={128}
-                                           className="w-32 h-32"/>
+                                        className="w-32 h-32" />
                                     <div className="text-center">
                                         <h2 className="font-semibold text-xl text-[#000000]">Oops! That Spare Part is
                                             Not
@@ -1212,9 +1212,9 @@ const VehicleSales = () => {
                                 />
 
                                 <div className="flex flex-col space-y-2 font-medium text-gray-900">
-                                <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
-                                  Price Range
-                                </span>
+                                    <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
+                                        Price Range
+                                    </span>
 
                                     <div className="flex gap-4">
                                         {/* Price From */}
@@ -1244,7 +1244,7 @@ const VehicleSales = () => {
                                                         viewBox="0 0 10 6"
                                                         fill="none"
                                                     >
-                                                        <path d="M0 6L5 0L10 6H0Z" fill="#575757"/>
+                                                        <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
                                                     </svg>
                                                 </button>
                                                 <button
@@ -1258,7 +1258,7 @@ const VehicleSales = () => {
                                                         viewBox="0 0 10 6"
                                                         fill="none"
                                                     >
-                                                        <path d="M0 0L5 6L10 0H0Z" fill="#575757"/>
+                                                        <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
                                                     </svg>
                                                 </button>
                                             </div>
@@ -1291,7 +1291,7 @@ const VehicleSales = () => {
                                                         viewBox="0 0 10 6"
                                                         fill="none"
                                                     >
-                                                        <path d="M0 6L5 0L10 6H0Z" fill="#575757"/>
+                                                        <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
                                                     </svg>
                                                 </button>
                                                 <button
@@ -1305,7 +1305,7 @@ const VehicleSales = () => {
                                                         viewBox="0 0 10 6"
                                                         fill="none"
                                                     >
-                                                        <path d="M0 0L5 6L10 0H0Z" fill="#575757"/>
+                                                        <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
                                                     </svg>
                                                 </button>
                                             </div>
@@ -1327,7 +1327,7 @@ type VerificationDropdownProps = {
     isIcon: boolean;
 };
 
-function VerificationDropdown({label, placeholder, isIcon}: VerificationDropdownProps) {
+function VerificationDropdown({ label, placeholder, isIcon }: VerificationDropdownProps) {
     return (
         <label className="flex flex-col space-y-2 font-medium text-gray-900">
             <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">{label}</span>
@@ -1344,10 +1344,10 @@ function VerificationDropdown({label, placeholder, isIcon}: VerificationDropdown
                 {
                     isIcon && (
                         <svg className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="20" height="20"
-                             viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path
                                 d="M14.1935 13.5122L16.6532 15.9719M15.8762 9.1838C15.8762 10.7723 15.2451 12.2958 14.1219 13.419C12.9986 14.5422 11.4752 15.1733 9.88669 15.1733C8.29818 15.1733 6.77473 14.5422 5.65149 13.419C4.52825 12.2958 3.89722 10.7723 3.89722 9.1838C3.89722 7.5953 4.52825 6.07185 5.65149 4.94861C6.77473 3.82537 8.29818 3.19434 9.88669 3.19434C11.4752 3.19434 12.9986 3.82537 14.1219 4.94861C15.2451 6.07185 15.8762 7.5953 15.8762 9.1838Z"
-                                stroke="#575757" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                stroke="#575757" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     )
                 }
@@ -1357,8 +1357,8 @@ function VerificationDropdown({label, placeholder, isIcon}: VerificationDropdown
                 {/*    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"*/}
                 {/*/>*/}
                 <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="10" height="6"
-                     viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757"/>
+                    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757" />
                 </svg>
             </div>
         </label>

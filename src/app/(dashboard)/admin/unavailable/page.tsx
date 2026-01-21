@@ -4,13 +4,15 @@
 import Header from "@/components/Header";
 import Image from "next/image";
 import React from "react";
-import {useUnavailableServices, useUnavailableSpareParts, useUnavailableVehicleSales} from "@/hooks/useUnavailable";
+import { useUnavailableServices, useUnavailableSpareParts, useUnavailableVehicleSales } from "@/hooks/useUnavailable";
+import { useBydUnavailableSales } from "@/hooks/useBydSales";
 
 export default function Unavailable() {
 
-    const {data: vehicleSales, isLoading: loadingVehicle} = useUnavailableVehicleSales();
-    const {data: services, isLoading: loadingService} = useUnavailableServices();
-    const {data: spareParts, isLoading: loadingSpare} = useUnavailableSpareParts();
+    const { data: vehicleSales, isLoading: loadingVehicle } = useUnavailableVehicleSales();
+    const { data: services, isLoading: loadingService } = useUnavailableServices();
+    const { data: spareParts, isLoading: loadingSpare } = useUnavailableSpareParts();
+    const { data: bydUnavailableSales, isLoading: loadingBydUnavailable } = useBydUnavailableSales();
 
     return (
         <div
@@ -169,6 +171,59 @@ export default function Unavailable() {
                                                 <div className="w-1/4 px-3 py-2">{item.part_no}</div>
                                                 <div className="w-1/4 px-3 py-2 relative">
                                                     {item.year_of_manufacture}
+                                                </div>
+                                            </div>
+                                        )))
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section
+                    className="relative mb-5 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
+                    <div className="w-full flex justify-between items-center">
+                        <span className="font-semibold text-[22px]">Unavailable BYD Vehicles</span>
+
+                        <button className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                            <Image
+                                src={"/images/admin/flowbite_filter-outline.svg"}
+                                width={24}
+                                height={24}
+                                alt="Filter icon"
+                            />
+                        </button>
+                    </div>
+                    <div className="w-full mt-5 ">
+                        <div className="h-[400px] overflow-x-auto overflow-y-hidden ">
+                            <div className="min-w-[1000px] ">
+                                {/* Table header */}
+                                <div
+                                    className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
+                                    <div className="w-1/6 px-3 py-2">Model</div>
+                                    <div className="w-1/6 px-3 py-2">Year</div>
+                                    <div className="w-1/6 px-3 py-2">Color</div>
+                                    <div className="w-1/6 px-3 py-2">Type</div>
+                                    <div className="w-1/6 px-3 py-2">Down Payment</div>
+                                    <div className="w-1/6 px-3 py-2">Price Range</div>
+                                </div>
+
+                                {/* Table body (scrollable vertically) */}
+                                <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
+                                    {loadingBydUnavailable ? <p>Loading...</p> :
+                                        (bydUnavailableSales?.map((item: any, idx: number) => (
+                                            <div
+                                                key={idx}
+                                                className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
+                                            >
+                                                <div className="w-1/6 px-3 py-2">{item.vehicle_model}</div>
+                                                <div className="w-1/6 px-3 py-2">{item.manufacture_year}</div>
+                                                <div className="w-1/6 px-3 py-2">{item.color}</div>
+                                                <div className="w-1/6 px-3 py-2">{item.type}</div>
+                                                <div className="w-1/6 px-3 py-2">{item.down_payment ? `LKR ${item.down_payment}` : '-'}</div>
+                                                <div className="w-1/6 px-3 py-2">
+                                                    {item.price_from && item.price_to ? `${item.price_from} - ${item.price_to}` : '-'}
                                                 </div>
                                             </div>
                                         )))
