@@ -13,6 +13,7 @@ export interface TicketCardProps {
     status: "New" | "Ongoing" | "Won" | "Lost";
     index?: number;
     route?: string;
+    email?: string; // Added email prop
     isOverlay?: boolean;
 }
 
@@ -47,6 +48,7 @@ export const TicketCard = ({
     date,
     index = 0,
     route,
+    email,
     isOverlay = false
 }: TicketCardProps) => {
     const router = useRouter();
@@ -58,6 +60,15 @@ export const TicketCard = ({
     const handleClick = () => {
         if (!isDragging) {
             router.push(route ? `${route}/${id}` : `/sales-agent/sales/${id}`);
+        }
+    };
+
+    const handleEmailClick = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card click
+        if (email) {
+            window.location.href = `mailto:${email}`;
+        } else {
+            alert("No email address available for this customer.");
         }
     };
 
@@ -128,18 +139,20 @@ export const TicketCard = ({
             </div>
 
             {/* Action Row */}
-            <div className="flex items-center gap-3 mt-4">
+            <div className="flex items-center gap-3 mt-4 border-t-1 pt-3 border-[#E5E7EB80]">
                 {/*<button className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">*/}
                 {/*    <PhoneIcon size={14} />*/}
                 {/*    Call*/}
                 {/*</button>*/}
-                <button className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
+                <button
+                    onClick={handleEmailClick}
+                    className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] cursor-pointer border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
                     <MailIcon size={14} />
                     Email
                 </button>
                 <button
                     onClick={handleClick}
-                    className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
+                    className="flex-1 bg-white hover:bg-gray-50 text-[#344054] text-xs font-semibold py-2 px-3 rounded-[8px] cursor-pointer border border-[#D0D5DD] shadow-sm flex items-center justify-center gap-2 transition-colors">
                     <EyeIcon size={14} />
                     View
                 </button>

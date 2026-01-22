@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import FlowBar, {SalesStatus} from "@/components/FlowBar";
+import FlowBar, { SalesStatus } from "@/components/FlowBar";
 import SalesDetailsTab from "@/components/SalesDetailsTab";
 import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
-import React, {useEffect, useState} from "react";
-import {Role} from "@/types/role";
-import {message} from "antd";
+import React, { useEffect, useState } from "react";
+import { Role } from "@/types/role";
+import { message } from "antd";
 import {
     useClaimSaleLead,
     useCreateSaleFollowup,
@@ -16,10 +16,11 @@ import {
     useSaleByTicket, useUpdateSalePriority,
     useUpdateSaleStatus, useSaleHistory, usePromoteSale
 } from "@/hooks/useFastTrack";
-import {useParams} from "next/navigation";
-import {useCurrentUser} from "@/utils/auth";
+import { useParams } from "next/navigation";
+import { useCurrentUser } from "@/utils/auth";
 import Image from "next/image";
 import HistoryTimeline from "@/components/HistoryTimeline";
+import RedSpinner from "@/components/RedSpinner";
 
 const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
     switch (apiStatus) {
@@ -46,14 +47,14 @@ export default function SalesDetailsPage() {
     const user = useCurrentUser();
     const userId = Number(user?.id) || 1;
 
-    const {data: sale, isLoading, error} = useSaleByTicket(ticketNumber);
+    const { data: sale, isLoading, error } = useSaleByTicket(ticketNumber);
     const assignToMeMutation = useClaimSaleLead();
     const createFollowupMutation = useCreateSaleFollowup();
     const createReminderMutation = useCreateSaleReminder();
     const updateSaleStatusMutation = useUpdateSaleStatus();
     const updateSalePriorityMutation = useUpdateSalePriority();
 
-    const {data: history} = useSaleHistory(sale?.id);
+    const { data: history } = useSaleHistory(sale?.id);
     const promoteMutation = usePromoteSale();
 
     const [status, setStatus] = useState<SalesStatus>("New");
@@ -73,7 +74,7 @@ export default function SalesDetailsPage() {
 
     const handleAssignClick = () => {
         if (sale && sale.id && status === "New") {
-            assignToMeMutation.mutate({saleId: sale.id, userId}, {
+            assignToMeMutation.mutate({ saleId: sale.id, userId }, {
                 onSuccess: () => {
                     setStatus("Ongoing");
                     message.success("Sale assigned to you");
@@ -146,7 +147,7 @@ export default function SalesDetailsPage() {
         const priority = parseInt(value);
         if (sale && sale.id && !isNaN(priority)) {
             updateSalePriorityMutation.mutate(
-                {saleId: sale.id, priority},
+                { saleId: sale.id, priority },
                 {
                     onSuccess: () => {
                         message.success(`Priority updated to ${value}`);
@@ -181,7 +182,7 @@ export default function SalesDetailsPage() {
         if (!confirm("Are you sure you want to pass this lead to the next sales level? You will lose access.")) return;
 
         try {
-            await promoteMutation.mutateAsync({id: sale.id, userId: Number(userId)});
+            await promoteMutation.mutateAsync({ id: sale.id, userId: Number(userId) });
             alert("Lead promoted successfully!");
             window.location.href = "/sales-agent/sales";
         } catch (e) {
@@ -195,8 +196,13 @@ export default function SalesDetailsPage() {
         status === "New" ? "Assign to me" : `Sales person: ${sale?.salesUser?.full_name || "Unknown"}`;
 
     if (isLoading) {
-        return <div className="text-center mt-10"><p>Loading sale details...</p></div>;
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <RedSpinner />
+            </div>
+        );
     }
+
 
     if (error || !sale) {
         return (
@@ -242,24 +248,24 @@ export default function SalesDetailsPage() {
                     {/* Header */}
                     <div className="flex w-full justify-between items-center">
                         <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
-              <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-               {sale.ticket_number}
-              </span>
-                            <span
-                                className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                                    <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20}/>
+                            <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
+                                {sale.ticket_number}
                             </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                ITPL
-              </span>
+                                <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20} />
+                            </span>
+                            <span
+                                className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
+                                ITPL
+                            </span>
                             {status !== "New" && (
                                 <div
                                     className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
                                     <select
                                         onChange={handlePriorityChange}
                                         className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
-                                        style={{textAlignLast: "center"}}
+                                        style={{ textAlignLast: "center" }}
                                     >
                                         <option value={0}>P0</option>
                                         <option value={1}>P1</option>
@@ -276,7 +282,7 @@ export default function SalesDetailsPage() {
                                 setStatus(newStatus);
                                 if (sale?.id && (newStatus.toUpperCase() === "WON" || newStatus.toUpperCase() === "LOST")) {
                                     updateSaleStatusMutation.mutate(
-                                        {saleId: sale.id, status: newStatus.toUpperCase()},
+                                        { saleId: sale.id, status: newStatus.toUpperCase() },
                                         {
                                             onSuccess: () => {
                                                 message.success(`Status updated to ${newStatus}`);
@@ -297,11 +303,10 @@ export default function SalesDetailsPage() {
                     <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
                         <button
                             onClick={handleAssignClick}
-                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
-                                status === "New"
+                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${status === "New"
                                     ? "bg-[#DB2727] text-white"
                                     : "bg-[#EBD4FF] text-[#1D1D1D]"
-                            }`}
+                                }`}
                             disabled={status !== "New"}
                         >
                             {buttonText}
@@ -372,22 +377,22 @@ export default function SalesDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "Unknown"}/>
-                            <InfoRow label="Contact No:" value={sale.customer?.phone_number || "N/A"}/>
-                            <InfoRow label="Email:" value={sale.customer?.email || "N/A"}/>
+                            <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "Unknown"} />
+                            <InfoRow label="Contact No:" value={sale.customer?.phone_number || "N/A"} />
+                            <InfoRow label="Email:" value={sale.customer?.email || "N/A"} />
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Vehicle Details
                             </div>
-                            <InfoRow label="Vehicle Made:" value={sale.vehicle?.make || "Honda"}/>
-                            <InfoRow label="Vehicle Model:" value={sale.vehicle?.model || "Civic"}/>
-                            <InfoRow label="Manufacture Year:" value={sale.vehicle?.manufacture_year || "2019"}/>
-                            <InfoRow label="Capacity:" value={sale.vehicle?.capacity || "2800cc"}/>
-                            <InfoRow label="Transmission:" value={sale.vehicle?.transmission || "Auto"}/>
-                            <InfoRow label="Fuel Type:" value={sale.vehicle?.fuel_type || "Petrol"}/>
+                            <InfoRow label="Vehicle Made:" value={sale.vehicle?.make || "Honda"} />
+                            <InfoRow label="Vehicle Model:" value={sale.vehicle?.model || "Civic"} />
+                            <InfoRow label="Manufacture Year:" value={sale.vehicle?.manufacture_year || "2019"} />
+                            <InfoRow label="Capacity:" value={sale.vehicle?.capacity || "2800cc"} />
+                            <InfoRow label="Transmission:" value={sale.vehicle?.transmission || "Auto"} />
+                            <InfoRow label="Fuel Type:" value={sale.vehicle?.fuel_type || "Petrol"} />
                             <InfoRow label="Price Range:"
-                                     value={(sale.price_range_min && sale.price_range_max) ? `${sale.price_range_min.toLocaleString()} - ${sale.price_range_max.toLocaleString()}` : "N/A"}/>
-                            <InfoRow label="Additional Note:" value={sale.additional_note || "-"}/>
+                                value={(sale.price_range_min && sale.price_range_max) ? `${sale.price_range_min.toLocaleString()} - ${sale.price_range_max.toLocaleString()}` : "N/A"} />
+                            <InfoRow label="Additional Note:" value={sale.additional_note || "-"} />
                         </div>
 
                         <div className="w-3/5 flex flex-col min-h-[400px]">
@@ -419,7 +424,7 @@ export default function SalesDetailsPage() {
                     isPriorityAvailable={false}
                 >
                     <div className="w-full px-4 pb-4">
-                        <HistoryTimeline history={history}/>
+                        <HistoryTimeline history={history} />
                     </div>
                 </Modal>
             )}

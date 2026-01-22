@@ -343,6 +343,50 @@ const VehicleSales = () => {
         },
     ];
 
+    const compareData = [
+        {
+            source: 'Ikman.lk',
+            price: 'Rs. 21,500,000',
+            year: '2025',
+            mileage: '7000 km',
+            color: 'Rallye Red',
+            owners: '2',
+            vehicle_no: 'CAR-6543',
+            grade: 'Sport Touring Hybrid',
+        },
+        {
+            source: 'Ikman.lk',
+            price: 'Rs. 21,500,000',
+            year: '2025',
+            mileage: '7000 km',
+            color: 'Rallye Red',
+            owners: '2',
+            vehicle_no: 'CAR-6543',
+            grade: 'Sport Touring Hybrid',
+        },
+        {
+            source: 'Ikman.lk',
+            price: 'Rs. 21,500,000',
+            year: '2025',
+            mileage: '7000 km',
+            color: 'Rallye Red',
+            owners: '2',
+            vehicle_no: 'CAR-6543',
+            grade: 'Sport Touring Hybrid',
+        },
+        {
+            source: 'Ikman.lk',
+            price: 'Rs. 21,500,000',
+            year: '2025',
+            mileage: '7000 km',
+            color: 'Rallye Red',
+            owners: '2',
+            vehicle_no: 'CAR-6543',
+            grade: 'Sport Touring Hybrid',
+        },
+    ];
+
+
 
     const vehicleData = [
         { make: 'Nissan', model: 'GT-R (R35)', year: 2020, transmission: 'Automatic', price: 'Rs 75,300,000' },
@@ -524,7 +568,7 @@ const VehicleSales = () => {
                                     <div>
                                         <button
                                             onClick={() => setIsVehicleAvailabilityModalOpen(true)}
-                                            className="ml-auto text-white text-base font-medium rounded-full">
+                                            className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
                                             <Image src="/dashboard/availability.svg" alt="availability" height={36}
                                                 width={36} className="h-12 w-12" />
                                         </button>
@@ -546,10 +590,10 @@ const VehicleSales = () => {
                                             {stockData.map((item, index) => (
                                                 <tr key={index} onClick={handleStockItemClick}
                                                     className="text-lg font-medium text-[#4353FF] underline">
-                                                    <td className="py-4 px-4"><a>{item.physical}</a></td>
-                                                    <td className="py-4 px-4">{item.onOrder}</td>
-                                                    <td className="py-4 px-4">{item.ftProgressLevel}</td>
-                                                    <td className="py-4 px-4">{item.productionLine}</td>
+                                                    <td className="py-4 px-4 cursor-pointer"><a>{item.physical}</a></td>
+                                                    <td className="py-4 px-4 cursor-pointer">{item.onOrder}</td>
+                                                    <td className="py-4 px-4 cursor-pointer">{item.ftProgressLevel}</td>
+                                                    <td className="py-4 px-4 cursor-pointer">{item.productionLine}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -642,6 +686,60 @@ const VehicleSales = () => {
                                             ))
                                         }
                                     </div>
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
+                    {showStockAvailability && showVehicleDetailsAndLoyaltyAndPromotions && (
+                        <section
+                            id="vehicle-compare-section"
+                            className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
+                            <div
+                                className="w-full">
+                                <div className="flex flex-row items-center justify-between">
+                                    <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Compare Vehicle Prices</h2>
+                                    {/*<div>*/}
+                                    {/*    <button*/}
+                                    {/*        onClick={() => setIsVehicleAvailabilityModalOpen(true)}*/}
+                                    {/*        className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">*/}
+                                    {/*        <Image src="/dashboard/availability.svg" alt="availability" height={36}*/}
+                                    {/*               width={36} className="h-12 w-12" />*/}
+                                    {/*    </button>*/}
+                                    {/*</div>*/}
+                                </div>
+
+                                {/* Table Headers */}
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-black">
+                                        <thead>
+                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                            <th className="py-5 px-4 text-left">Source</th>
+                                            <th className="py-5 px-4 text-left">Price</th>
+                                            <th className="py-5 px-4 text-left">Manufacture Year</th>
+                                            <th className="py-5 px-4 text-left">Mileage</th>
+                                            <th className="py-5 px-4 text-left">Color</th>
+                                            <th className="py-5 px-4 text-left">No of Owners</th>
+                                            <th className="py-5 px-4 text-left">Vehicle no.</th>
+                                            <th className="py-5 px-4 text-left">Grade</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {compareData.map((item, index) => (
+                                            <tr key={index}
+                                                className="text-lg font-medium text-[#1D1D1D]">
+                                                <td className="py-4 px-4 cursor-pointer">{item.source}</td>
+                                                <td className="py-4 px-4 cursor-pointer truncate">{item.price}</td>
+                                                <td className="py-4 px-4 cursor-pointer">{item.year}</td>
+                                                <td className="py-4 px-4 cursor-pointer">{item.mileage}</td>
+                                                <td className="py-4 px-4 cursor-pointer truncate">{item.color}</td>
+                                                <td className="py-4 px-4 cursor-pointer">{item.owners}</td>
+                                                <td className="py-4 px-4 cursor-pointer">{item.vehicle_no}</td>
+                                                <td className="py-4 px-4 cursor-pointer truncate">{item.grade}</td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </section>
@@ -1337,10 +1435,6 @@ function VerificationDropdown({ label, placeholder, isIcon }: VerificationDropdo
                     placeholder={placeholder}
                     className={`w-full ${isIcon ? "px-10" : "px-4"} py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
                 />
-                {/*<FiSearch*/}
-                {/*    size={18}*/}
-                {/*    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"*/}
-                {/*/>*/}
                 {
                     isIcon && (
                         <svg className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="20" height="20"
@@ -1351,11 +1445,6 @@ function VerificationDropdown({ label, placeholder, isIcon }: VerificationDropdo
                         </svg>
                     )
                 }
-
-                {/*<BiChevronDown*/}
-                {/*    size={18}*/}
-                {/*    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"*/}
-                {/*/>*/}
                 <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="10" height="6"
                     viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757" />

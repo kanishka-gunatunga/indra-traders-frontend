@@ -4,6 +4,7 @@
 
 import Modal from "@/components/Modal";
 import Header from "@/components/Header";
+import RedSpinner from "@/components/RedSpinner";
 import { TicketCard, TicketCardProps } from "@/components/TicketCard";
 import { TicketColumn } from "@/components/TicketColumn";
 import Image from "next/image";
@@ -17,6 +18,7 @@ import {
     useUpdateSaleStatus,
     useAssignToMe
 } from "@/hooks/useSparePartSales";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useToast } from "@/hooks/useToast";
 import {
     DndContext,
@@ -67,6 +69,7 @@ type MappedTicket = {
     priority: number;
     user: string;
     phone: string;
+    email: string;
     date: string;
     rawDate: string;
     status: "New" | "Ongoing" | "Won" | "Lost";
@@ -108,13 +111,14 @@ const mapApiToTicket = (apiSale: any): MappedTicket => ({
     priority: apiSale.priority,
     user: apiSale.customer?.customer_name || "Unknown",
     phone: apiSale.customer?.phone_number || "",
+    email: apiSale.customer?.email || "",
     date: new Date(apiSale.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
     rawDate: apiSale.date,
     status: mapStatus(apiSale.status),
 });
 
 
-export const selfAssignSaleSchema = z.object({
+const selfAssignSaleSchema = z.object({
     customer_name: z.string().min(1, "Customer Name is required"),
     contact_number: z.string().min(10, "Valid Contact Number is required"),
     email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -161,10 +165,20 @@ export default function SalesDashboard() {
     const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
     const filterRef = useRef<HTMLDivElement>(null);
 
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
     const { toast, showToast, hideToast } = useToast();
 
+    // Prepare filters for the hook
+    const filters = React.useMemo(() => ({
+        search: debouncedSearchTerm,
+        priority: filterPriority === "All Priority" ? undefined : filterPriority,
+        startDate: dateFrom || undefined,
+        endDate: dateTo || undefined,
+        status: filterStatus === "All Status" ? undefined : filterStatus
+    }), [debouncedSearchTerm, filterPriority, dateFrom, dateTo, filterStatus]);
 
-    const { data: apiSales, isLoading } = useSpareSales(undefined, userId, userRole);
+    const { data: apiSales, isLoading } = useSpareSales(undefined, userId, userRole, filters);
     const createSaleMutation = useSpareCreateSale();
 
     const updateStatusMutation = useUpdateSaleStatus();
@@ -203,25 +217,8 @@ export default function SalesDashboard() {
     }, [apiSales]);
 
     // Derived State for Filters & Stats
-    const filteredTickets = tickets.filter((ticket) => {
-        const matchesSearch =
-            ticket.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ticket.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ticket.phone.includes(searchTerm);
-
-        const matchesStatus =
-            filterStatus === "All Status" || ticket.status === filterStatus;
-
-        const matchesPriority =
-            filterPriority === "All Priority" ||
-            `P${ticket.priority}` === filterPriority;
-
-        const matchesDate =
-            (!dateFrom || dayjs(ticket.rawDate).isAfter(dayjs(dateFrom).subtract(1, 'day'))) &&
-            (!dateTo || dayjs(ticket.rawDate).isBefore(dayjs(dateTo).add(1, 'day')));
-
-        return matchesSearch && matchesStatus && matchesPriority && matchesDate;
-    });
+    // Direct use of tickets as they are already filtered from backend
+    const filteredTickets = tickets;
 
     const totalLeads = tickets.length;
     const newLeads = tickets.filter(t => t.status === "New").length;
@@ -534,8 +531,13 @@ export default function SalesDashboard() {
     ];
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <RedSpinner />
+            </div>
+        );
     }
+
 
     if (!isMounted) return null;
 
@@ -587,7 +589,7 @@ export default function SalesDashboard() {
                                     e.stopPropagation();
                                     setIsFilterOpen(!isFilterOpen);
                                 }}
-                                className={`flex items-center gap-2 px-6 py-3 border rounded-[20px] transition-colors ${isFilterOpen
+                                className={`flex items-center cursor-pointer gap-2 px-6 py-3 border rounded-[20px] transition-colors ${isFilterOpen
                                     ? 'bg-red-50 border-red-200 text-red-700'
                                     : 'bg-white border-[#E0E0E0] text-[#344054] hover:bg-gray-50'
                                     }`}
@@ -601,7 +603,7 @@ export default function SalesDashboard() {
                             {isLevel1 && (
                                 <button
                                     onClick={() => setIsAddSaleModalOpen(true)}
-                                    className="flex flex-row items-center gap-2 px-6 py-3 bg-[#DB2727] text-white rounded-[20px] hover:bg-red-700 transition shadow-lg shadow-red-500/30"
+                                    className="flex flex-row items-center cursor-pointer gap-2 px-6 py-3 bg-[#DB2727] text-white rounded-[20px] hover:bg-red-700 transition shadow-lg shadow-red-500/30"
                                 >
                                     <Image src="/plus.svg" alt="plus" width={20} height={20} className="h-5 w-5" />
                                     <span className="font-medium whitespace-nowrap">Add Lead</span>

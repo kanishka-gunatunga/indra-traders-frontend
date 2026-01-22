@@ -40,6 +40,8 @@ import { Table, Dropdown, MenuProps } from "antd";
 import { MoreHorizontal, Phone, Mail, Eye, Search, LayoutGrid } from "lucide-react";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
+import RedSpinner from "@/components/RedSpinner";
+import {useDebounce} from "@/hooks/useDebounce";
 
 dayjs.extend(isBetween);
 
@@ -83,6 +85,7 @@ type MappedTicket = {
     priority: number;
     user: string;
     phone: string;
+    email: string;
     date: string;
     rawDate: Date;
     status: "New" | "Ongoing" | "Won" | "Lost";
@@ -146,6 +149,7 @@ const mapApiToTicket = (apiSale: any): MappedTicket => ({
     priority: apiSale.priority,
     user: apiSale.customer?.customer_name || "Unknown",
     phone: apiSale.customer?.phone_number || "",
+    email: apiSale.customer?.email || "",
     date: new Date(apiSale.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
     rawDate: new Date(apiSale.date),
     status: mapStatus(apiSale.status),
@@ -211,7 +215,17 @@ export default function SalesDashboard() {
     const [dateTo, setDateTo] = useState("");
     const filterRef = useRef<HTMLDivElement>(null);
 
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
     const { toast, showToast, hideToast } = useToast();
+
+    const filters = React.useMemo(() => ({
+        search: debouncedSearchTerm,
+        priority: filterPriority === "All Priority" ? undefined : filterPriority,
+        startDate: dateFrom || undefined,
+        endDate: dateTo || undefined,
+        status: filterStatus === "All Status" ? undefined : filterStatus
+    }), [debouncedSearchTerm, filterPriority, dateFrom, dateTo, filterStatus]);
 
     const { data: apiSales, isLoading, error } = useBydSales(undefined, userId, userRole);
     const createSaleMutation = useCreateBydSale();
@@ -253,27 +267,30 @@ export default function SalesDashboard() {
     const wonDeals = apiSales ? apiSales.filter((s: any) => mapStatus(s.status) === "Won").length : 0;
     const lostDeals = apiSales ? apiSales.filter((s: any) => mapStatus(s.status) === "Lost").length : 0;
 
-    const filteredTickets = tickets.filter(ticket => {
-        const matchesSearch = searchTerm === "" ||
-            ticket.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ticket.phone.includes(searchTerm) ||
-            ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const filteredTickets = tickets;
 
-        const matchesStatus = filterStatus === "All Status" || ticket.status === filterStatus;
-        const matchesPriority = filterPriority === "All Priority" || `P${ticket.priority}` === filterPriority;
 
-        let matchesDate = true;
-        if (dateFrom && dateTo) {
-            const ticketDate = dayjs(ticket.rawDate);
-            matchesDate = ticketDate.isBetween(dateFrom, dateTo, 'day', '[]');
-        } else if (dateFrom) {
-            matchesDate = dayjs(ticket.rawDate).isAfter(dayjs(dateFrom).subtract(1, 'day'));
-        } else if (dateTo) {
-            matchesDate = dayjs(ticket.rawDate).isBefore(dayjs(dateTo).add(1, 'day'));
-        }
-
-        return matchesSearch && matchesStatus && matchesPriority && matchesDate;
-    });
+    // const filteredTickets = tickets.filter(ticket => {
+    //     const matchesSearch = searchTerm === "" ||
+    //         ticket.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //         ticket.phone.includes(searchTerm) ||
+    //         ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
+    //
+    //     const matchesStatus = filterStatus === "All Status" || ticket.status === filterStatus;
+    //     const matchesPriority = filterPriority === "All Priority" || `P${ticket.priority}` === filterPriority;
+    //
+    //     let matchesDate = true;
+    //     if (dateFrom && dateTo) {
+    //         const ticketDate = dayjs(ticket.rawDate);
+    //         matchesDate = ticketDate.isBetween(dateFrom, dateTo, 'day', '[]');
+    //     } else if (dateFrom) {
+    //         matchesDate = dayjs(ticket.rawDate).isAfter(dayjs(dateFrom).subtract(1, 'day'));
+    //     } else if (dateTo) {
+    //         matchesDate = dayjs(ticket.rawDate).isBefore(dayjs(dateTo).add(1, 'day'));
+    //     }
+    //
+    //     return matchesSearch && matchesStatus && matchesPriority && matchesDate;
+    // });
 
     const allowedTransitions: Record<MappedTicket["status"], MappedTicket["status"][]> = {
         New: ["Ongoing"],
@@ -558,7 +575,11 @@ export default function SalesDashboard() {
     ];
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <RedSpinner />
+            </div>
+        );
     }
 
     if (!isMounted) return null;
@@ -614,7 +635,7 @@ export default function SalesDashboard() {
                             {/* Filter Toggle */}
                             <button
                                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                                className={`flex items-center gap-2 px-6 py-3 border rounded-[20px] transition-colors ${isFilterOpen
+                                className={`flex items-center cursor-pointer gap-2 px-6 py-3 border rounded-[20px] transition-colors ${isFilterOpen
                                     ? 'bg-red-50 border-red-200 text-red-700'
                                     : 'bg-white border-[#E0E0E0] text-[#344054] hover:bg-gray-50'
                                     }`}
@@ -640,7 +661,7 @@ export default function SalesDashboard() {
                             {isLevel1 && (
                                 <button
                                     onClick={() => setIsAddSaleModalOpen(true)}
-                                    className="flex flex-row items-center gap-2 px-6 py-3 bg-[#DB2727] text-white rounded-[20px] hover:bg-red-700 transition shadow-lg shadow-red-500/30"
+                                    className="flex flex-row items-center cursor-pointer gap-2 px-6 py-3 bg-[#DB2727] text-white rounded-[20px] hover:bg-red-700 transition shadow-lg shadow-red-500/30"
                                 >
                                     <Image src="/plus.svg" alt="plus" width={20} height={20} className="h-5 w-5" />
                                     <span className="font-medium whitespace-nowrap">Add Lead</span>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
-import {FastTrackService} from "@/services/fastTrack.service";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { FastTrackService } from "@/services/fastTrack.service";
 
 
 export const useCreateDirectRequest = () => {
@@ -9,7 +9,7 @@ export const useCreateDirectRequest = () => {
     return useMutation({
         mutationFn: (payload: any) => FastTrackService.createDirectRequest(payload),
         onSuccess: () =>
-            qc.invalidateQueries({queryKey: ["directRequests"]})
+            qc.invalidateQueries({ queryKey: ["directRequests"] })
     });
 };
 
@@ -23,10 +23,10 @@ export const useDirectRequests = () => {
 export const useAddDirectReminder = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({id, payload}: { id: number; payload: any }) =>
+        mutationFn: ({ id, payload }: { id: number; payload: any }) =>
             FastTrackService.addDirectRequestReminder(id, payload),
         onSuccess: (_d, vars) =>
-            qc.invalidateQueries({queryKey: ["directReminders", vars.id]})
+            qc.invalidateQueries({ queryKey: ["directReminders", vars.id] })
     });
 };
 
@@ -72,10 +72,10 @@ export const useVehicleDetails = (vehicleId: number) => {
 export const useAssignBestMatchToSale = () => {
     return useMutation({
         mutationFn: ({
-                         directRequestId,
-                         vehicleId,
-                         payload
-                     }: {
+            directRequestId,
+            vehicleId,
+            payload
+        }: {
             directRequestId: number;
             vehicleId: number;
             payload: any;
@@ -89,41 +89,42 @@ export const useAssignBestMatchToSale = () => {
 };
 
 
-export const useSales = (status?: string, userId?: number, userRole?: string) => {
+export const useSales = (status?: string, userId?: number, userRole?: string, filters?: any) => {
     return useQuery({
-        queryKey: ["sales", status, userId, userRole],
-        queryFn: () => FastTrackService.listSales(status, userId, userRole),
+        queryKey: ["sales", status, userId, userRole, filters],
+        queryFn: () => FastTrackService.listSales(status, userId, userRole, filters),
         refetchInterval: 1000,
+        placeholderData: keepPreviousData,
     });
 };
 
 export const useClaimSaleLead = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({saleId, userId}: { saleId: number; userId: number }) =>
+        mutationFn: ({ saleId, userId }: { saleId: number; userId: number }) =>
             FastTrackService.claimSaleLead(saleId, userId),
         onSuccess: () =>
-            qc.invalidateQueries({queryKey: ["sales"]})
+            qc.invalidateQueries({ queryKey: ["sales"] })
     });
 };
 
 export const useUpdateSaleStatus = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({saleId, status}: { saleId: string; status: string }) =>
+        mutationFn: ({ saleId, status }: { saleId: string; status: string }) =>
             FastTrackService.updateSaleStatus(saleId, status),
         onSuccess: () =>
-            qc.invalidateQueries({queryKey: ["sales"]})
+            qc.invalidateQueries({ queryKey: ["sales"] })
     });
 };
 
 export const useUpdateSalePriority = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({saleId, priority}: { saleId: number; priority: number }) =>
+        mutationFn: ({ saleId, priority }: { saleId: number; priority: number }) =>
             FastTrackService.updateSalePriority(saleId, priority),
         onSuccess: () =>
-            qc.invalidateQueries({queryKey: ["sales"]})
+            qc.invalidateQueries({ queryKey: ["sales"] })
     });
 };
 
@@ -180,12 +181,12 @@ export const useSaleReminders = (saleId: number) => {
 export const usePromoteSale = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({id, userId}: { id: number; userId: number }) =>
+        mutationFn: ({ id, userId }: { id: number; userId: number }) =>
             FastTrackService.promote(id, userId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["FastTracks"]});
-            queryClient.invalidateQueries({queryKey: ["FastTrack"]});
-            queryClient.invalidateQueries({queryKey: ["saleHistory"]});
+            queryClient.invalidateQueries({ queryKey: ["FastTracks"] });
+            queryClient.invalidateQueries({ queryKey: ["FastTrack"] });
+            queryClient.invalidateQueries({ queryKey: ["saleHistory"] });
         },
     });
 };

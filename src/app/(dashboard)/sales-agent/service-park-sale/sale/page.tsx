@@ -4,6 +4,7 @@
 
 import Modal from "@/components/Modal";
 import Header from "@/components/Header";
+import RedSpinner from "@/components/RedSpinner";
 import { TicketCard, TicketCardProps } from "@/components/TicketCard";
 import { TicketColumn } from "@/components/TicketColumn";
 import Image from "next/image";
@@ -17,6 +18,7 @@ import {
     useVehicleSales,
     useAssignToSale
 } from "@/hooks/useServicePark";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useToast } from "@/hooks/useToast";
 import {
     DndContext,
@@ -45,7 +47,7 @@ import isBetween from "dayjs/plugin/isBetween";
 
 dayjs.extend(isBetween);
 
-export const selfAssignServiceSchema = z.object({
+const selfAssignServiceSchema = z.object({
     customer_name: z.string().min(1, "Customer Name is required"),
     contact_number: z.string().min(1, "Valid Contact Number is required"),
     email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -77,6 +79,7 @@ type MappedTicket = {
     priority: number;
     user: string;
     phone: string;
+    email: string;
     date: string;
     rawDate: string;
     status: "New" | "Ongoing" | "Won" | "Lost";
@@ -118,6 +121,7 @@ const mapApiToTicket = (apiSale: any): MappedTicket => ({
     priority: apiSale.priority,
     user: apiSale.customer?.customer_name || "Unknown",
     phone: apiSale.customer?.phone_number || "",
+    email: apiSale.customer?.email || "",
     date: new Date(apiSale.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
     rawDate: apiSale.date,
     status: mapStatus(apiSale.status),
@@ -166,8 +170,18 @@ export default function SalesDashboard() {
 
     const { toast, showToast, hideToast } = useToast();
 
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-    const { data: apiSales, isLoading, isError } = useVehicleSales(undefined, userId, userRole);
+    const filters = React.useMemo(() => ({
+        search: debouncedSearchTerm,
+        priority: filterPriority === "All Priorities" ? undefined : filterPriority,
+        startDate: dateFrom || undefined,
+        endDate: dateTo || undefined,
+        status: filterStatus === "All Status" ? undefined : filterStatus
+    }), [debouncedSearchTerm, filterPriority, dateFrom, dateTo, filterStatus]);
+
+
+    const { data: apiSales, isLoading, isError } = useVehicleSales(undefined, userId, userRole, filters);
     console.log("----- sale details: ", apiSales);
 
     const { data: reminderData, isLoading: reminderLoading, error: reminderError } = useNearestReminders(userId);
@@ -374,31 +388,7 @@ export default function SalesDashboard() {
     ];
 
     // Derived State: Filtering
-    const filteredTickets = tickets.filter((ticket) => {
-        // Search Filter
-        const matchesSearch =
-            ticket.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ticket.phone.includes(searchTerm) ||
-            ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-        // Status Filter
-        const matchesStatus =
-            filterStatus === "All Status" || ticket.status === filterStatus;
-
-        // Priority Filter (assuming priority is 0,1,2,3 -> P0, P1, etc.)
-        const matchesPriority =
-            filterPriority === "All Priorities" ||
-            `P${ticket.priority}` === filterPriority;
-
-        // Date Range Filter
-        let matchesDate = true;
-        if (dateFrom && dateTo) {
-            const ticketDate = dayjs(ticket.rawDate);
-            matchesDate = ticketDate.isBetween(dateFrom, dateTo, "day", "[]");
-        }
-
-        return matchesSearch && matchesStatus && matchesPriority && matchesDate;
-    });
+    const filteredTickets = tickets;
 
     // Pagination Logic
     const [currentPage, setCurrentPage] = useState(1);
@@ -561,8 +551,13 @@ export default function SalesDashboard() {
     ];
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <RedSpinner />
+            </div>
+        );
     }
+
 
     if (!isMounted) return null;
 
@@ -614,7 +609,7 @@ export default function SalesDashboard() {
                                     e.stopPropagation();
                                     setIsFilterOpen(!isFilterOpen);
                                 }}
-                                className={`flex items-center gap-2 px-6 py-3 border rounded-[20px] transition-colors ${isFilterOpen
+                                className={`flex items-center cursor-pointer gap-2 px-6 py-3 border rounded-[20px] transition-colors ${isFilterOpen
                                     ? 'bg-red-50 border-red-200 text-red-700'
                                     : 'bg-white border-[#E0E0E0] text-[#344054] hover:bg-gray-50'
                                     }`}
@@ -627,7 +622,7 @@ export default function SalesDashboard() {
 
                             {isLevel1 && (
                                 <button
-                                    className="flex flex-row items-center gap-2 px-6 py-3 bg-[#DB2727] text-white rounded-[20px] hover:bg-red-700 transition shadow-lg shadow-red-500/30"
+                                    className="flex flex-row items-center cursor-pointer gap-2 px-6 py-3 bg-[#DB2727] text-white rounded-[20px] hover:bg-red-700 transition shadow-lg shadow-red-500/30"
                                     onClick={() => setIsAddLeadModalOpen(true)}
                                 >
                                     <Image

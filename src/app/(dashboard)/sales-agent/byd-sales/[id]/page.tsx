@@ -23,6 +23,7 @@ import { message } from "antd";
 import { useCurrentUser } from "@/utils/auth";
 import Image from "next/image";
 import HistoryTimeline from "@/components/HistoryTimeline";
+import RedSpinner from "@/components/RedSpinner";
 
 export default function SalesDetailsPage() {
     const [role, setRole] = useState<Role>(
@@ -206,11 +207,12 @@ export default function SalesDetailsPage() {
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <p>Loading sale details...</p>
+            <div className="h-screen flex items-center justify-center">
+                <RedSpinner />
             </div>
         );
     }
+
 
     if (error || !sale) {
         return (

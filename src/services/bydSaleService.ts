@@ -4,12 +4,13 @@ import axiosInstance from "@/utils/axiosinstance";
 export const BydSaleService = {
     create: (data: any) => axiosInstance.post("/byd-sales", data),
 
-    getAll: (status?: string, userId?: number, userRole?: string) =>
+    getAll: (status?: string, userId?: number, userRole?: string, filters?: any) =>
         axiosInstance.get("/byd-sales", {
             params: {
                 ...(status ? { status } : {}),
                 ...(userId ? { userId } : {}),
-                ...(userRole ? { userRole } : {})
+                ...(userRole ? { userRole } : {}),
+                ...filters
             },
         }),
 

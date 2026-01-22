@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import FlowBar, {SalesStatus} from "@/components/FlowBar";
+import FlowBar, { SalesStatus } from "@/components/FlowBar";
 import SalesDetailsTab from "@/components/SalesDetailsTab";
 import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
-import React, {useEffect, useState} from "react";
-import {Role} from "@/types/role";
+import React, { useEffect, useState } from "react";
+import { Role } from "@/types/role";
 import {
     useSaleDetailsByTicketNumber,
     useAssignToSalesAgent,
@@ -16,10 +16,10 @@ import {
     useCreateReminder,
     useUpdatePriority, useSaleHistory, usePromoteSale
 } from "@/hooks/useServicePark";
-import {useParams} from "next/navigation";
+import { useParams } from "next/navigation";
 import Image from "next/image";
-import {message} from "antd";
-import {useCurrentUser} from "@/utils/auth";
+import { message } from "antd";
+import { useCurrentUser } from "@/utils/auth";
 import HistoryTimeline from "@/components/HistoryTimeline";
 
 
@@ -63,14 +63,14 @@ export default function SalesDetailsPage() {
 
     console.log("------- number:", ticketNumber);
 
-    const {data: saleDetails, isLoading, error} = useSaleDetailsByTicketNumber(ticketNumber);
+    const { data: saleDetails, isLoading, error } = useSaleDetailsByTicketNumber(ticketNumber);
     const assignToMeMutation = useAssignToSalesAgent();
     const updateSaleStatusMutation = useUpdateSaleStatus();
     const createFollowupMutation = useCreateFollowup();
     const createReminderMutation = useCreateReminder();
 
 
-    const {data: history} = useSaleHistory(saleDetails?.id);
+    const { data: history } = useSaleHistory(saleDetails?.id);
     const promoteMutation = usePromoteSale();
 
     const updatePriorityMutation = useUpdatePriority();
@@ -173,7 +173,7 @@ export default function SalesDetailsPage() {
         if (!saleDetails?.id) return;
 
         updatePriorityMutation.mutate(
-            {id: saleDetails.id, priority: newPriority},
+            { id: saleDetails.id, priority: newPriority },
             {
                 onSuccess: () => {
                     message.success("Priority updated");
@@ -206,7 +206,7 @@ export default function SalesDetailsPage() {
         if (!confirm("Are you sure you want to pass this lead to the next sales level? You will lose access.")) return;
 
         try {
-            await promoteMutation.mutateAsync({id: saleDetails.id, userId: Number(userId)});
+            await promoteMutation.mutateAsync({ id: saleDetails.id, userId: Number(userId) });
             alert("Lead promoted successfully!");
             window.location.href = "/sales-agent/service-park-sale/sale";
         } catch (e) {
@@ -238,9 +238,11 @@ export default function SalesDetailsPage() {
     }
 
     if (isLoading) {
-        return <div className="text-center mt-10">
-            <p>Loading sale details...</p>
-        </div>;
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <RedSpinner />
+            </div>
+        );
     }
 
     if (error || !saleDetails) {
@@ -266,17 +268,17 @@ export default function SalesDetailsPage() {
                     {/* Header */}
                     <div className="flex w-full justify-between items-center">
                         <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
-              <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-                {saleDetails?.ticket_number}
-              </span>
+                            <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
+                                {saleDetails?.ticket_number}
+                            </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                                    <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20}/>
-              </span>
+                                <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20} />
+                            </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                ISP
-              </span>
+                                ISP
+                            </span>
                             {status !== "New" && (
                                 <div
                                     className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
@@ -284,7 +286,7 @@ export default function SalesDetailsPage() {
                                         value={saleDetails.priority}
                                         onChange={(e) => handlePriorityChange(Number(e.target.value))}
                                         className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
-                                        style={{textAlignLast: "center"}}
+                                        style={{ textAlignLast: "center" }}
                                     >
                                         <option value={0}>P0</option>
                                         <option value={1}>P1</option>
@@ -303,7 +305,7 @@ export default function SalesDetailsPage() {
                                 if (saleDetails?.id && (newStatus.toUpperCase() === "WON" || newStatus.toUpperCase() === "LOST")) {
 
                                     updateSaleStatusMutation.mutate(
-                                        {id: saleDetails.id, status: newStatus.toUpperCase() as "WON" | "LOST"},
+                                        { id: saleDetails.id, status: newStatus.toUpperCase() as "WON" | "LOST" },
                                         {
                                             onSuccess: () => {
                                                 message.success(`Status updated to ${newStatus}`);
@@ -324,11 +326,10 @@ export default function SalesDetailsPage() {
                     <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
                         <button
                             onClick={handleAssignClick}
-                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
-                                status === "New"
-                                    ? "bg-[#DB2727] text-white"
-                                    : "bg-[#EBD4FF] text-[#1D1D1D]"
-                            }`}
+                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${status === "New"
+                                ? "bg-[#DB2727] text-white"
+                                : "bg-[#EBD4FF] text-[#1D1D1D]"
+                                }`}
                             disabled={status !== "New" || assignToMeMutation.isPending}
                         >
                             {assignToMeMutation.isPending ? "Assigning..." : buttonText}
@@ -399,20 +400,20 @@ export default function SalesDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value={saleDetails?.customer?.customer_name}/>
-                            <InfoRow label="Contact No:" value={saleDetails?.customer?.phone_number}/>
-                            <InfoRow label="Email:" value={saleDetails?.customer?.email}/>
-                            <InfoRow label="Address:" value={saleDetails?.vehicle?.address}/>
+                            <InfoRow label="Customer Name:" value={saleDetails?.customer?.customer_name} />
+                            <InfoRow label="Contact No:" value={saleDetails?.customer?.phone_number} />
+                            <InfoRow label="Email:" value={saleDetails?.customer?.email} />
+                            <InfoRow label="Address:" value={saleDetails?.vehicle?.address} />
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Vehicle Details
                             </div>
-                            <InfoRow label="Vehicle No:" value={saleDetails?.vehicle?.vehicle_no}/>
-                            <InfoRow label="Odometer:" value={`${saleDetails?.vehicle?.odometer} km`}/>
-                            <InfoRow label="Last Ser. Mileage:" value={`${saleDetails?.vehicle?.mileage} km`}/>
-                            <InfoRow label="Oil Type:" value={saleDetails?.vehicle?.oil_type}/>
-                            <InfoRow label="Service Center:" value={saleDetails?.vehicle?.service_center}/>
-                            <InfoRow label="Service Advisor:" value={saleDetails?.vehicle?.service_advisor}/>
+                            <InfoRow label="Vehicle No:" value={saleDetails?.vehicle?.vehicle_no} />
+                            <InfoRow label="Odometer:" value={`${saleDetails?.vehicle?.odometer} km`} />
+                            <InfoRow label="Last Ser. Mileage:" value={`${saleDetails?.vehicle?.mileage} km`} />
+                            <InfoRow label="Oil Type:" value={saleDetails?.vehicle?.oil_type} />
+                            <InfoRow label="Service Center:" value={saleDetails?.vehicle?.service_center} />
+                            <InfoRow label="Service Advisor:" value={saleDetails?.vehicle?.service_advisor} />
 
                         </div>
 
@@ -445,7 +446,7 @@ export default function SalesDetailsPage() {
                     isPriorityAvailable={false}
                 >
                     <div className="w-full px-4 pb-4">
-                        <HistoryTimeline history={history}/>
+                        <HistoryTimeline history={history} />
                     </div>
                 </Modal>
             )}

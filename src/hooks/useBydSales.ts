@@ -1,10 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {useQuery, useMutation, useQueryClient, keepPreviousData} from "@tanstack/react-query";
 import { BydSaleService } from "@/services/bydSaleService";
 
-export const useBydSales = (status?: string, userId?: number, userRole?: string) => {
+export const useBydSales = (status?: string, userId?: number, userRole?: string, filters?: any) => {
     return useQuery({
-        queryKey: ["byd-sales", status, userId, userRole],
-        queryFn: () => BydSaleService.getAll(status, userId, userRole).then((res) => res.data),
+        queryKey: ["byd-sales", status, userId, userRole, filters],
+        queryFn: () => BydSaleService.getAll(status, userId, userRole, filters).then((res) => res.data),
+        refetchInterval: 1000,
+        placeholderData: keepPreviousData,
     });
 };
 
