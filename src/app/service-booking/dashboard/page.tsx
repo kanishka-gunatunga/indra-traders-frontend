@@ -209,6 +209,7 @@ export default function ServiceBookingDashboard() {
                     <div className="flex items-center gap-4">
                         <Image src="/indra-logo.png" alt="Logo" width={48} height={48} className="object-contain w-[3rem] h-[3rem]" />
                         <div>
+                            {/* TODO: Program the service park name */}
                             <h1 className="text-xl font-bold text-[#1D1D1D] montserrat">Colombo Service Park</h1>
                             <p className="text-[0.8125rem] text-[#575757] montserrat font-medium">Today&#39;s Service Schedule</p>
                         </div>
