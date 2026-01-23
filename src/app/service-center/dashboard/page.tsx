@@ -6,6 +6,7 @@ import { LogOut, Users, Clock, Info, Sparkles, X, Save, XCircle } from 'lucide-r
 import { signOut } from 'next-auth/react';
 import { Calendar, ConfigProvider, Select } from 'antd';
 import dayjs from 'dayjs';
+import { BookingDetails, BookingFormData, SelectedBooking, SlotStatus } from '@/types/serviceCenter';
 
 const TIME_SLOT_START = 8 * 60;
 const TIME_SLOT_END = 17 * 60;
@@ -84,30 +85,6 @@ const generateTimeSlots = () => {
 
 const TIME_SLOTS = generateTimeSlots();
 
-interface BookingDetails {
-    vehicleCode: string;
-    vehicleNo: string;
-    customerName: string;
-    phoneNumber: string;
-    vehicleModel: string;
-    status: string;
-}
-
-interface SelectedBooking {
-    slotStart: string;
-    slotEnd: string;
-    slotLabel: string;
-    vehicleCode: string;
-    vehicleNo: string;
-    status: string;
-}
-
-interface FormData {
-    vehicleCode: string;
-    phoneNumber: string;
-    customerName: string;
-    vehicleModel: string;
-}
 
 export default function ServiceCenterDashboard() {
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -118,7 +95,7 @@ export default function ServiceCenterDashboard() {
     const [selectedBooking, setSelectedBooking] = useState<SelectedBooking | null>(null);
     const [bookingStatus, setBookingStatus] = useState<string>('booked');
     const [isAvailableSlot, setIsAvailableSlot] = useState(false);
-    const [formData, setFormData] = useState<FormData>({
+    const [formData, setFormData] = useState<BookingFormData>({
         vehicleCode: '',
         phoneNumber: '',
         customerName: '',
@@ -180,7 +157,7 @@ export default function ServiceCenterDashboard() {
         );
     };
 
-    const getSlotStatus = (slotStart: string) => {
+    const getSlotStatus = (slotStart: string): SlotStatus => {
         if (slotStart === '08:00') {
             return { status: 'booked', vehicleCode: 'CAB - 5482', vehicleNo: '5' };
         }
