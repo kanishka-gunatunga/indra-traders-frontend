@@ -35,9 +35,8 @@ export default function ServiceCenterDashboard() {
 
     const [currentTime, setCurrentTime] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
-    const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
-    const [selectedServiceType, setSelectedServiceType] = useState<string | null>(null);
-    const [selectedLineId, setSelectedLineId] = useState<number | null>(null);
+    const [selectedServiceType, setSelectedServiceType] = useState<string | null>('Repair');
+    const [selectedLineId, setSelectedLineId] = useState<string | null>('line3');
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -173,7 +172,7 @@ export default function ServiceCenterDashboard() {
                         {/* Service Schedule Section */}
                         <section className="bg-[#FFFFFF4D] rounded-[45px] px-10 py-10 mb-8 border border-white shadow-sm overflow-hidden">
                             <div className="flex items-center justify-between gap-[80px] mb-12">
-                                <div className="flex flex-row items-center gap-[80px]">
+                                <div className="flex flex-row items-center gap-10">
                                     <h2 className="font-semibold text-[22px] text-[#000000]" style={{
                                         fontFamily: 'Montserrat',
                                         fontWeight: 600,
@@ -185,29 +184,15 @@ export default function ServiceCenterDashboard() {
                                     }}>Service Schedule</h2>
                                     <div className="flex gap-4">
                                         <Select
-                                            className="w-32 h-10 custom-select"
-                                            placeholder="Select Branch"
-                                            bordered={false}
-                                            suffixIcon={<svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                                                <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757" />
-                                            </svg>}
-                                            options={[]}
-                                            value={selectedBranchId}
-                                            onChange={(val) => {
-                                                setSelectedBranchId(val);
-                                                setSelectedServiceType(null);
-                                                setSelectedLineId(null);
-                                            }}
-                                        />
-                                        <Select
-                                            className="w-32 h-10 custom-select"
+                                            className="custom-select"
                                             placeholder="Service Type"
                                             bordered={false}
-                                            disabled={!selectedBranchId}
-                                            suffixIcon={<svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                                                <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757" />
+                                            suffixIcon={<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path fillRule="evenodd" clipRule="evenodd" d="M8.00244 10.207L11.8564 6.354L11.1494 5.646L8.00244 8.793L4.85644 5.646L4.14844 6.354L8.00244 10.207Z" fill="black" />
                                             </svg>}
-                                            options={[]}
+                                            options={[
+                                                { value: 'Repair', label: 'Repair' }
+                                            ]}
                                             value={selectedServiceType}
                                             onChange={(val) => {
                                                 setSelectedServiceType(val);
@@ -215,29 +200,25 @@ export default function ServiceCenterDashboard() {
                                             }}
                                         />
                                         <Select
-                                            className="w-32 h-10 custom-select"
+                                            className="custom-select"
                                             placeholder="Select Line"
                                             bordered={false}
-                                            disabled={!selectedServiceType}
-                                            suffixIcon={<svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                                                <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757" />
+                                            suffixIcon={<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path fillRule="evenodd" clipRule="evenodd" d="M8.00244 10.207L11.8564 6.354L11.1494 5.646L8.00244 8.793L4.85644 5.646L4.14844 6.354L8.00244 10.207Z" fill="black" />
                                             </svg>}
-                                            options={[]}
+                                            options={[
+                                                { value: 'line3', label: 'Line 3 - Brake Service' }
+                                            ]}
                                             value={selectedLineId}
                                             onChange={setSelectedLineId}
                                         />
                                     </div>
                                 </div>
-                                <div className="justify-end">
-                                    <button className="bg-[#DB2727] text-white px-8 py-2 rounded-full font-medium text-base hover:bg-red-700 transition disabled:bg-gray-400 justify-end">
-                                        Confirm Booking
-                                    </button>
-                                </div>
                             </div>
 
                             <div className="flex flex-col lg:flex-row gap-16">
                                 {/* Calendar */}
-                                <div className="w-full lg:w-1/2">
+                                <div className="w-full lg:w-2/5">
                                     <ConfigProvider theme={{
                                         token: {
                                             colorPrimary: '#DB2727',
@@ -248,14 +229,14 @@ export default function ServiceCenterDashboard() {
                                             <div className="flex items-center justify-between bg-transparent pt-[20.61px] pb-[20.61px] pl-0 pr-[13.61px] gap-[9.07px]">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[20px] font-bold text-[#1D1D1D]" style={{
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: 700,
-                                        fontStyle: 'normal',
-                                        fontSize: '16px',
-                                        lineHeight: '100%',
-                                        letterSpacing: '0%',
-                                        color: '#1D1D1D'
-                                    }}>{selectedDate.format('MMMM YYYY')}</span>
+                                                        fontFamily: 'Montserrat',
+                                                        fontWeight: 700,
+                                                        fontStyle: 'normal',
+                                                        fontSize: '16px',
+                                                        lineHeight: '100%',
+                                                        letterSpacing: '0%',
+                                                        color: '#1D1D1D'
+                                                    }}>{selectedDate.format('MMMM YYYY')}</span>
                                                     <svg width="10" height="16" viewBox="0 0 10 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                         <path d="M1.5 14.5L8.5 8L1.5 1.5" stroke="#DB2727" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                                     </svg>
@@ -300,9 +281,9 @@ export default function ServiceCenterDashboard() {
                                 </div>
 
                                 {/* Time Slots */}
-                                <div className="w-full lg:w-1/2 relative">
+                                <div className="w-full lg:w-3/5 relative">
                                     <div className="absolute left-[60px] top-0 bottom-0 w-px bg-gray-200 hidden md:block"></div>
-                                    <div className="space-y-6 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
+                                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
                                         {TIME_SLOTS.map((slot) => {
                                             const slotStatus = getSlotStatus(slot.start);
                                             const isAvailable = slotStatus.status === 'available';
@@ -314,42 +295,72 @@ export default function ServiceCenterDashboard() {
                                                     key={slot.start}
                                                     className={`flex items-center gap-6 relative group ${isBooked ? 'cursor-not-allowed' : ''}`}
                                                 >
-                                                    <div className="w-[60px] text-right font-medium text-lg text-gray-500">{slot.start}</div>
+                                                    <div className="w-[60px] text-right font-medium text-lg text-gray-500" style={{
+                                                        fontFamily: 'Montserrat, sans-serif',
+                                                        fontWeight: 500
+                                                    }}>{slot.start}</div>
                                                     <div
-                                                        className={`flex-1 rounded-[20px] p-4 flex justify-between items-center transition-all duration-200 ${isAvailable ? 'bg-[#A7FFA780] cursor-pointer hover:shadow-md' :
-                                                                isBooked ? 'bg-[#FFA7A780] cursor-not-allowed' :
-                                                                    isPending ? 'bg-[#FFCBA780] cursor-pointer hover:shadow-md' :
-                                                                        'bg-[#A7FFA780] cursor-pointer hover:shadow-md'
+                                                        className={`flex-1 rounded-[20px] p-4 flex justify-between items-center transition-all duration-200 shadow-sm border-2 ${isAvailable ? 'bg-[#D9FFD9] cursor-pointer hover:shadow-md border-[#A7FFA7]' :
+                                                            isBooked ? 'bg-[#FFB3B3] cursor-not-allowed border-[#FF9191]' :
+                                                                isPending ? 'bg-[#FFD9B3] cursor-pointer hover:shadow-md border-[#FFDAA3]' :
+                                                                    'bg-[#A7FFA780] cursor-pointer hover:shadow-md'
                                                             }`}
+                                                        style={{
+                                                            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)'
+                                                        }}
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <div
-                                                                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm font-bold text-lg ${isAvailable ? 'bg-[#A7FFA7] text-white' :
-                                                                        isBooked ? 'bg-[#FFD1D1] text-[#1D1D1D]' :
-                                                                            isPending ? 'bg-[#FFCBA7] text-[#1D1D1D]' :
-                                                                                'bg-[#A7FFA7] text-white'
+                                                                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${isAvailable ? 'bg-[#FFFFFF80] text-[#039855]' :
+                                                                    isBooked ? 'bg-[#FFFFFF80] text-[#F52A2A]' :
+                                                                        isPending ? 'bg-[#FFFFFF80] text-[#F52A2A]' :
+                                                                            'bg-[#A7FFA7] text-white'
                                                                     }`}
+                                                                style={{
+                                                                    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.15)',
+                                                                    fontFamily: 'Montserrat, sans-serif',
+                                                                    fontWeight: !isAvailable ? 600 : 500,
+                                                                    fontSize: isAvailable ? '23px' : '16px',
+                                                                    lineHeight: '18px',
+                                                                    letterSpacing: '0px'
+                                                                }}
                                                             >
                                                                 {isAvailable ? '+' : slotStatus.vehicleNo || '5'}
                                                             </div>
                                                             <div>
-                                                                <h4 className="font-semibold text-[16px] text-[#1D1D1D]">
+                                                                <h4 className="font-semibold text-[16px] text-[#1D1D1D]" style={{
+                                                                    fontFamily: 'Montserrat, sans-serif',
+                                                                    fontWeight: 600,
+                                                                    fontStyle: 'SemiBold',
+                                                                    fontSize: '16px',
+                                                                    lineHeight: '24px',
+                                                                    letterSpacing: '0px'
+                                                                }}>
                                                                     {isAvailable ? 'Available' : isBooked ? slotStatus.vehicleCode || `CAB - ${slotStatus.vehicleNo}` : isPending ? slotStatus.vehicleCode || `CAB - ${slotStatus.vehicleNo}` : 'Available'}
                                                                 </h4>
-                                                                <p className="text-sm font-medium text-gray-600">{slot.label}</p>
+                                                                <p className="text-sm font-medium text-gray-600" style={{
+                                                                    fontFamily: 'Montserrat, sans-serif',
+                                                                    fontWeight: 400,
+                                                                    fontStyle: 'Regular',
+                                                                    fontSize: '14px',
+                                                                    lineHeight: '21px',
+                                                                    letterSpacing: '0px',
+                                                                }}>{slot.label}</p>
                                                             </div>
                                                         </div>
                                                         <div
-                                                            className={`px-4 py-1 rounded-full text-xs font-semibold flex items-center gap-2 ${isAvailable ? 'bg-[#A7FFA7] text-[#1D1D1D]' :
-                                                                    isBooked ? 'bg-[#FF9191] text-[#1D1D1D]' :
-                                                                        isPending ? 'bg-[#FFCBA7] text-[#1D1D1D]' :
-                                                                            'bg-[#A7FFA7] text-[#1D1D1D]'
+                                                            className={`w-[95px] h-[30px] flex items-center justify-center rounded-full text-xs font-semibold  gap-2 ${isAvailable ? 'bg-[#FFFFFF99] text-[#039855]' :
+                                                                isBooked ? 'bg-[#FFFFFF99] text-[#DB2727]' :
+                                                                    isPending ? 'bg-[#FFFFFF99] text-[#FF961B]' :
+                                                                        'bg-[#A7FFA7] text-[#1D1D1D]'
                                                                 }`}
+                                                            style={{
+                                                                fontFamily: 'Montserrat, sans-serif',
+                                                                fontWeight: 600,
+                                                                boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)'
+                                                            }}
                                                         >
                                                             {isAvailable ? 'Available' : isBooked ? 'Booked' : isPending ? 'Pending' : 'Available'}
-                                                            <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                                                                <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757" />
-                                                            </svg>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -574,14 +585,71 @@ export default function ServiceCenterDashboard() {
                     color: #000000 !important;
                 }
 
+                .custom-select {
+                    min-width: 110px !important;
+                }
+
                 .custom-select .ant-select-selector {
-                    background-color: transparent !important;
+                    background: #FFFFFF99 !important;
                     border: none !important;
-                    font-size: 17px !important;
+                    border-radius: 15px !important;
+                    height: 36px !important;
+                    padding-left: 24px !important;
+                    padding-right: 40px !important;
+                    padding-top: 0 !important;
+                    padding-bottom: 0 !important;
+                    box-shadow: 0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A !important;
+                    position: relative !important;
+                    display: flex !important;
+                    align-items: center !important;
+                }
+
+                .custom-select .ant-select-selection-placeholder,
+                .custom-select .ant-select-selection-item {
+                    font-family: Montserrat, sans-serif !important;
                     font-weight: 500 !important;
+                    font-size: 14px !important;
+                    line-height: 100% !important;
+                    letter-spacing: 0px !important;
                     color: #1D1D1D !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    height: 100% !important;
+                }
+
+                .custom-select .ant-select-selection-search-input {
+                    font-family: Montserrat, sans-serif !important;
+                    font-weight: 500 !important;
+                    font-size: 14px !important;
+                    line-height: 100% !important;
+                    letter-spacing: 0px !important;
+                    color: #1D1D1D !important;
+                }
+
+                .custom-select .ant-select-arrow {
+                    position: absolute !important;
+                    top: 0 !important;
+                    bottom: 0 !important;
+                    right: 14px !important;
+                    margin: auto 0 !important;
                     padding: 0 !important;
-                    box-shadow: none !important;
+                    width: 16px !important;
+                    height: 16px !important;
+                    opacity: 1 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    line-height: 0 !important;
+                }
+
+                .custom-select .ant-select-arrow svg {
+                    width: 16px !important;
+                    height: 16px !important;
+                    opacity: 1 !important;
+                    display: block !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    vertical-align: middle !important;
                 }
             `}</style>
         </div>
