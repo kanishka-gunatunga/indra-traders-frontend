@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import Image from "next/image";
 
 interface StatCardProps {
@@ -5,10 +7,10 @@ interface StatCardProps {
     count: number;
     percentage: string;
     icon: string;
-    color: string;
+    color?: string;
 }
 
-const StatCard = ({title, count, percentage, icon, color}: StatCardProps) => {
+const StatCard = ({title, count, percentage, icon}: StatCardProps) => {
     const IconMap: any = {
         users: <div className="p-3 rounded-lg text-blue-600"><Image src="/total-leads.svg" alt="total leads"
                                                                                 width={32} height={32} className="h-12 w-12"/></div>,
