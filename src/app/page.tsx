@@ -19,7 +19,7 @@ export default function Home() {
         // Logged in → redirect to their dashboard
         const role = user.user_role as keyof typeof ROLE_DASHBOARDS;
         const destination = ROLE_DASHBOARDS[role];
-        
+
         if (destination) {
             router.push(destination);
         } else {

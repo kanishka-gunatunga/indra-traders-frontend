@@ -90,16 +90,16 @@ export default function ServiceParkLoginPage() {
       })
 
       if (result?.error) {
-        
+
         const errorMessage = result.error.toLowerCase();
-        
+
         if (errorMessage.includes("network") || errorMessage.includes("fetch") || errorMessage.includes("connection")) {
           toast.error(
             <div className="flex items-center gap-2">
               <WifiOff className="w-4 h-4" />
               <span>Unable to connect to server. Please check your network connection.</span>
             </div>,
-            { 
+            {
               duration: 5000,
               style: {
                 background: '#fee2e2',
@@ -114,7 +114,7 @@ export default function ServiceParkLoginPage() {
               <AlertCircle className="w-4 h-4" />
               <span>Server error. Please try again later.</span>
             </div>,
-            { 
+            {
               duration: 5000,
               style: {
                 background: '#fee2e2',
@@ -135,17 +135,17 @@ export default function ServiceParkLoginPage() {
         setLoading(false);
       } else {
         toast.success("Login successful! Redirecting...");
-        
+
         router.push("/service-booking/dashboard");
       }
     } catch (error) {
-      
+
       toast.error(
         <div className="flex items-center gap-2">
           <WifiOff className="w-4 h-4" />
           <span>Connection error. Unable to reach the server.</span>
         </div>,
-        { 
+        {
           duration: 5000,
           style: {
             background: '#fee2e2',
