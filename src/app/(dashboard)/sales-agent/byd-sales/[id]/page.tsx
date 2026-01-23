@@ -18,6 +18,7 @@ import {
     useUpdateBydPriority,
     useCreateBydReminder, useBydSaleHistory, usePromoteBydSale
 } from "@/hooks/useBydSales";
+import { useEligibleAgents, useAssignLead } from "@/hooks/useLeads";
 // import {useCreateReminder} from "@/hooks/useReminder";
 import { message } from "antd";
 import { useCurrentUser } from "@/utils/auth";
@@ -61,6 +62,12 @@ export default function SalesDetailsPage() {
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
 
+    const [isAssignModalOpen, setAssignModalOpen] = useState(false);
+    const [selectedAgent, setSelectedAgent] = useState<number | null>(null);
+
+    const { data: eligibleAgents } = useEligibleAgents("BYD", sale?.branch, isAssignModalOpen, sale?.current_level);
+    const assignLeadMutation = useAssignLead();
+
     // Sync status from fetched sale
     useEffect(() => {
         if (sale) {
@@ -71,6 +78,11 @@ export default function SalesDetailsPage() {
 
     const handleAssignClick = async () => {
         if (!sale || status !== "New") return;
+
+        if (user?.user_role === "ADMIN") {
+            setAssignModalOpen(true);
+            return;
+        }
         try {
             await assignMutation.mutateAsync({ id: sale.id, salesUserId: userId });
             setStatus("Ongoing");
@@ -223,9 +235,27 @@ export default function SalesDetailsPage() {
     }
 
     const buttonText =
-        status === "New" ? "Assign to me" : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
+        status === "New"
+            ? (user?.user_role === "ADMIN" ? "Assign to Sales Agent" : "Assign to me")
+            : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
 
     const source = sale?.lead_source?.toLowerCase();
+
+    const handleAdminAssign = async () => {
+        if (!selectedAgent || !sale) return;
+        try {
+            await assignLeadMutation.mutateAsync({
+                leadType: 'BYD',
+                leadId: sale.id,
+                salesUserId: selectedAgent,
+                adminId: Number(userId)
+            });
+            setAssignModalOpen(false);
+            setStatus("Ongoing");
+        } catch (error) {
+            console.error("Error assigning lead:", error);
+        }
+    };
 
     let imageSrc = "";
 
@@ -302,7 +332,7 @@ export default function SalesDetailsPage() {
                                 ? "bg-[#DB2727] text-white"
                                 : "bg-[#EBD4FF] text-[#1D1D1D]"
                                 }`}
-                            disabled={status !== "New" || assignMutation.isPending}
+                            disabled={(status !== "New" && user?.user_role !== "ADMIN") || assignMutation.isPending}
                         >
                             {assignMutation.isPending ? "Assigning..." : buttonText}
                         </button>
@@ -325,6 +355,8 @@ export default function SalesDetailsPage() {
                             View History
                         </button>
                     </div>
+
+
 
                     {/* Tabs */}
                     <div className="w-full flex">
@@ -391,149 +423,189 @@ export default function SalesDetailsPage() {
             </main>
 
 
-            {isLeasingModalOpen && (
-                <Modal
-                    title="Leasing Details"
-                    onClose={() => setLeasingModalOpen(false)}
-                    isPriorityAvailable={false}
-                >
-                    <div className="w-[400px] px-2 pb-4 font-montserrat text-[#1D1D1D]">
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-[18px] font-medium">Vehicle Price:</span>
-                            <span className="text-[18px] text-left font-medium text-[#575757]">
-                                {formatCurrency(sale.leasing_vehicle_price)}
-                            </span>
+            {
+                isLeasingModalOpen && (
+                    <Modal
+                        title="Leasing Details"
+                        onClose={() => setLeasingModalOpen(false)}
+                        isPriorityAvailable={false}
+                    >
+                        <div className="w-[400px] px-2 pb-4 font-montserrat text-[#1D1D1D]">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[18px] font-medium">Vehicle Price:</span>
+                                <span className="text-[18px] text-left font-medium text-[#575757]">
+                                    {formatCurrency(sale.leasing_vehicle_price)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[18px] font-medium">Down payment:</span>
+                                <span className="text-[18px] font-medium text-[#575757]">
+                                    {formatCurrency(sale.down_payment)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[18px] font-medium">Bank:</span>
+                                <span className="text-[18px] font-medium text-[#575757]">
+                                    {sale.leasing_bank || "N/A"}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[18px] font-medium">Time Period:</span>
+                                <span className="text-[18px] font-medium text-[#575757]">
+                                    {sale.leasing_time_period
+                                        ? `${sale.leasing_time_period} Months`
+                                        : "N/A"}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[18px] font-medium">Promo Code:</span>
+                                <span className="text-[18px] font-medium text-[#575757]">
+                                    {sale.leasing_promo_code || "N/A"}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[18px] font-medium">Interest Rate:</span>
+                                <span className="text-[18px] font-medium text-[#575757]">
+                                    {sale.leasing_interest_rate
+                                        ? `${sale.leasing_interest_rate}% p.a.`
+                                        : "N/A"}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[18px] font-medium">
+                                    Monthly Installment:
+                                </span>
+                                <span className="text-[18px] font-medium text-[#575757]">
+                                    {formatCurrency(sale.leasing_monthly_installment)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[18px] font-medium">Total Amount:</span>
+                                <span className="text-[18px] font-medium text-[#575757]">
+                                    {formatCurrency(sale.leasing_total_amount)}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-[18px] font-medium">Down payment:</span>
-                            <span className="text-[18px] font-medium text-[#575757]">
-                                {formatCurrency(sale.down_payment)}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-[18px] font-medium">Bank:</span>
-                            <span className="text-[18px] font-medium text-[#575757]">
-                                {sale.leasing_bank || "N/A"}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-[18px] font-medium">Time Period:</span>
-                            <span className="text-[18px] font-medium text-[#575757]">
-                                {sale.leasing_time_period
-                                    ? `${sale.leasing_time_period} Months`
-                                    : "N/A"}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-[18px] font-medium">Promo Code:</span>
-                            <span className="text-[18px] font-medium text-[#575757]">
-                                {sale.leasing_promo_code || "N/A"}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-[18px] font-medium">Interest Rate:</span>
-                            <span className="text-[18px] font-medium text-[#575757]">
-                                {sale.leasing_interest_rate
-                                    ? `${sale.leasing_interest_rate}% p.a.`
-                                    : "N/A"}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-[18px] font-medium">
-                                Monthly Installment:
-                            </span>
-                            <span className="text-[18px] font-medium text-[#575757]">
-                                {formatCurrency(sale.leasing_monthly_installment)}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-[18px] font-medium">Total Amount:</span>
-                            <span className="text-[18px] font-medium text-[#575757]">
-                                {formatCurrency(sale.leasing_total_amount)}
-                            </span>
-                        </div>
-                    </div>
-                </Modal>
-            )}
+                    </Modal>
+                )
+            }
 
 
-            {isHistoryModalOpen && (
-                <Modal
-                    title="Lead History Journey"
-                    onClose={() => setHistoryModalOpen(false)}
-                    isPriorityAvailable={false}
-                >
-                    <div className="w-full px-4 pb-4">
-                        <HistoryTimeline history={history} />
-                    </div>
-                </Modal>
-            )}
+            {
+                isHistoryModalOpen && (
+                    <Modal
+                        title="Lead History Journey"
+                        onClose={() => setHistoryModalOpen(false)}
+                        isPriorityAvailable={false}
+                    >
+                        <div className="w-full px-4 pb-4">
+                            <HistoryTimeline history={history} />
+                        </div>
+                    </Modal>
+                )
+            }
 
             {/* Activity Modal */}
-            {isActivityModalOpen && (
-                <Modal
-                    title="Add New Activity"
-                    onClose={() => setActivityModalOpen(false)}
-                    actionButton={{
-                        label: createFollowupMutation.isPending ? "Saving..." : "Save",
-                        onClick: handleActivitySave,
-                        disabled: createFollowupMutation.isPending,
-                    }}
-                >
-                    <div className="w-full">
-                        <label className="block mb-2 font-semibold">Activity</label>
-                        <input
-                            type="text"
-                            value={activityText}
-                            onChange={(e) => setActivityText(e.target.value)}
-                            className="w-[600px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 mt-2"
-                        />
-                    </div>
-                </Modal>
-            )}
+            {
+                isActivityModalOpen && (
+                    <Modal
+                        title="Add New Activity"
+                        onClose={() => setActivityModalOpen(false)}
+                        actionButton={{
+                            label: createFollowupMutation.isPending ? "Saving..." : "Save",
+                            onClick: handleActivitySave,
+                            disabled: createFollowupMutation.isPending,
+                        }}
+                    >
+                        <div className="w-full">
+                            <label className="block mb-2 font-semibold">Activity</label>
+                            <input
+                                type="text"
+                                value={activityText}
+                                onChange={(e) => setActivityText(e.target.value)}
+                                className="w-[600px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4 mt-2"
+                            />
+                        </div>
+                    </Modal>
+                )
+            }
 
             {/* Reminder Modal */}
-            {isReminderModalOpen && (
-                <Modal
-                    title="Add New Reminder"
-                    onClose={() => setReminderModalOpen(false)}
-                    actionButton={{
-                        label: createReminderMutation.isPending ? "Saving..." : "Save",
-                        onClick: handleReminderSave,
-                        disabled: createReminderMutation.isPending,
-                    }}
-                >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-                        <div>
-                            <label className="block mb-2 font-medium">Task Title</label>
-                            <input
-                                type="text"
-                                value={reminderTitle}
-                                onChange={(e) => setReminderTitle(e.target.value)}
-                                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                            />
+            {
+                isReminderModalOpen && (
+                    <Modal
+                        title="Add New Reminder"
+                        onClose={() => setReminderModalOpen(false)}
+                        actionButton={{
+                            label: createReminderMutation.isPending ? "Saving..." : "Save",
+                            onClick: handleReminderSave,
+                            disabled: createReminderMutation.isPending,
+                        }}
+                    >
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                            <div>
+                                <label className="block mb-2 font-medium">Task Title</label>
+                                <input
+                                    type="text"
+                                    value={reminderTitle}
+                                    onChange={(e) => setReminderTitle(e.target.value)}
+                                    className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                                />
+                            </div>
+                            <div>
+                                <label className="block mb-2 font-medium">Task Date</label>
+                                <input
+                                    type="date"
+                                    value={reminderDate}
+                                    onChange={(e) => setReminderDate(e.target.value)}
+                                    className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                                />
+                            </div>
+                            <div>
+                                <label className="block mb-2 font-medium">Note</label>
+                                <input
+                                    type="text"
+                                    value={reminderNote}
+                                    onChange={(e) => setReminderNote(e.target.value)}
+                                    className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block mb-2 font-medium">Task Date</label>
-                            <input
-                                type="date"
-                                value={reminderDate}
-                                onChange={(e) => setReminderDate(e.target.value)}
-                                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                            />
+                    </Modal>
+                )
+            }
+
+
+            {/* Assign Agent Modal (Admin) */}
+            {
+                isAssignModalOpen && (
+                    <Modal
+                        title="Assign to Sales Agent"
+                        onClose={() => setAssignModalOpen(false)}
+                        actionButton={{
+                            label: assignLeadMutation.isPending ? "Assigning..." : "Assign",
+                            onClick: handleAdminAssign,
+                            disabled: !selectedAgent || assignLeadMutation.isPending,
+                        }}
+                    >
+                        <div className="w-[400px] pb-4">
+                            <label className="block mb-2 font-medium">Select Agent</label>
+                            <select
+                                className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 px-4"
+                                onChange={(e) => setSelectedAgent(Number(e.target.value))}
+                                value={selectedAgent || ""}
+                            >
+                                <option value="" disabled>Select an agent</option>
+                                {eligibleAgents?.map((agent: any) => (
+                                    <option key={agent.id} value={agent.id}>
+                                        {agent.full_name} ({agent.user_role})
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                        <div>
-                            <label className="block mb-2 font-medium">Note</label>
-                            <input
-                                type="text"
-                                value={reminderNote}
-                                onChange={(e) => setReminderNote(e.target.value)}
-                                className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
-                            />
-                        </div>
-                    </div>
-                </Modal>
-            )}
-        </div>
+                    </Modal>
+                )
+            }
+        </div >
     );
 }

@@ -2,14 +2,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import FlowBar, {SalesStatus} from "@/components/FlowBar";
+import FlowBar, { SalesStatus } from "@/components/FlowBar";
 import SalesDetailsTab from "@/components/SalesDetailsTab";
 import Header from "@/components/Header";
 import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
-import React, {useEffect, useState} from "react";
-import {Role} from "@/types/role";
-import {useParams} from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { Role } from "@/types/role";
+import { useParams } from "next/navigation";
 import {
     useAssignVehicleSale,
     useCreateFollowup,
@@ -18,16 +18,18 @@ import {
     useUpdatePriority,
     useCreateReminder, useSaleHistory, usePromoteSale
 } from "@/hooks/useVehicleSales";
+import { useEligibleAgents, useAssignLead } from "@/hooks/useLeads";
 // import {useCreateReminder} from "@/hooks/useReminder";
-import {message} from "antd";
-import {useCurrentUser} from "@/utils/auth";
+import { message } from "antd";
+import { useCurrentUser } from "@/utils/auth";
 import Image from "next/image";
 import HistoryTimeline from "@/components/HistoryTimeline";
+import RedSpinner from "@/components/RedSpinner";
 
 export default function SalesDetailsPage() {
-    const [role, setRole] = useState<Role>(
-        process.env.NEXT_PUBLIC_USER_ROLE as Role
-    );
+    // const [role, setRole] = useState<Role>(
+    //     process.env.NEXT_PUBLIC_USER_ROLE as Role
+    // );
 
     const params = useParams();
     const ticketNumber = params?.id as string;
@@ -37,13 +39,13 @@ export default function SalesDetailsPage() {
 
     console.log(ticketNumber);
 
-    const {data: sale, isLoading, error} = useVehicleSaleByTicket(ticketNumber);
+    const { data: sale, isLoading, error } = useVehicleSaleByTicket(ticketNumber);
     const assignMutation = useAssignVehicleSale();
     const updateStatusMutation = useUpdateSaleStatus();
     const createFollowupMutation = useCreateFollowup();
     const createReminderMutation = useCreateReminder();
 
-    const {data: history} = useSaleHistory(sale?.id);
+    const { data: history } = useSaleHistory(sale?.id);
     const promoteMutation = usePromoteSale();
 
     const updatePriorityMutation = useUpdatePriority();
@@ -60,6 +62,12 @@ export default function SalesDetailsPage() {
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
 
+    const [isAssignModalOpen, setAssignModalOpen] = useState(false);
+    const [selectedAgent, setSelectedAgent] = useState<number | null>(null);
+
+    const { data: eligibleAgents } = useEligibleAgents("ITPL", sale?.branch, isAssignModalOpen, sale?.current_level);
+    const assignLeadMutation = useAssignLead();
+
     // Sync status from fetched sale
     useEffect(() => {
         if (sale) {
@@ -70,12 +78,34 @@ export default function SalesDetailsPage() {
 
     const handleAssignClick = async () => {
         if (!sale || status !== "New") return;
+
+        if (user?.user_role === "ADMIN") {
+            setAssignModalOpen(true);
+            return;
+        }
+
         try {
-            await assignMutation.mutateAsync({id: sale.id, salesUserId: userId});
+            await assignMutation.mutateAsync({ id: sale.id, salesUserId: userId });
             setStatus("Ongoing");
         } catch (error: any) {
             console.error("Error assigning sale:", error);
             alert(`Failed to assign: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    const handleAdminAssign = async () => {
+        if (!selectedAgent || !sale) return;
+        try {
+            await assignLeadMutation.mutateAsync({
+                leadType: 'VEHICLE',
+                leadId: sale.id,
+                salesUserId: selectedAgent,
+                adminId: Number(userId)
+            });
+            setAssignModalOpen(false);
+            setStatus("Ongoing"); // Optimistic update
+        } catch (error) {
+            console.error("Error assigning lead:", error);
         }
     };
 
@@ -107,7 +137,7 @@ export default function SalesDetailsPage() {
         }
 
         try {
-            await updateStatusMutation.mutateAsync({id: sale.id, status: backendStatus});
+            await updateStatusMutation.mutateAsync({ id: sale.id, status: backendStatus });
             setStatus(newStatus);
         } catch (error: any) {
             console.error("Error updating status:", error);
@@ -156,7 +186,7 @@ export default function SalesDetailsPage() {
         if (!sale?.id) return;
 
         updatePriorityMutation.mutate(
-            {id: sale.id, priority: newPriority},
+            { id: sale.id, priority: newPriority },
             {
                 onSuccess: () => {
                     message.success("Priority updated");
@@ -188,7 +218,7 @@ export default function SalesDetailsPage() {
         if (!confirm("Are you sure you want to pass this lead to the next sales level? You will lose access.")) return;
 
         try {
-            await promoteMutation.mutateAsync({id: sale.id, userId: Number(userId)});
+            await promoteMutation.mutateAsync({ id: sale.id, userId: Number(userId) });
             alert("Lead promoted successfully!");
             window.location.href = "/sales-agent/sales";
         } catch (e) {
@@ -207,7 +237,7 @@ export default function SalesDetailsPage() {
     if (isLoading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
-                <p>Loading sale details...</p>
+                <RedSpinner/>
             </div>
         );
     }
@@ -221,7 +251,9 @@ export default function SalesDetailsPage() {
     }
 
     const buttonText =
-        status === "New" ? "Assign to me" : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
+        status === "New"
+            ? (user?.user_role === "ADMIN" ? "Assign to Sales Agent" : "Assign to me")
+            : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
 
     const source = sale?.lead_source?.toLowerCase();
 
@@ -258,17 +290,17 @@ export default function SalesDetailsPage() {
                     className="relative bg-[#FFFFFF4D] mb-5 bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-9 py-10 flex flex-col justify-center items-center">
                     <div className="flex w-full justify-between items-center">
                         <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
-                          <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
-                            {sale.ticket_number}
-                          </span>
-                            <span
-                                className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                                    <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20}/>
+                            <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
+                                {sale.ticket_number}
                             </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                            ITPL
-                          </span>
+                                <Image src={imageSrc} alt={source ?? "source icon"} width={20} height={20} />
+                            </span>
+                            <span
+                                className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
+                                ITPL
+                            </span>
                             {status !== "New" && (
                                 <div
                                     className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
@@ -276,7 +308,7 @@ export default function SalesDetailsPage() {
                                         value={sale.priority}
                                         onChange={(e) => handlePriorityChange(Number(e.target.value))}
                                         className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
-                                        style={{textAlignLast: "center"}}
+                                        style={{ textAlignLast: "center" }}
                                     >
                                         <option value={0}>P0</option>
                                         <option value={1}>P1</option>
@@ -296,12 +328,11 @@ export default function SalesDetailsPage() {
                     <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
                         <button
                             onClick={handleAssignClick}
-                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${
-                                status === "New"
-                                    ? "bg-[#DB2727] text-white"
-                                    : "bg-[#EBD4FF] text-[#1D1D1D]"
-                            }`}
-                            disabled={status !== "New" || assignMutation.isPending}
+                            className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${status === "New"
+                                ? "bg-[#DB2727] text-white"
+                                : "bg-[#EBD4FF] text-[#1D1D1D]"
+                                }`}
+                            disabled={(status !== "New" && user?.user_role !== "ADMIN") || assignMutation.isPending}
                         >
                             {assignMutation.isPending ? "Assigning..." : buttonText}
                         </button>
@@ -371,29 +402,29 @@ export default function SalesDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "N/A"}/>
-                            <InfoRow label="Contact No:" value={sale.customer?.phone_number || "N/A"}/>
-                            <InfoRow label="Email:" value={sale.customer?.email || "N/A"}/>
+                            <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "N/A"} />
+                            <InfoRow label="Contact No:" value={sale.customer?.phone_number || "N/A"} />
+                            <InfoRow label="Email:" value={sale.customer?.email || "N/A"} />
                             <InfoRow
                                 label="Request Leasing:"
                                 value={
                                     sale.enable_leasing ? (
                                         <span className="flex items-center gap-2">
                                             Yes
-                                          {/*<button*/}
-                                          {/*    onClick={() => setLeasingModalOpen(true)}*/}
-                                          {/*    className="text-[#4655FF] underline text-[18px] font-medium font-montserrat hover:text-blue-800 transition-colors"*/}
-                                          {/*>*/}
-                                          {/*  click for more details*/}
-                                          {/*</button>*/}
+                                            {/*<button*/}
+                                            {/*    onClick={() => setLeasingModalOpen(true)}*/}
+                                            {/*    className="text-[#4655FF] underline text-[18px] font-medium font-montserrat hover:text-blue-800 transition-colors"*/}
+                                            {/*>*/}
+                                            {/*  click for more details*/}
+                                            {/*</button>*/}
 
                                             <button
                                                 onClick={() => setLeasingModalOpen(true)}
                                                 // Added: bg-transparent, border-none, cursor-pointer, p-0
                                                 className="bg-transparent border-none cursor-pointer p-0 text-[#4655FF] underline text-[18px] font-medium font-montserrat hover:text-blue-800 transition-colors"
                                             >
-                    click for more details
-                </button>
+                                                click for more details
+                                            </button>
                                         </span>
                                     ) : (
                                         "No"
@@ -404,8 +435,8 @@ export default function SalesDetailsPage() {
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Vehicle Details
                             </div>
-                            <InfoRow label="Vehicle Made:" value={sale.vehicle_make || "N/A"}/>
-                            <InfoRow label="Vehicle Model:" value={sale.vehicle_model || "N/A"}/>
+                            <InfoRow label="Vehicle Made:" value={sale.vehicle_make || "N/A"} />
+                            <InfoRow label="Vehicle Model:" value={sale.vehicle_model || "N/A"} />
                             {/*{role === "admin" ? (*/}
                             {/*    <>*/}
                             {/*        <InfoRow label="Part No:" value="BF-DOT4"/>*/}
@@ -425,13 +456,13 @@ export default function SalesDetailsPage() {
                             {/*        <InfoRow label="Additional Note:" value="White color"/>*/}
                             {/*    </>*/}
                             {/*) : (*/}
-                            <InfoRow label="Manufacture Year:" value={sale.manufacture_year || "N/A"}/>
-                            <InfoRow label="Transmission:" value={sale.transmission || "N/A"}/>
-                            <InfoRow label="Fuel Type:" value={sale.fuel_type || "N/A"}/>
-                            <InfoRow label="Down Payment:" value={`${sale.down_payment || 0}LKR`}/>
+                            <InfoRow label="Manufacture Year:" value={sale.manufacture_year || "N/A"} />
+                            <InfoRow label="Transmission:" value={sale.transmission || "N/A"} />
+                            <InfoRow label="Fuel Type:" value={sale.fuel_type || "N/A"} />
+                            <InfoRow label="Down Payment:" value={`${sale.down_payment || 0}LKR`} />
                             <InfoRow label="Price Range:"
-                                     value={`${sale.price_from || 0} - ${sale.price_to || 0}`}/>
-                            <InfoRow label="Additional Note:" value={sale.additional_note || "N/A"}/>
+                                value={`${sale.price_from || 0} - ${sale.price_to || 0}`} />
+                            <InfoRow label="Additional Note:" value={sale.additional_note || "N/A"} />
                             {/*)}*/}
                         </div>
 
@@ -466,22 +497,22 @@ export default function SalesDetailsPage() {
                 >
                     <div className="w-[400px] px-2 pb-4 font-montserrat text-[#1D1D1D]">
                         <div className="flex justify-between items-center mb-4">
-                                <span className="text-[18px] font-medium">Vehicle Price:</span>
-                                <span className="text-[18px] text-left font-medium text-[#575757]">
-                                    {formatCurrency(sale.leasing_vehicle_price)}
-                                  </span>
+                            <span className="text-[18px] font-medium">Vehicle Price:</span>
+                            <span className="text-[18px] text-left font-medium text-[#575757]">
+                                {formatCurrency(sale.leasing_vehicle_price)}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-[18px] font-medium">Down payment:</span>
                             <span className="text-[18px] font-medium text-[#575757]">
-                            {formatCurrency(sale.down_payment)}
-                          </span>
+                                {formatCurrency(sale.down_payment)}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-[18px] font-medium">Bank:</span>
                             <span className="text-[18px] font-medium text-[#575757]">
-                            {sale.leasing_bank || "N/A"}
-                          </span>
+                                {sale.leasing_bank || "N/A"}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-[18px] font-medium">Time Period:</span>
@@ -489,35 +520,35 @@ export default function SalesDetailsPage() {
                                 {sale.leasing_time_period
                                     ? `${sale.leasing_time_period} Months`
                                     : "N/A"}
-                              </span>
+                            </span>
                         </div>
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-[18px] font-medium">Promo Code:</span>
                             <span className="text-[18px] font-medium text-[#575757]">
                                 {sale.leasing_promo_code || "N/A"}
-                              </span>
+                            </span>
                         </div>
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-[18px] font-medium">Interest Rate:</span>
                             <span className="text-[18px] font-medium text-[#575757]">
-                            {sale.leasing_interest_rate
-                                ? `${sale.leasing_interest_rate}% p.a.`
-                                : "N/A"}
-                          </span>
+                                {sale.leasing_interest_rate
+                                    ? `${sale.leasing_interest_rate}% p.a.`
+                                    : "N/A"}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center mb-4">
-                              <span className="text-[18px] font-medium">
+                            <span className="text-[18px] font-medium">
                                 Monthly Installment:
-                              </span>
+                            </span>
                             <span className="text-[18px] font-medium text-[#575757]">
                                 {formatCurrency(sale.leasing_monthly_installment)}
-                              </span>
+                            </span>
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-[18px] font-medium">Total Amount:</span>
                             <span className="text-[18px] font-medium text-[#575757]">
-                            {formatCurrency(sale.leasing_total_amount)}
-                          </span>
+                                {formatCurrency(sale.leasing_total_amount)}
+                            </span>
                         </div>
                     </div>
                 </Modal>
@@ -531,7 +562,7 @@ export default function SalesDetailsPage() {
                     isPriorityAvailable={false}
                 >
                     <div className="w-full px-4 pb-4">
-                        <HistoryTimeline history={history}/>
+                        <HistoryTimeline history={history} />
                     </div>
                 </Modal>
             )}
@@ -598,6 +629,35 @@ export default function SalesDetailsPage() {
                                 className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
                             />
                         </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* Assign Agent Modal (Admin) */}
+            {isAssignModalOpen && (
+                <Modal
+                    title="Assign to Sales Agent"
+                    onClose={() => setAssignModalOpen(false)}
+                    actionButton={{
+                        label: assignLeadMutation.isPending ? "Assigning..." : "Assign",
+                        onClick: handleAdminAssign,
+                        disabled: !selectedAgent || assignLeadMutation.isPending,
+                    }}
+                >
+                    <div className="w-[400px] pb-4">
+                        <label className="block mb-2 font-medium">Select Agent</label>
+                        <select
+                            className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 px-4"
+                            onChange={(e) => setSelectedAgent(Number(e.target.value))}
+                            value={selectedAgent || ""}
+                        >
+                            <option value="" disabled>Select an agent</option>
+                            {eligibleAgents?.map((agent: any) => (
+                                <option key={agent.id} value={agent.id}>
+                                    {agent.full_name} ({agent.user_role})
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </Modal>
             )}

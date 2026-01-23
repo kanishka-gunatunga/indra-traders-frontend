@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Header from "@/components/Header";
@@ -6,56 +7,52 @@ import { TicketCardProps } from "@/components/TicketCard";
 import { TicketColumn } from "@/components/TicketColumn";
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import Image from "next/image";
-import React, { useState } from "react";
-
-const dummyTickets: TicketCardProps[] = [
-  {
-    id: "ITPL122455874561",
-    priority: 0,
-    user: "Sophie",
-    phone: "0771234567",
-    date: "12 Mar, 2025",
-    status: "New",
-  },
-  {
-    id: "ITPL122455874562",
-    priority: 1,
-    user: "Alex",
-    phone: "0777654321",
-    date: "13 Mar, 2025",
-    status: "Ongoing",
-  },
-  {
-    id: "ITPL122455874563",
-    priority: 2,
-    user: "Sophie",
-    phone: "0771234567",
-    date: "12 Mar, 2025",
-    status: "New",
-  },
-  {
-    id: "ITPL122455874564",
-    priority: 3,
-    user: "Alex",
-    phone: "0777654321",
-    date: "13 Mar, 2025",
-    status: "Lost",
-  },
-  {
-    id: "ITPL122455874565",
-    priority: 4,
-    user: "Sophie",
-    phone: "0771234567",
-    date: "12 Mar, 2025",
-    status: "Won",
-  },
-];
+import React, { useEffect, useState } from "react";
+import { useLeads } from "@/hooks/useLeads";
 
 const priority = ["P0", "P1", "P2", "P3", "P4", "P5"];
 const department = ["ITPL", "ISP", "IMS", "IFT"];
 
 export default function Leads() {
-  const [tickets, setTickets] = useState<TicketCardProps[]>(dummyTickets);
+  const { data: leads, isLoading } = useLeads();
+  const [tickets, setTickets] = useState<TicketCardProps[]>([]);
+
+  useEffect(() => {
+    if (leads) {
+      const mappedLeads: TicketCardProps[] = leads.map((lead: any) => {
+        let route = "/sales-agent/sales";
+        let categoryTag = "ITPL"; // Default to ITPL (Vehicle Sale)
+
+        if (lead.type === "FAST_TRACK") {
+          route = "/sales-agent/fast-track";
+          categoryTag = "IFT";
+        } else if (lead.type === "SPARE_PART") {
+          route = "/sales-agent/spare-parts";
+          categoryTag = "IMS";
+        } else if (lead.type === "SERVICE_PARK") {
+          route = "/sales-agent/service-park-sale/sale";
+          categoryTag = "ISP";
+        } else if (lead.type === "BYD") {
+          route = "/sales-agent/byd-sales";
+          categoryTag = "BYD";
+        }
+
+        return {
+          id: lead.ticket_number,
+          dbId: lead.original_id,
+          priority: lead.priority,
+          user: lead.user,
+          ticketNumber: lead.ticket_number,
+          categoryTag: categoryTag,
+          phone: lead.phone,
+          date: lead.date,
+          status: (["New", "Ongoing", "Won", "Lost"].includes(lead.status) ? lead.status : "New") as any,
+          route: route
+        };
+      });
+      setTickets(mappedLeads);
+    }
+  }, [leads]);
 
   const [isFilterLeadsModalOpen, setIsFilterLeadsModalOpen] = useState(false);
 
@@ -131,7 +128,7 @@ export default function Leads() {
           </div>
           <div className="w-full mt-5">
             <DragDropContext onDragEnd={onDragEnd}>
-              <div className="w-full mt-6 flex gap-6 overflow-x-auto ">
+              <div className="w-full mt-6 flex gap-6">
                 {columns.map((col) => (
                   <TicketColumn
                     key={col}
@@ -172,11 +169,10 @@ export default function Leads() {
                   <div
                     key={priority}
                     className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                                  ${
-                                    isSelected
-                                      ? "bg-blue-500 text-white border-none"
-                                      : ""
-                                  }`}
+                                  ${isSelected
+                        ? "bg-blue-500 text-white border-none"
+                        : ""
+                      }`}
                     onClick={() => {
                       if (isSelected) {
                         setSelectedPriorities(
@@ -209,11 +205,10 @@ export default function Leads() {
                   <div
                     key={dept}
                     className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                                  ${
-                                    isSelected
-                                      ? "bg-blue-500 text-white border-none"
-                                      : ""
-                                  }`}
+                                  ${isSelected
+                        ? "bg-blue-500 text-white border-none"
+                        : ""
+                      }`}
                     onClick={() => {
                       if (isSelected) {
                         setSelectedDepartments(

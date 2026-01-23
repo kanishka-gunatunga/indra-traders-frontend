@@ -15,6 +15,9 @@ export interface TicketCardProps {
     route?: string;
     email?: string; // Added email prop
     isOverlay?: boolean;
+    dbId?: string | number;
+    ticketNumber?: string;
+    categoryTag?: string;
 }
 
 const priorityBackgrounds = [
@@ -44,12 +47,15 @@ export const TicketCard = ({
     id,
     priority,
     user,
+    ticketNumber,
     phone,
     date,
     index = 0,
     route,
     email,
-    isOverlay = false
+    isOverlay = false,
+    dbId,
+    categoryTag
 }: TicketCardProps) => {
     const router = useRouter();
 
@@ -102,7 +108,10 @@ export const TicketCard = ({
         >
             {/* Header Row: Title & Badge */}
             <div className="flex flex-col gap-1 mb-4">
-                <span className="font-bold text-base text-[#101828]">{user}</span>
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-base text-[#101828]">{ticketNumber}</span>
+                    {categoryTag && <span className="text-[#575757] font-[500] text-[10px]">{categoryTag}</span>}
+                </div>
                 <div className="flex justify-between items-center">
                     {/*<span className="font-medium text-xs text-[#667085]">{id}</span>*/}
                     <span

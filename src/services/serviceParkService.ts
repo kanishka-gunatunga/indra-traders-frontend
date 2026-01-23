@@ -209,3 +209,25 @@ export const getServiceBookingBranches = async () => {
     const res = await axiosInstance.get('/service-booking/branches');
     return res.data;
 }
+
+export const getScheduledServices = async (branchId?: number | null, date?: string) => {
+    const res = await axiosInstance.get('/service-park/bookings/scheduled', {
+        params: { branchId, date }
+    });
+    return res.data;
+};
+
+export const getBookingById = async (id: number) => {
+    const res = await axiosInstance.get(`/service-park/bookings/${id}`);
+    return res.data;
+};
+
+export const cancelBooking = async (id: number) => {
+    const res = await axiosInstance.post(`/service-park/bookings/${id}/cancel`);
+    return res.data;
+};
+
+export const rescheduleBooking = async (id: number, data: any) => {
+    const res = await axiosInstance.post(`/service-park/bookings/${id}/reschedule`, data);
+    return res.data;
+};
