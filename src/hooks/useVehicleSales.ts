@@ -1,11 +1,14 @@
-import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
-import {VehicleSaleService} from "@/services/vehicleSaleService";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-export const useVehicleSales = (status?: string, userId?: number, userRole?: string) =>
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { VehicleSaleService } from "@/services/vehicleSaleService";
+
+export const useVehicleSales = (status?: string, userId?: number, userRole?: string, filters?: any) =>
     useQuery({
-        queryKey: ["vehicleSales", status, userId, userRole],
-        queryFn: () => VehicleSaleService.getAll(status, userId, userRole).then((res) => res.data),
+        queryKey: ["vehicleSales", status, userId, userRole, filters],
+        queryFn: () => VehicleSaleService.getAll(status, userId, userRole, filters).then((res) => res.data),
         refetchInterval: 1000,
+        placeholderData: keepPreviousData,
     });
 
 export const useCreateVehicleSale = () => {
@@ -14,7 +17,7 @@ export const useCreateVehicleSale = () => {
     return useMutation({
         mutationFn: VehicleSaleService.create,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
+            queryClient.invalidateQueries({ queryKey: ["vehicleSales"] });
         },
     });
 };
@@ -39,10 +42,10 @@ export const useAssignVehicleSale = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, salesUserId}: { id: number; salesUserId: number }) =>
+        mutationFn: ({ id, salesUserId }: { id: number; salesUserId: number }) =>
             VehicleSaleService.assign(id, salesUserId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
+            queryClient.invalidateQueries({ queryKey: ["vehicleSales"] });
         },
     });
 };
@@ -51,10 +54,10 @@ export const useUpdateSaleStatus = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, status}: { id: number; status: string }) =>
+        mutationFn: ({ id, status }: { id: number; status: string }) =>
             VehicleSaleService.updateStatus(id, status),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
+            queryClient.invalidateQueries({ queryKey: ["vehicleSales"] });
         },
     });
 };
@@ -65,7 +68,7 @@ export const useDeleteVehicleSale = () => {
     return useMutation({
         mutationFn: (id: number) => VehicleSaleService.delete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
+            queryClient.invalidateQueries({ queryKey: ["vehicleSales"] });
         },
     });
 };
@@ -92,7 +95,7 @@ export const useCreateFollowup = () => {
         mutationFn: VehicleSaleService.followUpCreate,
         onSuccess: (_, variables) => {
             if (variables.vehicleSaleId)
-                queryClient.invalidateQueries({queryKey: ["followups", variables.vehicleSaleId]});
+                queryClient.invalidateQueries({ queryKey: ["followups", variables.vehicleSaleId] });
         },
     });
 };
@@ -103,7 +106,7 @@ export const useDeleteFollowup = () => {
     return useMutation({
         mutationFn: (id: number) => VehicleSaleService.followUpDelete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["followups"]});
+            queryClient.invalidateQueries({ queryKey: ["followups"] });
         },
     });
 };
@@ -130,7 +133,7 @@ export const useCreateReminder = () => {
         mutationFn: VehicleSaleService.reminderCreate,
         onSuccess: (_, variables) => {
             if (variables.vehicleSaleId)
-                queryClient.invalidateQueries({queryKey: ["reminders", variables.vehicleSaleId]});
+                queryClient.invalidateQueries({ queryKey: ["reminders", variables.vehicleSaleId] });
         },
     });
 };
@@ -141,7 +144,7 @@ export const useDeleteReminder = () => {
     return useMutation({
         mutationFn: (id: number) => VehicleSaleService.reminderDelete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["reminders"]});
+            queryClient.invalidateQueries({ queryKey: ["reminders"] });
         },
     });
 };
@@ -161,12 +164,12 @@ export const useUpdatePriority = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, priority}: { id: number; priority: number }) =>
-            VehicleSaleService.updatePriority(id, {priority}),
+        mutationFn: ({ id, priority }: { id: number; priority: number }) =>
+            VehicleSaleService.updatePriority(id, { priority }),
 
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
-            queryClient.invalidateQueries({queryKey: ["vehicleSale", variables.id]});
+            queryClient.invalidateQueries({ queryKey: ["vehicleSales"] });
+            queryClient.invalidateQueries({ queryKey: ["vehicleSale", variables.id] });
         },
     });
 };
@@ -175,12 +178,12 @@ export const useUpdatePriority = () => {
 export const usePromoteSale = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({id, userId}: { id: number; userId: number }) =>
+        mutationFn: ({ id, userId }: { id: number; userId: number }) =>
             VehicleSaleService.promote(id, userId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["vehicleSales"]});
-            queryClient.invalidateQueries({queryKey: ["vehicleSale"]});
-            queryClient.invalidateQueries({queryKey: ["saleHistory"]});
+            queryClient.invalidateQueries({ queryKey: ["vehicleSales"] });
+            queryClient.invalidateQueries({ queryKey: ["vehicleSale"] });
+            queryClient.invalidateQueries({ queryKey: ["saleHistory"] });
         },
     });
 };

@@ -1,18 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
 "use client";
 
-import {Role} from "@/types/role";
+import { Role } from "@/types/role";
 import Image from "next/image";
 import Link from "next/link";
-import React, {useState} from "react";
+import React, { useState } from "react";
 import Modal from "@/components/Modal";
-import VerificationDropdown from "@/components/VerificationDropdown";
-import {CreateComplaintInput} from "@/types/complaint.types";
-import {useCreateComplaint} from "@/hooks/useComplaint";
-import {useCurrentUser} from "@/utils/auth";
-import {usePathname, useRouter} from "next/navigation";
-import {signOut} from "next-auth/react";
+
+import { CreateComplaintInput } from "@/types/complaint.types";
+import { useCreateComplaint } from "@/hooks/useComplaint";
+import { useCurrentUser } from "@/utils/auth";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
+import { useForm } from "react-hook-form";
+import FormField from "@/components/FormField";
+import { useToast } from "@/hooks/useToast";
+import Toast from "@/components/Toast";
 
 const SideMenu = () => {
 
@@ -21,22 +26,20 @@ const SideMenu = () => {
     const pathname = usePathname();
     const userRole = user?.user_role;
 
+    const { toast, showToast, hideToast } = useToast();
+
     const [role, setRole] = useState<Role>(
         process.env.NEXT_PUBLIC_USER_ROLE as Role
     );
 
     const [isComplainModalOpen, setIsComplainModalOpen] = useState(false);
 
-    const [formData, setFormData] = useState({
-        category: "",
-        customer_name: "",
-        phone_number: "",
-        email: "",
-        vehicle_number: "",
-        title: "",
-        preferred_solution: "",
-        description: "",
-    });
+    const {
+        register,
+        handleSubmit: handleFormSubmit,
+        reset,
+        formState: { errors }
+    } = useForm<CreateComplaintInput>();
 
     const createComplaintMutation = useCreateComplaint();
 
@@ -61,54 +64,47 @@ const SideMenu = () => {
     };
 
 
-    const handleSubmit = async () => {
+    const onSubmit = async (data: CreateComplaintInput) => {
         try {
-            await createComplaintMutation.mutateAsync(formData as CreateComplaintInput);
+            await createComplaintMutation.mutateAsync(data);
             setIsComplainModalOpen(false);
-            // Reset form
-            setFormData({
-                category: "",
-                customer_name: "",
-                phone_number: "",
-                email: "",
-                vehicle_number: "",
-                title: "",
-                preferred_solution: "",
-                description: "",
-            });
-            // Optional: Show success toast
-            console.log("Complaint submitted successfully");
+            reset();
+            showToast("Complaint submitted successfully", "success");
         } catch (error: any) {
             console.error("Error creating complaint:", error);
-            alert(`Failed to submit complaint: ${error.response?.data?.message || error.message}`);
+            showToast(`Failed to submit complaint: ${error.response?.data?.message || error.message}`, "error");
         }
-    };
-
-    const handleInputChange = (field: keyof CreateComplaintInput, value: string) => {
-        setFormData((prev) => ({...prev, [field]: value}));
     };
 
 
     const handleLogout = async () => {
-        await signOut({redirect: false});
+        await signOut({ redirect: false });
         router.push("/login");
     };
 
 
     const complainCategories = [
-        {value: "service_issue", label: "Service Issue"},
-        {value: "product_quality", label: "Product Quality"},
-        {value: "billing_error", label: "Billing Error"},
+        { value: "ITPL", label: "Indra Vehicle Sale" },
+        { value: "ISP", label: "Indra Service Park" },
+        { value: "IMS", label: "Indra Spare Parts" },
+        { value: "IFT", label: "Indra Fast Track" },
+        { value: "BYD", label: "BYD" },
     ];
 
     const preferredSolutions = [
-        {value: "refund", label: "Refund"},
-        {value: "replacement", label: "Replacement"},
-        {value: "repair", label: "Repair"},
+        { value: "refund", label: "Refund" },
+        { value: "replacement", label: "Replacement" },
+        { value: "repair", label: "Repair" },
     ];
 
     return (
         <div>
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                visible={toast.visible}
+                onClose={hideToast}
+            />
             <aside className="fixed top-32 left-8 flex flex-col gap-6 z-40">
                 <button
                     onClick={() => router.back()}
@@ -170,8 +166,8 @@ const SideMenu = () => {
                     <Link href="/call-agent/chat-bot">
                         <div
                             className={`${getLinkClasses("/chat-bot")} relative flex items-center justify-center`}>
-                                <span
-                                    className="absolute top-3 right-3 border border-[#FBF9F9] w-2 h-2 bg-[#DB2727] rounded-full"/>
+                            <span
+                                className="absolute top-3 right-3 border border-[#FBF9F9] w-2 h-2 bg-[#DB2727] rounded-full" />
                             <svg
                                 width="24"
                                 height="24"
@@ -247,13 +243,13 @@ const SideMenu = () => {
                 {hasRole(["ADMIN"]) && (
                     <Link href="/admin/star-rating">
                         <div className={getLinkClasses("/admin/star-rating")}>
-                        <Image
-                            src={"/images/Features-list.svg"}
-                            alt="List icon"
-                            width={24}
-                            height={24}
-                            className={pathname === "/admin/star-rating" ? "brightness-0 invert" : ""}
-                        />
+                            <Image
+                                src={"/images/Features-list.svg"}
+                                alt="List icon"
+                                width={24}
+                                height={24}
+                                className={pathname === "/admin/star-rating" ? "brightness-0 invert" : ""}
+                            />
                         </div>
                     </Link>
                 )}
@@ -315,7 +311,7 @@ const SideMenu = () => {
                     onClose={() => setIsComplainModalOpen(false)}
                     actionButton={{
                         label: "Submit",
-                        onClick: handleSubmit,
+                        onClick: handleFormSubmit(onSubmit),
                         // disabled: createComplaintMutation.isPending,
                     }}
                     isPriorityAvailable={false}
@@ -323,16 +319,15 @@ const SideMenu = () => {
                     <div>
                         <div className="flex-1 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <div>
-                                    <VerificationDropdown
-                                        label="Complain Category"
-                                        placeholder="Select Category"
-                                        value={formData.category || ""}
-                                        onChange={(value: string) => handleInputChange("category", value)}
-                                        options={complainCategories}
-                                        isIcon={false}
-                                    />
-                                </div>
+                                <FormField
+                                    label="Complain Category"
+                                    placeholder="Select Category"
+                                    type="select"
+                                    isIcon={false}
+                                    options={complainCategories}
+                                    register={register("category")}
+                                    error={errors.category}
+                                />
                             </div>
                         </div>
 
@@ -343,58 +338,30 @@ const SideMenu = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Customer Name</span>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Customer Name"
-                                            value={formData.customer_name || ""}
-                                            onChange={(e) => handleInputChange("customer_name", e.target.value)}
-                                            className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                        />
-                                    </div>
-                                </label>
-                                <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Phone Number</span>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Phone Number"
-                                            value={formData.phone_number || ""}
-                                            onChange={(e) => handleInputChange("phone_number", e.target.value)}
-                                            className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                        />
-                                    </div>
-                                </label>
-                                <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Email Address</span>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Email Address"
-                                            value={formData.email || ""}
-                                            onChange={(e) => handleInputChange("email", e.target.value)}
-                                            className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                        />
-                                    </div>
-                                </label>
-                                <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Vehicle Number</span>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Vehicle Number"
-                                            value={formData.vehicle_number || ""}
-                                            onChange={(e) => handleInputChange("vehicle_number", e.target.value)}
-                                            className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                        />
-                                    </div>
-                                </label>
+                                <FormField
+                                    label="Customer Name"
+                                    placeholder="Customer Name"
+                                    register={register("customer_name")}
+                                    error={errors.customer_name}
+                                />
+                                <FormField
+                                    label="Phone Number"
+                                    placeholder="Phone Number"
+                                    register={register("phone_number")}
+                                    error={errors.phone_number}
+                                />
+                                <FormField
+                                    label="Email Address"
+                                    placeholder="Email Address"
+                                    register={register("email")}
+                                    error={errors.email}
+                                />
+                                <FormField
+                                    label="Vehicle Number"
+                                    placeholder="Vehicle Number"
+                                    register={register("vehicle_number")}
+                                    error={errors.vehicle_number}
+                                />
                             </div>
                         </div>
 
@@ -404,35 +371,30 @@ const SideMenu = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Complain Title</span>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Complain Title"
-                                            value={formData.title || ""}
-                                            onChange={(e) => handleInputChange("title", e.target.value)}
-                                            className={`w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                        />
-                                    </div>
-                                </label>
-                                <VerificationDropdown label="Preferred Solution"
-                                                      placeholder="Select Preferred Solution"
-                                                      value={formData.preferred_solution || ""}
-                                                      onChange={(value: string) => handleInputChange("preferred_solution", value)}
-                                                      options={preferredSolutions}
-                                                      isIcon={false}/>
+                                <FormField
+                                    label="Complain Title"
+                                    placeholder="Complain Title"
+                                    register={register("title")}
+                                    error={errors.title}
+                                />
+                                <FormField
+                                    label="Preferred Solution"
+                                    placeholder="Select Preferred Solution"
+                                    type="select"
+                                    isIcon={false}
+                                    options={preferredSolutions}
+                                    register={register("preferred_solution")}
+                                    error={errors.preferred_solution}
+                                />
                             </div>
 
-                            <div className="flex flex-col space-y-2 font-medium text-gray-900">
-                                <span
-                                    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Complaint Description</span>
-                                <textarea placeholder="Complaint Description" rows={5}
-                                          value={formData.description || ""}
-                                          onChange={(e) => handleInputChange("description", e.target.value)}
-                                          className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>
-                            </div>
+                            <FormField
+                                label="Complaint Description"
+                                placeholder="Complaint Description"
+                                type="textarea"
+                                register={register("description")}
+                                error={errors.description}
+                            />
                         </div>
                     </div>
                 </Modal>

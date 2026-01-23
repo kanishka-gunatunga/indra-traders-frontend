@@ -180,7 +180,7 @@ export default function Modal({
           <button
             onClick={actionButton.onClick}
             disabled={actionButton.disabled}
-            className={`absolute top-6 right-8 flex items-center justify-center ${
+            className={`absolute top-6 right-8 flex items-center cursor-pointer justify-center ${
               actionButton.icon
                 ? // Icon-only button
                   "w-[50px] h-[50px] rounded-full bg-[#E7E7E7] shadow-md"

@@ -9,6 +9,13 @@ export const useRemindersByComplaint = (complaintId: number) => {
     });
 };
 
+export const useNearestReminders = () => {
+    return useQuery({
+        queryKey: ["reminders", "nearest"],
+        queryFn: () => ComplaintReminderService.getNearest(),
+    });
+};
+
 export const useCreateReminder = () => {
     const queryClient = useQueryClient();
     return useMutation({

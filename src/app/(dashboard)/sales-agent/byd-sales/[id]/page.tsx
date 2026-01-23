@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
@@ -8,34 +9,21 @@ import InfoRow from "@/components/SalesInfoRow";
 import Modal from "@/components/Modal";
 import React, { useEffect, useState } from "react";
 import { Role } from "@/types/role";
-import { message } from "antd";
-import {
-    useClaimSaleLead,
-    useCreateSaleFollowup,
-    useCreateSaleReminder,
-    useSaleByTicket, useUpdateSalePriority,
-    useUpdateSaleStatus, useSaleHistory, usePromoteSale
-} from "@/hooks/useFastTrack";
 import { useParams } from "next/navigation";
+import {
+    useAssignBydSale,
+    useCreateBydFollowup,
+    useUpdateBydSaleStatus,
+    useBydSaleByTicket,
+    useUpdateBydPriority,
+    useCreateBydReminder, useBydSaleHistory, usePromoteBydSale
+} from "@/hooks/useBydSales";
+// import {useCreateReminder} from "@/hooks/useReminder";
+import { message } from "antd";
 import { useCurrentUser } from "@/utils/auth";
 import Image from "next/image";
 import HistoryTimeline from "@/components/HistoryTimeline";
 import RedSpinner from "@/components/RedSpinner";
-
-const mapApiStatusToSalesStatus = (apiStatus: string): SalesStatus => {
-    switch (apiStatus) {
-        case "NEW":
-            return "New";
-        case "ONGOING":
-            return "Ongoing";
-        case "WON":
-            return "Won";
-        case "LOST":
-            return "Lost";
-        default:
-            return "New";
-    }
-};
 
 export default function SalesDetailsPage() {
     const [role, setRole] = useState<Role>(
@@ -44,123 +32,142 @@ export default function SalesDetailsPage() {
 
     const params = useParams();
     const ticketNumber = params?.id as string;
+
     const user = useCurrentUser();
-    const userId = Number(user?.id) || 1;
+    const userId = Number(user?.id) || 2;
 
-    const { data: sale, isLoading, error } = useSaleByTicket(ticketNumber);
-    const assignToMeMutation = useClaimSaleLead();
-    const createFollowupMutation = useCreateSaleFollowup();
-    const createReminderMutation = useCreateSaleReminder();
-    const updateSaleStatusMutation = useUpdateSaleStatus();
-    const updateSalePriorityMutation = useUpdateSalePriority();
+    console.log(ticketNumber);
 
-    const { data: history } = useSaleHistory(sale?.id);
-    const promoteMutation = usePromoteSale();
+    const { data: sale, isLoading, error } = useBydSaleByTicket(ticketNumber);
+    const assignMutation = useAssignBydSale();
+    const updateStatusMutation = useUpdateBydSaleStatus();
+    const createFollowupMutation = useCreateBydFollowup();
+    const createReminderMutation = useCreateBydReminder();
+
+    const { data: history } = useBydSaleHistory(sale?.id);
+    const promoteMutation = usePromoteBydSale();
+
+    const updatePriorityMutation = useUpdateBydPriority();
 
     const [status, setStatus] = useState<SalesStatus>("New");
+
     const [isActivityModalOpen, setActivityModalOpen] = useState(false);
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
+    const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
+    const [isLeasingModalOpen, setLeasingModalOpen] = useState(false);
+
     const [activityText, setActivityText] = useState("");
     const [reminderTitle, setReminderTitle] = useState("");
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
-    const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
 
+    // Sync status from fetched sale
     useEffect(() => {
         if (sale) {
-            setStatus(mapApiStatusToSalesStatus(sale.status));
+            const displayStatus: SalesStatus = sale.status === "NEW" ? "New" : sale.status === "ONGOING" ? "Ongoing" : sale.status === "WON" ? "Won" : "Lost"; // Adjust for Won/Lost if needed
+            setStatus(displayStatus);
         }
     }, [sale]);
 
-    const handleAssignClick = () => {
-        if (sale && sale.id && status === "New") {
-            assignToMeMutation.mutate({ saleId: sale.id, userId }, {
-                onSuccess: () => {
-                    setStatus("Ongoing");
-                    message.success("Sale assigned to you");
-                },
-                onError: (err) => {
-                    console.error("Assign sale error:", err);
-                    message.error("Failed to assign sale.");
-                },
+    const handleAssignClick = async () => {
+        if (!sale || status !== "New") return;
+        try {
+            await assignMutation.mutateAsync({ id: sale.id, salesUserId: userId });
+            setStatus("Ongoing");
+        } catch (error: any) {
+            console.error("Error assigning sale:", error);
+            alert(`Failed to assign: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    const handleStatusChange = async (newStatus: SalesStatus) => {
+        if (!sale) return;
+        // let backendStatus = newStatus === "New" ? "NEW" : newStatus === "Ongoing" ? "ONGOING" : "COMPLETED";
+        // if (newStatus === "Won" || newStatus === "Lost") {
+        //     backendStatus = "COMPLETED";
+        // }
+
+        let backendStatus = "";
+
+        switch (newStatus) {
+            case "New":
+                backendStatus = "NEW";
+                break;
+            case "Ongoing":
+                backendStatus = "ONGOING";
+                break;
+            case "Won":
+                backendStatus = "WON";
+                break;
+            case "Lost":
+                backendStatus = "LOST";
+                break;
+            default:
+                console.error("Unknown status selected");
+                return;
+        }
+
+        try {
+            await updateStatusMutation.mutateAsync({ id: sale.id, status: backendStatus });
+            setStatus(newStatus);
+        } catch (error: any) {
+            console.error("Error updating status:", error);
+            alert(`Failed to update status: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    const handleActivitySave = async () => {
+        if (!activityText.trim() || !sale) return;
+        try {
+            await createFollowupMutation.mutateAsync({
+                activity: activityText,
+                activity_date: new Date().toISOString().split('T')[0],
+                bydSaleId: sale.id,
+                userId: userId
             });
+            setActivityText("");
+            setActivityModalOpen(false);
+        } catch (error: any) {
+            console.error("Error creating followup:", error);
+            alert(`Failed to save activity: ${error.response?.data?.message || error.message}`);
         }
     };
 
-    const handleSaveActivity = () => {
-        if (sale && sale.id && activityText) {
-            createFollowupMutation.mutate(
-                {
-                    sale_id: sale.id,
-                    activity: activityText,
-                    activity_date: new Date().toISOString(),
-                    userId: userId
+    const handleReminderSave = async () => {
+        if (!reminderTitle.trim() || !reminderDate || !sale) return;
+        try {
+            await createReminderMutation.mutateAsync({
+                task_title: reminderTitle,
+                task_date: reminderDate,
+                note: reminderNote,
+                bydSaleId: sale.id,
+                userId: userId
+            });
+            setReminderTitle("");
+            setReminderDate("");
+            setReminderNote("");
+            setReminderModalOpen(false);
+        } catch (error: any) {
+            console.error("Error creating reminder:", error);
+            alert(`Failed to save reminder: ${error.response?.data?.message || error.message}`);
+        }
+    };
+
+    const handlePriorityChange = (newPriority: number) => {
+        if (!sale?.id) return;
+
+        updatePriorityMutation.mutate(
+            { id: sale.id, priority: newPriority },
+            {
+                onSuccess: () => {
+                    message.success("Priority updated");
                 },
-                {
-                    onSuccess: () => {
-                        message.success("Activity Saved!");
-                        setActivityText("");
-                        setActivityModalOpen(false);
-                    },
-                    onError: (err) => {
-                        console.error("Failed to save followup:", err);
-                        message.error("Failed to save follow-up.");
-                    },
+                onError: () => {
+                    message.error("Failed to update priority");
                 }
-            );
-        } else {
-            message.error("Please fill all required fields.");
-        }
+            }
+        );
     };
-
-    const handleSaveReminder = () => {
-        if (sale && sale.id && reminderTitle && reminderDate) {
-            createReminderMutation.mutate(
-                {
-                    task_title: reminderTitle,
-                    task_date: new Date(reminderDate).toISOString(),
-                    note: reminderNote || undefined,
-                    sale_id: sale.id,
-                    userId: userId
-                },
-                {
-                    onSuccess: () => {
-                        message.success("Reminder Saved!");
-                        setReminderTitle("");
-                        setReminderDate("");
-                        setReminderNote("");
-                        setReminderModalOpen(false);
-                    },
-                    onError: (err) => {
-                        console.error("Reminder error:", err);
-                        message.error("Failed to save reminder.");
-                    },
-                }
-            );
-        } else {
-            message.error("Please fill all required fields.");
-        }
-    };
-
-    const handlePriorityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const value = e.target.value;
-        const priority = parseInt(value);
-        if (sale && sale.id && !isNaN(priority)) {
-            updateSalePriorityMutation.mutate(
-                { saleId: sale.id, priority },
-                {
-                    onSuccess: () => {
-                        message.success(`Priority updated to ${value}`);
-                    },
-                    onError: (err) => {
-                        console.error("Failed to update priority:", err);
-                        message.error("Failed to update priority.");
-                    },
-                }
-            );
-        }
-    };
-
 
     const userRole = user?.user_role || "SALES01";
     const isLevel1 = userRole === "SALES01";
@@ -184,7 +191,7 @@ export default function SalesDetailsPage() {
         try {
             await promoteMutation.mutateAsync({ id: sale.id, userId: Number(userId) });
             alert("Lead promoted successfully!");
-            window.location.href = "/sales-agent/sales";
+            window.location.href = "/sales-agent/byd-sales";
         } catch (e) {
             console.error(e);
             alert("Failed to promote lead.");
@@ -192,8 +199,11 @@ export default function SalesDetailsPage() {
     };
 
 
-    const buttonText =
-        status === "New" ? "Assign to me" : `Sales person: ${sale?.salesUser?.full_name || "Unknown"}`;
+    const formatCurrency = (amount: number | string | null | undefined) => {
+        if (amount === null || amount === undefined || amount === "") return "N/A";
+        return `${Number(amount).toLocaleString()} LKR`;
+    };
+
 
     if (isLoading) {
         return (
@@ -206,11 +216,14 @@ export default function SalesDetailsPage() {
 
     if (error || !sale) {
         return (
-            <div className="text-center mt-10 text-red-600">
-                Error: {error?.message || "Sale not found!"}
+            <div className="flex justify-center items-center min-h-screen">
+                <p>Sale not found or error loading details.</p>
             </div>
         );
     }
+
+    const buttonText =
+        status === "New" ? "Assign to me" : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
 
     const source = sale?.lead_source?.toLowerCase();
 
@@ -240,12 +253,11 @@ export default function SalesDetailsPage() {
                 <Header
                     name={user?.full_name || "Sophie Eleanor"}
                     location={user?.branch || "Bambalapitiya"}
-                    title="Indra Fast Track Sales Dashboard"
+                    title="BYD Sales Dashboard"
                 />
 
                 <section
                     className="relative bg-[#FFFFFF4D] mb-5 bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-9 py-10 flex flex-col justify-center items-center">
-                    {/* Header */}
                     <div className="flex w-full justify-between items-center">
                         <div className="flex flex-wrap w-full gap-4 max-[1140px]:gap-2 items-center">
                             <span className="font-semibold text-[22px] max-[1140px]:text-[18px]">
@@ -257,13 +269,14 @@ export default function SalesDetailsPage() {
                             </span>
                             <span
                                 className="w-[67px] h-[26px] rounded-[22.98px] px-[17.23px] py-[5.74px] max-[1140px]:text-[12px] bg-[#DBDBDB] text-sm flex items-center justify-center">
-                                ITPL
+                                BYD
                             </span>
                             {status !== "New" && (
                                 <div
                                     className="w-[61px] h-[26px] rounded-[22.98px] bg-[#FFA7A7] flex items-center justify-center px-[10px] py-[5.74px]">
                                     <select
-                                        onChange={handlePriorityChange}
+                                        value={sale.priority}
+                                        onChange={(e) => handlePriorityChange(Number(e.target.value))}
                                         className="w-full h-full bg-transparent border-none text-sm max-[1140px]:text-[12px] cursor-pointer focus:outline-none"
                                         style={{ textAlignLast: "center" }}
                                     >
@@ -278,38 +291,20 @@ export default function SalesDetailsPage() {
                         <FlowBar<SalesStatus>
                             variant="sales"
                             status={status}
-                            onStatusChange={(newStatus) => {
-                                setStatus(newStatus);
-                                if (sale?.id && (newStatus.toUpperCase() === "WON" || newStatus.toUpperCase() === "LOST")) {
-                                    updateSaleStatusMutation.mutate(
-                                        { saleId: sale.id, status: newStatus.toUpperCase() },
-                                        {
-                                            onSuccess: () => {
-                                                message.success(`Status updated to ${newStatus}`);
-                                            },
-                                            onError: (err) => {
-                                                console.error("Failed to update status:", err);
-                                                message.error("Failed to update status.");
-                                            },
-                                        }
-                                    );
-                                }
-                            }}
+                            onStatusChange={handleStatusChange}
                         />
                     </div>
 
-                    {/* Assign + Sales Level */}
-                    {/*{role === "user" ? (*/}
                     <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">
                         <button
                             onClick={handleAssignClick}
                             className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${status === "New"
-                                    ? "bg-[#DB2727] text-white"
-                                    : "bg-[#EBD4FF] text-[#1D1D1D]"
+                                ? "bg-[#DB2727] text-white"
+                                : "bg-[#EBD4FF] text-[#1D1D1D]"
                                 }`}
-                            disabled={status !== "New"}
+                            disabled={status !== "New" || assignMutation.isPending}
                         >
-                            {buttonText}
+                            {assignMutation.isPending ? "Assigning..." : buttonText}
                         </button>
 
                         {canPromote && (
@@ -323,53 +318,13 @@ export default function SalesDetailsPage() {
                             </button>
                         )}
 
-                        {/*{status !== "New" && (*/}
-                        {/*    <div*/}
-                        {/*        className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
-                        {/*        <select*/}
-                        {/*            className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
-                        {/*            style={{textAlignLast: "center"}}*/}
-                        {/*        >*/}
-                        {/*            <option value="S0">Sales Level 1</option>*/}
-                        {/*            <option value="S1">Sales Level 2</option>*/}
-                        {/*            <option value="S2">Sales Level 3</option>*/}
-                        {/*            <option value="S3">Sales Level 4</option>*/}
-                        {/*        </select>*/}
-                        {/*    </div>*/}
-                        {/*)}*/}
-
-                        {/*<div*/}
-                        {/*    className="h-[40px] px-6 rounded-[22.98px] bg-[#FFEDD8] border border-orange-200 flex items-center justify-center font-semibold text-[#8a5b28]">*/}
-                        {/*    Current Level: Sales {sale?.current_level || 1}*/}
-                        {/*</div>*/}
-
-                        {showHistoryButton && (
-                            <button
-                                onClick={() => setHistoryModalOpen(true)}
-                                className="ml-auto h-[40px] px-5 rounded-[22.98px] border border-gray-400 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                            >
-                                {/*<Image src="/dashboard/time.svg" width={20} height={20} alt="history" />*/}
-                                View History
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setHistoryModalOpen(true)}
+                            className="ml-auto h-[40px] px-5 rounded-[22.98px] border border-gray-400 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                            View History
+                        </button>
                     </div>
-                    {/*) : (*/}
-                    {/*    <div className="w-full flex items-center gap-3 max-[1386px]:mt-5 mt-2 mb-8">*/}
-                    {/*        <span>Assign to:</span>*/}
-                    {/*        <div*/}
-                    {/*            className="h-[40px] rounded-[22.98px] bg-[#FFEDD8] flex items-center justify-center px-4">*/}
-                    {/*            <select*/}
-                    {/*                className="w-full h-full bg-transparent border-none text-sm cursor-pointer focus:outline-none"*/}
-                    {/*                style={{textAlignLast: "center"}}*/}
-                    {/*            >*/}
-                    {/*                <option value="S0">Sales Level 1</option>*/}
-                    {/*                <option value="S1">Sales Level 2</option>*/}
-                    {/*                <option value="S2">Sales Level 3</option>*/}
-                    {/*                <option value="S3">Sales Level 4</option>*/}
-                    {/*            </select>*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-                    {/*)}*/}
 
                     {/* Tabs */}
                     <div className="w-full flex">
@@ -377,32 +332,50 @@ export default function SalesDetailsPage() {
                             <div className="mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Customer Details
                             </div>
-                            <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "Unknown"} />
+                            <InfoRow label="Customer Name:" value={sale.customer?.customer_name || "N/A"} />
                             <InfoRow label="Contact No:" value={sale.customer?.phone_number || "N/A"} />
                             <InfoRow label="Email:" value={sale.customer?.email || "N/A"} />
+                            <InfoRow
+                                label="Request Leasing:"
+                                value={
+                                    sale.enable_leasing ? (
+                                        <span className="flex items-center gap-2">
+                                            Yes
+
+                                            <button
+                                                onClick={() => setLeasingModalOpen(true)}
+                                                className="bg-transparent border-none cursor-pointer p-0 text-[#4655FF] underline text-[18px] font-medium font-montserrat hover:text-blue-800 transition-colors"
+                                            >
+                                                click for more details
+                                            </button>
+                                        </span>
+                                    ) : (
+                                        "No"
+                                    )
+                                }
+                            />
 
                             <div className="mt-8 mb-6 font-semibold text-[20px] max-[1140px]:text-[18px]">
                                 Vehicle Details
                             </div>
-                            <InfoRow label="Vehicle Made:" value={sale.vehicle?.make || "Honda"} />
-                            <InfoRow label="Vehicle Model:" value={sale.vehicle?.model || "Civic"} />
-                            <InfoRow label="Manufacture Year:" value={sale.vehicle?.manufacture_year || "2019"} />
-                            <InfoRow label="Capacity:" value={sale.vehicle?.capacity || "2800cc"} />
-                            <InfoRow label="Transmission:" value={sale.vehicle?.transmission || "Auto"} />
-                            <InfoRow label="Fuel Type:" value={sale.vehicle?.fuel_type || "Petrol"} />
-                            <InfoRow label="Price Range:"
-                                value={(sale.price_range_min && sale.price_range_max) ? `${sale.price_range_min.toLocaleString()} - ${sale.price_range_max.toLocaleString()}` : "N/A"} />
-                            <InfoRow label="Additional Note:" value={sale.additional_note || "-"} />
+                            <InfoRow label="Millage:" value={"200KM"} />
+                            <InfoRow label="No. of Owners:" value={"0"} />
+                            <InfoRow label="Vehicle No:" value={"Brand New"} />
+                            <InfoRow label="Color:" value={"Arctic White"} />
+                            <InfoRow label="Capacity" value={"2000cc"} />
+                            <InfoRow label="Model" value={"2025 BYD SEALION 6 E-Hybrid"} />
+                            <InfoRow label="Additional Note:" value={sale.additional_note || "N/A"} />
+                            {/*)}*/}
                         </div>
 
                         <div className="w-3/5 flex flex-col min-h-[400px]">
                             <SalesDetailsTab
-                                customerId={sale.customer_id?.toString() || "1"}
-                                reminders={sale.saleReminders || []}
-                                followups={sale.followups || []}
+                                customerId={sale.customer_id}
                                 status={status}
                                 onOpenActivity={() => setActivityModalOpen(true)}
                                 onOpenReminder={() => setReminderModalOpen(true)}
+                                followups={sale.followups || []}
+                                reminders={sale.reminders || []}
                             />
                             {/*{role === "admin" ? null : (*/}
                             <div className="mt-6 flex w-full justify-end">
@@ -416,6 +389,73 @@ export default function SalesDetailsPage() {
                     </div>
                 </section>
             </main>
+
+
+            {isLeasingModalOpen && (
+                <Modal
+                    title="Leasing Details"
+                    onClose={() => setLeasingModalOpen(false)}
+                    isPriorityAvailable={false}
+                >
+                    <div className="w-[400px] px-2 pb-4 font-montserrat text-[#1D1D1D]">
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Vehicle Price:</span>
+                            <span className="text-[18px] text-left font-medium text-[#575757]">
+                                {formatCurrency(sale.leasing_vehicle_price)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Down payment:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {formatCurrency(sale.down_payment)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Bank:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {sale.leasing_bank || "N/A"}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Time Period:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {sale.leasing_time_period
+                                    ? `${sale.leasing_time_period} Months`
+                                    : "N/A"}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Promo Code:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {sale.leasing_promo_code || "N/A"}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">Interest Rate:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {sale.leasing_interest_rate
+                                    ? `${sale.leasing_interest_rate}% p.a.`
+                                    : "N/A"}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-[18px] font-medium">
+                                Monthly Installment:
+                            </span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {formatCurrency(sale.leasing_monthly_installment)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[18px] font-medium">Total Amount:</span>
+                            <span className="text-[18px] font-medium text-[#575757]">
+                                {formatCurrency(sale.leasing_total_amount)}
+                            </span>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
 
             {isHistoryModalOpen && (
                 <Modal
@@ -436,7 +476,7 @@ export default function SalesDetailsPage() {
                     onClose={() => setActivityModalOpen(false)}
                     actionButton={{
                         label: createFollowupMutation.isPending ? "Saving..." : "Save",
-                        onClick: handleSaveActivity,
+                        onClick: handleActivitySave,
                         disabled: createFollowupMutation.isPending,
                     }}
                 >
@@ -459,7 +499,7 @@ export default function SalesDetailsPage() {
                     onClose={() => setReminderModalOpen(false)}
                     actionButton={{
                         label: createReminderMutation.isPending ? "Saving..." : "Save",
-                        onClick: handleSaveReminder,
+                        onClick: handleReminderSave,
                         disabled: createReminderMutation.isPending,
                     }}
                 >

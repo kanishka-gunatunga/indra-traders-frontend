@@ -13,19 +13,20 @@ export const createAssignToSale = async (data: any) => {
     return res.data;
 };
 
-export const listVehicleSales = async (status?: string, userId?: number, userRole?: string) => {
+export const listVehicleSales = async (status?: string, userId?: number, userRole?: string, filters?: any) => {
     const res = await axiosInstance.get("/service-park/sales", {
         params: {
-            ...(status ? {status} : {}),
-            ...(userId ? {userId} : {}),
-            ...(userRole ? {userRole} : {})
+            ...(status ? { status } : {}),
+            ...(userId ? { userId } : {}),
+            ...(userRole ? { userRole } : {}),
+            ...filters
         },
     });
     return res.data;
 };
 
 export const assignToSalesAgent = async (saleId: number, userId: number) => {
-    const res = await axiosInstance.put(`/service-park/assign-to-sales/${saleId}/assign`, {userId});
+    const res = await axiosInstance.put(`/service-park/assign-to-sales/${saleId}/assign`, { userId });
     return res.data;
 };
 
@@ -78,7 +79,7 @@ export const updatePriority = async (id: number, data: { priority: number }) => 
 }
 
 export const promote = async (id: number, userId: number) => {
-    return await axiosInstance.put(`/service-park/${id}/promote`, {userId});
+    return await axiosInstance.put(`/service-park/${id}/promote`, { userId });
 }
 
 export const getHistory = async (id: number) => {
@@ -138,7 +139,7 @@ export const getAllPackages = async () => {
     return res.data;
 };
 
-export const updateService = async ({id, data}: { id: number, data: any }) => {
+export const updateService = async ({ id, data }: { id: number, data: any }) => {
     const res = await axiosInstance.put(`/service-park/services/${id}`, data);
     return res.data;
 };
@@ -148,7 +149,7 @@ export const deleteService = async (id: number) => {
     return res.data;
 };
 
-export const updatePackage = async ({id, data}: { id: number, data: any }) => {
+export const updatePackage = async ({ id, data }: { id: number, data: any }) => {
     const res = await axiosInstance.put(`/service-park/packages/${id}`, data);
     return res.data;
 };

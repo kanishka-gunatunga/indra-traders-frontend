@@ -4,7 +4,6 @@
 
 import Modal from "@/components/Modal";
 import Header from "@/components/Header";
-import RedSpinner from "@/components/RedSpinner";
 import { TicketCard, TicketCardProps } from "@/components/TicketCard";
 import { TicketColumn } from "@/components/TicketColumn";
 import Image from "next/image";
@@ -12,55 +11,72 @@ import React, { useEffect, useState, useRef } from "react";
 import Select from "react-select";
 import { Role } from "@/types/role";
 import {
-    useSpareSales,
-    useSpareCreateSale,
-    useNearestReminders,
-    useUpdateSaleStatus,
-    useAssignToMe
-} from "@/hooks/useSparePartSales";
-import { useDebounce } from "@/hooks/useDebounce";
-import { useToast } from "@/hooks/useToast";
+    useCreateBydSale,
+    useUpdateBydSaleStatus,
+    useBydSales,
+    useNearestBydReminders,
+    useAssignBydSale
+} from "@/hooks/useBydSales";
 import {
     DndContext,
     DragEndEvent,
-    DragOverlay,
-    DragStartEvent,
-    PointerSensor,
     useSensor,
-    useSensors
+    useSensors,
+    PointerSensor,
+    DragStartEvent,
+    DragOverlay,
 } from "@dnd-kit/core";
 import { createPortal } from "react-dom";
+import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/Toast";
 import { useCurrentUser } from "@/utils/auth";
-import { z } from "zod";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { setPriority } from "node:os";
 import FormField from "@/components/FormField";
-import { MoreHorizontal, Phone, Mail, Eye, Search, LayoutGrid } from "lucide-react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import StatCard from "@/components/StatCard";
 import { Table, Dropdown, MenuProps } from "antd";
+import { MoreHorizontal, Phone, Mail, Eye, Search, LayoutGrid } from "lucide-react";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import StatCard from "@/components/StatCard";
+import RedSpinner from "@/components/RedSpinner";
+import {useDebounce} from "@/hooks/useDebounce";
 
 dayjs.extend(isBetween);
 
 type OptionType = { value: string; label: string };
 
-const vehicleMakes = [
-    { value: "Toyota", label: "Toyota" },
-    { value: "Nissan", label: "Nissan" },
-    { value: "Honda", label: "Honda" },
+const vehicleData = [
+    { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+    { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+    { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+    { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
 ];
 
-const vehicleModels = [
-    { value: "Corolla", label: "Corolla" },
-    { value: "Civic", label: "Civic" },
-    { value: "Navara", label: "Navara" },
+const uniqueModels = Array.from(new Set(vehicleData.map(v => v.model)));
+const bydModelOptions = uniqueModels.map(model => ({ value: model, label: model }));
+
+const colorOptions = [
+    { value: "Arctic White", label: "Arctic White" },
+    { value: "Jet Black", label: "Jet Black" },
+    { value: "Metal Grey", label: "Metal Grey" },
+    { value: "Crimson Red", label: "Crimson Red" },
 ];
-const partNos = [
-    { value: "BP-001", label: "BP-001" },
-    { value: "EC-005", label: "EC-005" },
-    { value: "BP-002", label: "BP-002" },
+
+const typeOptions = [
+    { value: "E-Hybrid", label: "E-Hybrid" },
+    { value: "Electric", label: "Electric" },
+];
+
+const manufactureYearOptions = [2020, 2021, 2022, 2023, 2024, 2025].map((year) => ({
+    value: year.toString(),
+    label: year.toString(),
+}));
+
+const upcomingEventsData = [
+    { customerName: "Rajitha Perera", date: "2024-10-25", eventType: "Test Drive" },
+    { customerName: "Saman Kumara", date: "2024-10-26", eventType: "Meeting" },
 ];
 
 type MappedTicket = {
@@ -71,9 +87,31 @@ type MappedTicket = {
     phone: string;
     email: string;
     date: string;
-    rawDate: string;
+    rawDate: Date;
     status: "New" | "Ongoing" | "Won" | "Lost";
 };
+
+
+const selfAssignSaleSchema = z.object({
+    customer_name: z.string().min(1, "Customer Name is required"),
+    contact_number: z.string().min(10, "Valid Contact Number is required"),
+    email: z.string().email("Invalid email").optional().or(z.literal("")),
+    city: z.string().min(1, "City is required"),
+    lead_source: z.string().min(1, "Lead Source is required"),
+
+    vehicle_model: z.string().min(1, "Vehicle model is required"),
+    manufacture_year: z.string().min(1, "Manufacture year is required"),
+    color: z.string().min(1, "Color is required"),
+    type: z.string().min(1, "Type is required"),
+    down_payment: z.string().optional(),
+    price_from: z.string().optional(),
+    price_to: z.string().optional(),
+    additional_note: z.string().optional(),
+
+    priority: z.number().optional(),
+});
+
+export type SelfAssignSaleFormData = z.infer<typeof selfAssignSaleSchema>;
 
 const mapStatus = (apiStatus: string): MappedTicket["status"] => {
     switch (apiStatus) {
@@ -113,26 +151,9 @@ const mapApiToTicket = (apiSale: any): MappedTicket => ({
     phone: apiSale.customer?.phone_number || "",
     email: apiSale.customer?.email || "",
     date: new Date(apiSale.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-    rawDate: apiSale.date,
+    rawDate: new Date(apiSale.date),
     status: mapStatus(apiSale.status),
 });
-
-
-const selfAssignSaleSchema = z.object({
-    customer_name: z.string().min(1, "Customer Name is required"),
-    contact_number: z.string().min(10, "Valid Contact Number is required"),
-    email: z.string().email("Invalid email").optional().or(z.literal("")),
-    city: z.string().min(1, "City is required"),
-    lead_source: z.string().min(1, "Lead Source is required"),
-    part_no: z.string().optional(),
-    vehicle_make: z.string().min(1, "Make is required"),
-    vehicle_model: z.string().min(1, "Model is required"),
-    remark: z.string().optional(),
-    priority: z.number().optional(),
-});
-
-export type SelfAssignSaleFormData = z.infer<typeof selfAssignSaleSchema>;
-
 
 export default function SalesDashboard() {
     const [role, setRole] = useState<Role>(
@@ -141,35 +162,63 @@ export default function SalesDashboard() {
 
     const user = useCurrentUser();
 
-    const userId = Number(user?.id) || 1;
+    const userId = Number(user?.id || 1);
     const userRole = user?.user_role;
     const isLevel1 = userRole === "SALES01";
 
     const [tickets, setTickets] = useState<MappedTicket[]>([]);
     const [isAddSaleModalOpen, setIsAddSaleModalOpen] = useState(false);
 
-
+    // Form States
+    const [saleDate, setSaleDate] = useState(new Date().toISOString().split("T")[0]);
+    const [customerId, setCustomerId] = useState("");
+    const [callAgentId, setCallAgentId] = useState(1);
+    const [vehicleMake, setVehicleMake] = useState("");
+    const [vehicleModel, setVehicleModel] = useState("");
+    const [partNo, setPartNo] = useState("");
+    const [yearOfManufacture, setYearOfManufacture] = useState("");
+    const [additionalNote, setAdditionalNote] = useState("");
+    const [selectedMake, setSelectedMake] = useState<OptionType | null>(null);
+    const [selectedModel, setSelectedModel] = useState<OptionType | null>(null);
+    const [selectedPartNo, setSelectedPartNo] = useState<OptionType | null>(null);
     const [priority, setPriority] = useState("P0");
 
+    // Price Range State
+    const [priceFrom, setPriceFrom] = useState<number | "">("");
+    const [priceTo, setPriceTo] = useState<number | "">("");
+
+    const handleIncrement = (
+        setter: React.Dispatch<React.SetStateAction<number | "">>,
+        value: number | ""
+    ) => {
+        setter(value === "" ? 1 : value + 1);
+    };
+
+    const handleDecrement = (
+        setter: React.Dispatch<React.SetStateAction<number | "">>,
+        value: number | ""
+    ) => {
+        setter(value === "" ? 0 : Math.max(0, value - 1));
+    };
+
+    // UI States
     const [isMounted, setIsMounted] = useState(false);
-
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
 
-    // Filter & View State
+    // Filter States
     const [searchTerm, setSearchTerm] = useState("");
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filterStatus, setFilterStatus] = useState("All Status");
     const [filterPriority, setFilterPriority] = useState("All Priority");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
-    const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
     const filterRef = useRef<HTMLDivElement>(null);
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     const { toast, showToast, hideToast } = useToast();
 
-    // Prepare filters for the hook
     const filters = React.useMemo(() => ({
         search: debouncedSearchTerm,
         priority: filterPriority === "All Priority" ? undefined : filterPriority,
@@ -178,12 +227,10 @@ export default function SalesDashboard() {
         status: filterStatus === "All Status" ? undefined : filterStatus
     }), [debouncedSearchTerm, filterPriority, dateFrom, dateTo, filterStatus]);
 
-    const { data: apiSales, isLoading } = useSpareSales(undefined, userId, userRole, filters);
-    const createSaleMutation = useSpareCreateSale();
-
-    const updateStatusMutation = useUpdateSaleStatus();
-    const assignMutation = useAssignToMe();
-
+    const { data: apiSales, isLoading, error } = useBydSales(undefined, userId, userRole);
+    const createSaleMutation = useCreateBydSale();
+    const updateStatusMutation = useUpdateBydSaleStatus();
+    const assignMutation = useAssignBydSale();
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -193,8 +240,7 @@ export default function SalesDashboard() {
         })
     );
 
-    const { data: reminderData, isLoading: reminderLoading, error: reminderError } = useNearestReminders(userId);
-
+    const { data: reminderData, isLoading: reminderLoading, error: reminderError } = useNearestBydReminders(userId);
 
     useEffect(() => {
         setIsMounted(true);
@@ -209,35 +255,56 @@ export default function SalesDashboard() {
         };
     }, []);
 
-
     useEffect(() => {
         if (apiSales) {
             setTickets(apiSales.map(mapApiToTicket));
         }
     }, [apiSales]);
 
-    // Derived State for Filters & Stats
-    // Direct use of tickets as they are already filtered from backend
+    // Derived States
+    const totalLeads = apiSales ? apiSales.length : 0;
+    const newLeads = apiSales ? apiSales.filter((s: any) => mapStatus(s.status) === "New").length : 0;
+    const wonDeals = apiSales ? apiSales.filter((s: any) => mapStatus(s.status) === "Won").length : 0;
+    const lostDeals = apiSales ? apiSales.filter((s: any) => mapStatus(s.status) === "Lost").length : 0;
+
     const filteredTickets = tickets;
 
-    const totalLeads = tickets.length;
-    const newLeads = tickets.filter(t => t.status === "New").length;
-    const wonDeals = tickets.filter(t => t.status === "Won").length;
-    const lostDeals = tickets.filter(t => t.status === "Lost").length;
+
+    // const filteredTickets = tickets.filter(ticket => {
+    //     const matchesSearch = searchTerm === "" ||
+    //         ticket.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //         ticket.phone.includes(searchTerm) ||
+    //         ticket.id.toLowerCase().includes(searchTerm.toLowerCase());
+    //
+    //     const matchesStatus = filterStatus === "All Status" || ticket.status === filterStatus;
+    //     const matchesPriority = filterPriority === "All Priority" || `P${ticket.priority}` === filterPriority;
+    //
+    //     let matchesDate = true;
+    //     if (dateFrom && dateTo) {
+    //         const ticketDate = dayjs(ticket.rawDate);
+    //         matchesDate = ticketDate.isBetween(dateFrom, dateTo, 'day', '[]');
+    //     } else if (dateFrom) {
+    //         matchesDate = dayjs(ticket.rawDate).isAfter(dayjs(dateFrom).subtract(1, 'day'));
+    //     } else if (dateTo) {
+    //         matchesDate = dayjs(ticket.rawDate).isBefore(dayjs(dateTo).add(1, 'day'));
+    //     }
+    //
+    //     return matchesSearch && matchesStatus && matchesPriority && matchesDate;
+    // });
 
     const allowedTransitions: Record<MappedTicket["status"], MappedTicket["status"][]> = {
         New: ["Ongoing"],
         Ongoing: ["Won", "Lost"],
-        Won: [],
-        Lost: [],
+        Won: ["Ongoing"],
+        Lost: ["Ongoing"],
     };
-
 
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string);
     };
 
-    const updateTicketStatus = (ticketId: string, newStatus: MappedTicket["status"]) => {
+    const handleStatusChange = (ticketId: string, newStatus: MappedTicket["status"]) => {
+        // Find ticket
         const ticketIndex = tickets.findIndex((t) => t.id === ticketId);
         if (ticketIndex === -1) return;
 
@@ -247,7 +314,6 @@ export default function SalesDashboard() {
         if (currentStatus === newStatus) return;
 
         const isAllowed = allowedTransitions[currentStatus]?.includes(newStatus);
-
         if (!isAllowed) {
             console.warn(`Invalid transition: ${currentStatus} -> ${newStatus}`);
             showToast("Invalid status transition", "error");
@@ -258,35 +324,24 @@ export default function SalesDashboard() {
         updatedTickets[ticketIndex] = { ...ticket, status: newStatus };
         setTickets(updatedTickets);
 
-
         if (currentStatus === "New" && newStatus === "Ongoing") {
             assignMutation.mutate(
+                { id: ticket.dbId, salesUserId: userId },
                 {
-                    id: ticket.dbId,
-                    userId: userId
-                },
-                {
-                    onSuccess: () => {
-                        showToast("Lead assigned successfully.", "success");
-                        console.log("Lead assigned successfully");
-                    },
+                    onSuccess: () => showToast("Lead assigned successfully.", "success"),
                     onError: (error) => {
                         console.error("Failed to assign lead:", error);
-                        setTickets(tickets);
+                        setTickets(tickets); // Revert
                         showToast("Failed to assign lead", "error");
                     }
                 }
             );
         } else {
             updateStatusMutation.mutate(
-                {
-                    id: ticket.dbId,
-                    status: mapStatusToApi(newStatus) as "WON" | "LOST"
-                },
+                { id: ticket.dbId, status: mapStatusToApi(newStatus) },
                 {
                     onError: () => {
-                        // Revert on failure
-                        setTickets(tickets);
+                        setTickets(tickets); // Revert
                         showToast("Failed to update status", "error");
                     }
                 }
@@ -296,38 +351,27 @@ export default function SalesDashboard() {
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
-
         setActiveId(null);
-
         if (!over) return;
 
         const ticketId = active.id as string;
         const newStatus = over.id as MappedTicket["status"];
 
-        updateTicketStatus(ticketId, newStatus);
-    };
-
-    const handleStatusChange = (ticketId: string, newStatus: MappedTicket["status"]) => {
-        updateTicketStatus(ticketId, newStatus);
+        handleStatusChange(ticketId, newStatus);
     };
 
     const activeTicket = tickets.find((t) => t.id === activeId);
 
-    const columns: MappedTicket["status"][] = [
-        "New",
-        "Ongoing",
-        "Won",
-        "Lost",
-    ];
-
+    const columns: MappedTicket["status"][] = ["New", "Ongoing", "Won", "Lost"];
 
     const {
         register,
         handleSubmit,
         reset,
-        formState: { errors, isSubmitting }
+        formState: { errors, isSubmitting },
     } = useForm<SelfAssignSaleFormData>({
-        resolver: zodResolver(selfAssignSaleSchema)
+        resolver: zodResolver(selfAssignSaleSchema),
+        defaultValues: { type: "", additional_note: "", email: "" }
     });
 
     const handleSelfAssignSubmit = (data: SelfAssignSaleFormData) => {
@@ -337,14 +381,18 @@ export default function SalesDashboard() {
             is_self_assigned: true,
             date: new Date().toISOString(),
             priority: data.priority || parseInt(priority.replace('P', '')) || 0,
+            manufacture_year: parseInt(data.manufacture_year, 10),
+            down_payment: data.down_payment ? parseFloat(data.down_payment) : 0,
+            price_from: data.price_from ? parseFloat(data.price_from) : 0,
+            price_to: data.price_to ? parseFloat(data.price_to) : 0,
         };
 
         createSaleMutation.mutate(payload, {
             onSuccess: () => {
                 showToast("Lead created and assigned successfully!", "success");
                 setIsAddSaleModalOpen(false);
+                setPriority("P0");
                 reset();
-                setPriority("P0")
             },
             onError: (err) => {
                 console.error(err);
@@ -375,7 +423,10 @@ export default function SalesDashboard() {
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Lead ID <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Lead ID <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'id',
@@ -386,7 +437,10 @@ export default function SalesDashboard() {
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Name <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Name <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'user',
@@ -404,14 +458,18 @@ export default function SalesDashboard() {
             render: (_: any, record: MappedTicket) => (
                 <div className="flex flex-col">
                     <span className="text-gray-900 font-medium text-sm">{record.phone}</span>
-                    <span className="text-gray-500 text-xs">{(record as any).email || `${record.user.toLowerCase().replace(" ", ".")}@email.com`}</span>
+                    <span
+                        className="text-gray-500 text-xs">{(record as any).email || `${record.user.toLowerCase().replace(" ", ".")}@email.com`}</span>
                 </div>
             )
         },
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Status <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Status <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'status',
@@ -433,7 +491,8 @@ export default function SalesDashboard() {
                 // If no allowed transitions, just show pill
                 if (!menuItems.length) {
                     return (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-between w-[110px] gap-1 opacity-70 cursor-not-allowed ${colorClass}`}>
+                        <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-between w-[110px] gap-1 opacity-70 cursor-not-allowed ${colorClass}`}>
                             {status}
                         </span>
                     )
@@ -441,9 +500,13 @@ export default function SalesDashboard() {
 
                 return (
                     <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-                        <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-between w-[110px] gap-1 cursor-pointer transition-all hover:brightness-95 ${colorClass}`}>
+                        <div
+                            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-between w-[110px] gap-1 cursor-pointer transition-all hover:brightness-95 ${colorClass}`}>
                             {status}
-                            <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
                         </div>
                     </Dropdown>
                 );
@@ -453,14 +516,17 @@ export default function SalesDashboard() {
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Priority <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Priority <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'priority',
             key: 'priority',
             render: (priority: number) => {
                 const priorityBadges = [
-                    "bg-[#FFDDD1] text-[#B54708]", // P0 
+                    "bg-[#FFDDD1] text-[#B54708]", // P0
                     "bg-[#FFEFD1] text-[#B54708]", // P1
                     "bg-[#E9D7FE] text-[#6941C6]", // P2
                     "bg-[#D1E9FF] text-[#026AA2]", // P3
@@ -468,7 +534,8 @@ export default function SalesDashboard() {
                 const badgeStyle = priorityBadges[priority] || priorityBadges[3];
 
                 return (
-                    <span className={`px-2 py-0.5 rounded-[6px] text-xs font-medium border border-transparent ${badgeStyle}`}>
+                    <span
+                        className={`px-2 py-0.5 rounded-[6px] text-xs font-medium border border-transparent ${badgeStyle}`}>
                         P{priority}
                     </span>
                 );
@@ -478,7 +545,10 @@ export default function SalesDashboard() {
         {
             title: (
                 <div className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase">
-                    Date <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    Date <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
                 </div>
             ),
             dataIndex: 'date',
@@ -504,32 +574,6 @@ export default function SalesDashboard() {
         }
     ];
 
-
-
-
-    const upcomingEventsData = [
-        {
-            customerName: "Emily Charlotte",
-            date: "March 15",
-            eventType: "BirthDay",
-        },
-        {
-            customerName: "Albert Flore",
-            date: "March 16",
-            eventType: "Reminder",
-        },
-        {
-            customerName: "Guy Hawkins",
-            date: "May 12",
-            eventType: "Reminder",
-        },
-        {
-            customerName: "Wade Warren",
-            date: "May 6",
-            eventType: "BirthDay",
-        },
-    ];
-
     if (isLoading) {
         return (
             <div className="h-screen flex items-center justify-center">
@@ -538,12 +582,11 @@ export default function SalesDashboard() {
         );
     }
 
-
     if (!isMounted) return null;
 
     return (
         <div
-            className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
+            className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden pb-10">
 
             <Toast
                 message={toast.message}
@@ -556,15 +599,19 @@ export default function SalesDashboard() {
                 <Header
                     name={user?.full_name || "Sophie Eleanor"}
                     location={user?.branch || "Bambalapitiya"}
-                    title="Indra Motor Spare Sales Dashboard"
+                    title="BYD Sales Dashboard"
                 />
 
                 {/* Stats Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard title="Total Leads" count={totalLeads} percentage="+12% from last month" icon="users" color="bg-blue-500" />
-                    <StatCard title="New Leads" count={newLeads} percentage="+8% from last week" icon="trending-up" color="bg-orange-500" />
-                    <StatCard title="Won Deals" count={wonDeals} percentage="31.5% conversion rate" icon="check-circle" color="bg-green-500" />
-                    <StatCard title="Lost Deals" count={lostDeals} percentage="-3% from last month" icon="x-circle" color="bg-red-500" />
+                    <StatCard title="Total Leads" count={totalLeads} percentage="+12% from last month" icon="users"
+                        color="bg-blue-500" />
+                    <StatCard title="New Leads" count={newLeads} percentage="+8% from last week" icon="trending-up"
+                        color="bg-orange-500" />
+                    <StatCard title="Won Deals" count={wonDeals} percentage="31.5% conversion rate" icon="check-circle"
+                        color="bg-green-500" />
+                    <StatCard title="Lost Deals" count={lostDeals} percentage="-3% from last month" icon="x-circle"
+                        color="bg-red-500" />
                 </div>
 
                 {/* Controls Section */}
@@ -572,7 +619,9 @@ export default function SalesDashboard() {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         {/* Search */}
                         <div className="relative w-full flex-1">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                            <Search
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                                size={20} />
                             <input
                                 type="text"
                                 placeholder="Search leads by name, phone, or ID..."
@@ -585,17 +634,26 @@ export default function SalesDashboard() {
                         <div className="flex items-center gap-3 w-full md:w-auto">
                             {/* Filter Toggle */}
                             <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsFilterOpen(!isFilterOpen);
-                                }}
+                                onClick={() => setIsFilterOpen(!isFilterOpen)}
                                 className={`flex items-center cursor-pointer gap-2 px-6 py-3 border rounded-[20px] transition-colors ${isFilterOpen
                                     ? 'bg-red-50 border-red-200 text-red-700'
                                     : 'bg-white border-[#E0E0E0] text-[#344054] hover:bg-gray-50'
                                     }`}
                             >
                                 <div className="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                        strokeLinejoin="round">
+                                        <line x1="4" y1="21" x2="4" y2="14" />
+                                        <line x1="4" y1="10" x2="4" y2="3" />
+                                        <line x1="12" y1="21" x2="12" y2="12" />
+                                        <line x1="12" y1="8" x2="12" y2="3" />
+                                        <line x1="20" y1="21" x2="20" y2="16" />
+                                        <line x1="20" y1="12" x2="20" y2="3" />
+                                        <line x1="1" y1="14" x2="7" y2="14" />
+                                        <line x1="9" y1="8" x2="15" y2="8" />
+                                        <line x1="17" y1="16" x2="23" y2="16" />
+                                    </svg>
                                     <span className="font-medium">Filters</span>
                                 </div>
                             </button>
@@ -614,7 +672,8 @@ export default function SalesDashboard() {
 
                     {/* Expandable Filter Section */}
                     {isFilterOpen && (
-                        <div ref={filterRef} className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div
+                            className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-medium text-gray-500">Status</label>
@@ -630,8 +689,13 @@ export default function SalesDashboard() {
                                             <option value="Won">Won</option>
                                             <option value="Lost">Lost</option>
                                         </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                        <div
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                                strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="m6 9 6 6 6-6" />
+                                            </svg>
                                         </div>
                                     </div>
                                 </div>
@@ -649,8 +713,13 @@ export default function SalesDashboard() {
                                             <option value="P2">P2</option>
                                             <option value="P3">P3</option>
                                         </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                        <div
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                                                strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="m6 9 6 6 6-6" />
+                                            </svg>
                                         </div>
                                     </div>
                                 </div>
@@ -677,8 +746,9 @@ export default function SalesDashboard() {
                     )}
                 </div>
 
-                {/* Leads Section */}
-                <section className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] p-6 min-h-[500px]">
+                {/* Content Section */}
+                <section
+                    className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] p-6 min-h-[500px]">
                     <div className="w-full flex justify-between items-center mb-6 px-4">
                         <div className="flex flex-col">
                             <span className="font-semibold text-[22px]">
@@ -702,7 +772,16 @@ export default function SalesDashboard() {
                                 onClick={() => setViewMode("table")}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-medium transition-all ${viewMode === "table" ? "bg-red-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                    strokeLinejoin="round">
+                                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                </svg>
                                 Table
                             </button>
                         </div>
@@ -715,27 +794,22 @@ export default function SalesDashboard() {
                                     <TicketColumn
                                         key={col}
                                         title={col}
-                                        route={"/sales-agent/spare-parts"}
+                                        route={"/sales-agent/byd-sales"}
                                         tickets={filteredTickets.filter((t) => t.status === col)}
                                     />
                                 ))}
                             </div>
-
                             {isMounted && typeof document !== "undefined"
                                 ? createPortal(
                                     <DragOverlay>
                                         {activeTicket ? (
-                                            <TicketCard
-                                                {...activeTicket}
-                                                isOverlay={true}
-                                            />
+                                            <TicketCard {...activeTicket} isOverlay={true} />
                                         ) : null}
                                     </DragOverlay>,
                                     document.body
                                 )
                                 : null
                             }
-
                         </DndContext>
                     ) : (
                         <div className="flex flex-col gap-6">
@@ -765,6 +839,8 @@ export default function SalesDashboard() {
 
                                     {Array.from({ length: Math.min(5, totalPages || 1) }).map((_, idx) => {
                                         const pageNum = idx + 1;
+                                        // Logic to show near current page would go here for many pages
+                                        // For now, simpler list
                                         return (
                                             <button
                                                 key={pageNum}
@@ -790,12 +866,12 @@ export default function SalesDashboard() {
                             </div>
                         </div>
                     )}
-
                 </section>
 
-                {/* Next action and Upcomming events */}
+                {/* Next action and Upcoming events */}
                 <section className="relative flex flex-wrap w-full mb-5 gap-3 justify-center items-center">
-                    <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
+                    <div
+                        className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
                         <span className="font-semibold text-[22px]">Next Action</span>
                         <div className="h-full mt-5 overflow-y-auto no-scrollbar pr-2">
                             {/* Table header */}
@@ -826,7 +902,8 @@ export default function SalesDashboard() {
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
+                    <div
+                        className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
                         <span className="font-semibold text-[22px]">Upcoming Events</span>
                         <div className="h-full mt-5 overflow-y-auto no-scrollbar pr-2">
                             {/* Table header */}
@@ -858,27 +935,22 @@ export default function SalesDashboard() {
                         </div>
                     </div>
                 </section>
+
             </main>
-
-            {/* Add Lead Modal */}
-
-
-
 
             {isAddSaleModalOpen && (
                 <Modal
                     title="Add New Sale"
                     onClose={() => setIsAddSaleModalOpen(false)}
-                    isPriorityAvailable={true}
-                    priority={priority}
-                    onPriorityChange={setPriority}
                     actionButton={{
                         label: isSubmitting ? "Adding..." : "Add",
                         onClick: handleSubmit(handleSelfAssignSubmit),
-                        // disabled: createSaleMutation.isPending,
                     }}
+                    priority={priority}
+                    onPriorityChange={setPriority}
+                    isPriorityAvailable={true}
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
                         <FormField label="Customer Name" placeholder="Customer Name"
                             register={register("customer_name")} error={errors.customer_name} />
                         <FormField label="Contact No" placeholder="Contact No" register={register("contact_number")}
@@ -886,7 +958,8 @@ export default function SalesDashboard() {
                         <FormField label="Email" placeholder="Email" register={register("email")} error={errors.email} />
                         <FormField label="City" placeholder="City" register={register("city")} error={errors.city} />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mt-5">
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
                         <FormField
                             label="Lead Source"
                             type="select"
@@ -897,39 +970,156 @@ export default function SalesDashboard() {
                             register={register("lead_source")}
                             error={errors.lead_source}
                         />
-                        {/* Make & Model */}
                         <FormField
-                            label="Vehicle Make"
-                            type="select"
-                            isIcon={true} // Magnifying glass icon
-                            options={vehicleMakes}
-                            register={register("vehicle_make")}
-                            error={errors.vehicle_make}
-                        />
-                        <FormField
-                            label="Vehicle Model"
+                            label="BYD Model"
                             type="select"
                             isIcon={true}
-                            options={vehicleModels}
+                            options={bydModelOptions}
                             register={register("vehicle_model")}
                             error={errors.vehicle_model}
                         />
                         <FormField
-                            label="Part No"
+                            label="Manufacture Year"
                             type="select"
                             isIcon={true}
-                            options={partNos}
-                            register={register("part_no")}
-                            error={errors.part_no}
+                            options={manufactureYearOptions}
+                            register={register("manufacture_year")}
+                            error={errors.manufacture_year}
                         />
+                        <FormField
+                            label="Color"
+                            type="select"
+                            options={colorOptions}
+                            register={register("color")}
+                            error={errors.color}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full mb-6">
+                        <FormField
+                            label="Type"
+                            type="select"
+                            options={typeOptions}
+                            register={register("type")}
+                            error={errors.type}
+                        />
+                        <FormField
+                            label="Down Payment"
+                            type="number"
+                            placeholder="Enter Down Payment"
+                            register={register("down_payment")}
+                            error={errors.down_payment}
+                        />
+
+                        <div className="col-span-2 flex flex-col space-y-2 font-medium text-gray-900">
+                            <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
+                                Price Range
+                            </span>
+
+                            <div className="flex gap-4">
+                                {/* Price From */}
+                                <div className="relative w-1/2">
+                                    <input
+                                        type="number"
+                                        placeholder="Price From"
+                                        value={priceFrom}
+                                        {...register("price_from", {
+                                            onChange: (e) =>
+                                                setPriceFrom(e.target.value === "" ? "" : Number(e.target.value)),
+                                        })}
+                                        className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                    />
+                                    {errors.price_from && <span
+                                        className="text-red-600 text-sm">{errors.price_from.message}</span>}
+                                    <div
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleIncrement(setPriceFrom, priceFrom)}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <svg
+                                                width="10"
+                                                height="6"
+                                                viewBox="0 0 10 6"
+                                                fill="none"
+                                            >
+                                                <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDecrement(setPriceFrom, priceFrom)}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <svg
+                                                width="10"
+                                                height="6"
+                                                viewBox="0 0 10 6"
+                                                fill="none"
+                                            >
+                                                <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Price To */}
+                                <div className="relative w-1/2">
+                                    <input
+                                        type="number"
+                                        placeholder="Price To"
+                                        value={priceTo}
+                                        {...register("price_to", {
+                                            onChange: (e) =>
+                                                setPriceTo(e.target.value === "" ? "" : Number(e.target.value)),
+                                        })}
+                                        className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                    />
+                                    {errors.price_to && <span
+                                        className="text-red-600 text-sm">{errors.price_to.message}</span>}
+                                    <div
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleIncrement(setPriceTo, priceTo)}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <svg
+                                                width="10"
+                                                height="6"
+                                                viewBox="0 0 10 6"
+                                                fill="none"
+                                            >
+                                                <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDecrement(setPriceTo, priceTo)}
+                                            className="p-1 hover:bg-gray-200 rounded"
+                                        >
+                                            <svg
+                                                width="10"
+                                                height="6"
+                                                viewBox="0 0 10 6"
+                                                fill="none"
+                                            >
+                                                <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     {/* Additional Note */}
                     <div className="w-full">
-                        <label className="block my-2 font-medium text-[#1D1D1D] text-[17px] montserrat">Remark</label>
+                        <label className="text-[#1D1D1D] font-medium text-[17px] montserrat">Additional Note</label>
                         <textarea
-                            {...register("remark")}
+                            {...register("additional_note")}
                             className="w-full h-[100px] rounded-[20px] bg-[#FFFFFF80] border border-gray-300 p-4 focus:outline-none"
-                            placeholder="Remark"
+                            placeholder="Additional Note"
                         />
                     </div>
                 </Modal>
@@ -937,4 +1127,3 @@ export default function SalesDashboard() {
         </div>
     );
 }
-

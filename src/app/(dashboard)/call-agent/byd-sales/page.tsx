@@ -6,7 +6,7 @@ import Image from "next/image";
 import React, { useState, useEffect, useMemo } from "react";
 import Modal from "@/components/Modal";
 import { z } from "zod";
-import { useCreateVehicleSale } from "@/hooks/useVehicleSales";
+import { useCreateBydSale, useCreateBydUnavailableSale } from "@/hooks/useBydSales";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import FormField from "@/components/FormField";
@@ -24,11 +24,11 @@ const vehicleSaleSchema = z.object({
     date: z.string().min(1, "Date is required"),
     customer_id: z.string().min(1, "Customer ID is required"),
     call_agent_id: z.number().int().positive("Call Agent ID is required"),
-    vehicle_make: z.string().min(1, "Vehicle make is required"),
     vehicle_model: z.string().min(1, "Vehicle model is required"),
     manufacture_year: z.string().min(1, "Manufacture year is required"),
-    transmission: z.string().min(1, "Transmission is required"),
-    fuel_type: z.string().min(1, "Fuel type is required"),
+    // transmission: z.string().min(1, "Transmission is required"),
+    color: z.string().min(1, "Color is required"),
+    type: z.string().min(1, "Type is required"),
     down_payment: z.string().optional(),
     price_from: z.string().optional(),
     price_to: z.string().optional(),
@@ -49,22 +49,33 @@ const vehicleSaleSchema = z.object({
 export type VehicleSaleFormData = z.infer<typeof vehicleSaleSchema>;
 
 const unavailableVehicleSaleSchema = z.object({
-    vehicle_make: z.string().min(1, "Vehicle make is required"),
-    vehicle_model: z.string().min(1, "Vehicle model is required"),
-    manufacture_year: z.string().min(1, "Manufacture year is required"),
-    transmission: z.string().min(1, "Transmission is required"),
-    fuel_type: z.string().min(1, "Fuel type is required"),
+    model: z.string().min(1, "Vehicle model is required"),
+    manufacture_year: z.string().optional(),
+    color: z.string().optional(),
+    type: z.string().optional(),
     down_payment: z.string().optional(),
     price_from: z.string().optional(),
     price_to: z.string().optional(),
 });
+
+const filterSchema = z.object({
+    byd_model: z.string().optional(),
+    manufacture_year: z.string().optional(),
+    color: z.string().optional(),
+    type: z.string().optional(),
+    down_payment: z.string().optional(),
+    price_from: z.string().optional(),
+    price_to: z.string().optional(),
+});
+
+export type FilterFormData = z.infer<typeof filterSchema>;
 
 export type UnavailableVehicleSaleFormData = z.infer<
     typeof unavailableVehicleSaleSchema
 >;
 
 
-const VehicleSales = () => {
+const BydSales = () => {
 
     const user = useCurrentUser();
     const userId = user?.id;
@@ -73,10 +84,10 @@ const VehicleSales = () => {
 
     const { data: banks = [], isLoading: isBanksLoading } = useActiveBanks();
 
-    const { mutate: createSale, isPending } = useCreateVehicleSale();
+    const { mutate: createSale, isPending } = useCreateBydSale();
     // const [submitSuccess, setSubmitSuccess] = useState(false);
 
-    const { mutate: createUnavailableSale, isPending: isUnavailablePending } = useCreateUnavailableVehicleSale();
+    const { mutate: createUnavailableSale, isPending: isUnavailablePending } = useCreateBydUnavailableSale();
     const [unavailableSubmitSuccess, setUnavailableSubmitSuccess] = useState(false);
 
     const [showVehicleDetailsAndLoyaltyAndPromotions, setShowVehicleDetailsAndLoyaltyAndPromotions] = useState(false);
@@ -103,11 +114,11 @@ const VehicleSales = () => {
             call_agent_id: Number(userId) || 1,
             customer_id: "CUS1760976040167",
             enable_leasing: false,
-            vehicle_make: "",
             vehicle_model: "",
             manufacture_year: "",
-            transmission: "",
-            fuel_type: "",
+            // transmission: "",
+            color: "",
+            type: "",
             down_payment: "",
             price_from: "",
             price_to: "",
@@ -125,16 +136,54 @@ const VehicleSales = () => {
     } = useForm<UnavailableVehicleSaleFormData>({
         resolver: zodResolver(unavailableVehicleSaleSchema),
         defaultValues: {
-            vehicle_make: "",
-            vehicle_model: "",
+            model: "",
             manufacture_year: "",
-            transmission: "",
-            fuel_type: "",
+            color: "",
+            type: "",
             down_payment: "",
             price_from: "",
             price_to: "",
         },
     });
+
+    const {
+        register: registerFilter,
+        handleSubmit: handleSubmitFilter,
+        reset: resetFilter,
+        control: controlFilter,
+    } = useForm<FilterFormData>({
+        defaultValues: {
+            byd_model: "",
+            manufacture_year: "",
+            color: "",
+            type: "",
+            down_payment: "",
+            price_from: "",
+            price_to: "",
+        }
+    });
+
+    const vehicleData = [
+        { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+        { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+        { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+        { model: 'SEALION 6', year: 2025, type: 'E-Hybrid', color: 'Arctic White', price: 'Rs 75,300,000' },
+    ];
+
+    const uniqueModels = Array.from(new Set(vehicleData.map(v => v.model)));
+    const bydModelOptions = uniqueModels.map(model => ({ value: model, label: model }));
+
+    const colorOptions = [
+        { value: "Arctic White", label: "Arctic White" },
+        { value: "Jet Black", label: "Jet Black" },
+        { value: "Metal Grey", label: "Metal Grey" },
+        { value: "Crimson Red", label: "Crimson Red" },
+    ];
+
+    const typeOptions = [
+        { value: "E-Hybrid", label: "E-Hybrid" },
+        { value: "Electric", label: "Electric" },
+    ];
 
     const onSubmit = (data: VehicleSaleFormData) => {
         const submissionData = {
@@ -149,12 +198,12 @@ const VehicleSales = () => {
         createSale(submissionData, {
             onSuccess: () => {
                 // setSubmitSuccess(true);
-                showToast("Vehicle sale created successfully", "success");
+                showToast("BYD sale created successfully", "success");
                 reset();
                 // setTimeout(() => setSubmitSuccess(false), 3000);
             },
             onError: (error) => {
-                console.error("Error creating vehicle sale:", error);
+                console.error("Error creating BYD sale:", error);
             },
         });
     };
@@ -162,11 +211,13 @@ const VehicleSales = () => {
     const onUnavailableSubmit = (data: UnavailableVehicleSaleFormData) => {
         const submissionData = {
             call_agent_id: Number(userId) || 1,
-            ...data,
-            manufacture_year: parseInt(data.manufacture_year, 10),
-            down_payment: data.down_payment ? parseFloat(data.down_payment) : 0,
-            price_from: data.price_from ? parseFloat(data.price_from) : 0,
-            price_to: data.price_to ? parseFloat(data.price_to) : 0,
+            vehicle_model: data.model,
+            manufacture_year: data.manufacture_year ? parseInt(data.manufacture_year, 10) : null,
+            color: data.color,
+            type: data.type,
+            down_payment: data.down_payment ? parseFloat(data.down_payment) : null,
+            price_from: data.price_from ? parseFloat(data.price_from) : null,
+            price_to: data.price_to ? parseFloat(data.price_to) : null,
         };
         createUnavailableSale(submissionData, {
             onSuccess: () => {
@@ -318,87 +369,25 @@ const VehicleSales = () => {
 
     const stockData = [
         {
-            physical: 'A Silver Honda Civic Ex 10,000km mileage',
-            onOrder: '2025 A Silver Honda Civic Ex 10,000km mileage',
-            ftProgressLevel: '2025 A Silver Honda Civic Ex 10,000km mileage',
-            productionLine: '2024 Honda Civic Ex Techpack',
+            physical: 'BYD SEALION 6 E-Hybrid Smoke Grey',
+            onOrder: 'BYD SEALION 6 E-Hybrid Arctic White',
         },
         {
-            physical: 'A Silver Honda Civic Ex 12,000km mileage',
-            onOrder: '2025 A Red Honda Civic Ex 10,000km mileage',
-            ftProgressLevel: '2025 A Silver Honda Civic Ex 10,000km mileage',
-            productionLine: '2024 Honda Civic SR',
+            physical: 'BYD SEALION 6 E-Hybrid Crimson Red',
+            onOrder: 'BYD SEALION 6 E-Hybrid Ocean Blue',
         },
         {
-            physical: 'A Silver Honda Civic Ex 15,000km mileage',
-            onOrder: '2025 A Gray Honda Civic Ex 10,000km mileage',
-            ftProgressLevel: '2025 A Silver Honda Civic Ex 10,000km mileage',
-            productionLine: '2024 Honda Civic SE',
+            physical: 'BYD SEALION 6 E-Hybrid Desert Sand',
+            onOrder: 'BYD SEALION 6 E-Hybrid Forest Green',
         },
         {
-            physical: 'A Silver Honda Civic Ex 18,000km mileage',
-            onOrder: '2025 A White Honda Civic Ex 10,000km mileage',
-            ftProgressLevel: '2025 A Silver Honda Civic Ex 10,000km mileage',
-            productionLine: '2024 Honda Civic Ex',
-        },
-    ];
-
-    const compareData = [
-        {
-            source: 'Ikman.lk',
-            price: 'Rs. 21,500,000',
-            year: '2025',
-            mileage: '7000 km',
-            color: 'Rallye Red',
-            owners: '2',
-            vehicle_no: 'CAR-6543',
-            grade: 'Sport Touring Hybrid',
-        },
-        {
-            source: 'Ikman.lk',
-            price: 'Rs. 21,500,000',
-            year: '2025',
-            mileage: '7000 km',
-            color: 'Rallye Red',
-            owners: '2',
-            vehicle_no: 'CAR-6543',
-            grade: 'Sport Touring Hybrid',
-        },
-        {
-            source: 'Ikman.lk',
-            price: 'Rs. 21,500,000',
-            year: '2025',
-            mileage: '7000 km',
-            color: 'Rallye Red',
-            owners: '2',
-            vehicle_no: 'CAR-6543',
-            grade: 'Sport Touring Hybrid',
-        },
-        {
-            source: 'Ikman.lk',
-            price: 'Rs. 21,500,000',
-            year: '2025',
-            mileage: '7000 km',
-            color: 'Rallye Red',
-            owners: '2',
-            vehicle_no: 'CAR-6543',
-            grade: 'Sport Touring Hybrid',
+            physical: 'BYD SEALION 6 E-Hybrid Midnight Black',
+            onOrder: 'BYD SEALION 6 E-Hybrid Silver Metallic',
         },
     ];
 
 
 
-    const vehicleData = [
-        { make: 'Nissan', model: 'GT-R (R35)', year: 2020, transmission: 'Automatic', price: 'Rs 75,300,000' },
-        { make: 'Toyota', model: 'Supra (A90)', year: 2021, transmission: 'Automatic', price: 'Rs 54,500,000' },
-        { make: 'Ford', model: 'Mustang', year: 2020, transmission: 'Manual', price: 'Rs 40,000,000' },
-        { make: 'Chevrolet', model: 'Corvette (C8)', year: 2021, transmission: 'Automatic', price: 'Rs 75,000,000' },
-        { make: 'Porsche', model: '911 Carrera', year: 2020, transmission: 'Automatic', price: 'Rs 55,000,000' },
-        { make: 'Mazda', model: 'MX-5 Miata', year: 2021, transmission: 'Manual', price: 'Rs 35,000,000' },
-        { make: 'BMW', model: 'M4', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000' },
-        { make: 'Subaru', model: 'WRX STI', year: 2020, transmission: 'Manual', price: 'Rs 45,000,000' },
-        { make: 'Honda', model: 'NSX', year: 2021, transmission: 'Automatic', price: 'Rs 80,000,000' },
-    ];
 
     const loyaltyData = [
         {
@@ -441,14 +430,13 @@ const VehicleSales = () => {
     };
 
 
-    const vehicleMakeOptions = vehicleData.map((vehicle) => ({
-        value: vehicle.make,
-        label: vehicle.make,
-    }));
 
-    const vehicleModelOptions = vehicleData.map((vehicle) => ({
-        value: vehicle.model,
-        label: vehicle.model,
+
+    const vehicleModelOptions = Array.from(
+        new Set(vehicleData.map((vehicle) => vehicle.model))
+    ).map((model) => ({
+        value: model,
+        label: model,
     }));
 
 
@@ -504,53 +492,139 @@ const VehicleSales = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make"
-                                    isIcon={true} />
-                                <VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"
-                                    isIcon={true} />
-                                <VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"
-                                    isIcon={true} />
-                                <VerificationDropdown label="Transmission" placeholder="Select Transmission"
-                                    isIcon={false} />
-                                <VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type" isIcon={false} />
-                                <VerificationDropdown label="Down Payment" placeholder="Enter Down Payment"
-                                    isIcon={false} />
-                                <div>
-                                    <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                        <span
-                                            className="text-[#1D1D1D] font-medium text-[17px] montserrat">Price Range</span>
-                                        <div className="flex flex-row gap-4">
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Price From"
-                                                    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                                <svg
-                                                    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"
-                                                    width="10" height="6"
-                                                    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                        fill="#575757" />
-                                                </svg>
-                                            </div>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Price To"
-                                                    className={`w-[150px] px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                                                />
-                                                <svg
-                                                    className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"
-                                                    width="10" height="6"
-                                                    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                        fill="#575757" />
-                                                </svg>
+                                <FormField
+                                    label="BYD Model"
+                                    placeholder="Select BYD Model"
+                                    isIcon={true}
+                                    type="select"
+                                    options={bydModelOptions}
+                                    register={registerFilter("byd_model")}
+                                />
+                                <FormField
+                                    label="Manufacture Year"
+                                    placeholder="Manufacture Year"
+                                    isIcon={true}
+                                    type="select"
+                                    options={manufactureYearOptions}
+                                    register={registerFilter("manufacture_year")}
+                                />
+                                <FormField
+                                    label="Color"
+                                    placeholder="Select Color"
+                                    isIcon={false}
+                                    type="select"
+                                    options={colorOptions}
+                                    register={registerFilter("color")}
+                                />
+                                <FormField
+                                    label="Type"
+                                    placeholder="Select Type"
+                                    isIcon={false}
+                                    type="select"
+                                    options={typeOptions}
+                                    register={registerFilter("type")}
+                                />
+                                <FormField
+                                    label="Down Payment"
+                                    placeholder="Enter Down Payment"
+                                    isIcon={false}
+                                    type="text"
+                                    register={registerFilter("down_payment")}
+                                />
+
+                                <div className="flex flex-col space-y-2 font-medium text-gray-900">
+                                    <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">
+                                        Price Range
+                                    </span>
+
+                                    <div className="flex gap-4">
+                                        {/* Price From */}
+                                        <div className="relative w-1/2">
+                                            <input
+                                                type="number"
+                                                placeholder="Price From"
+                                                value={priceFrom}
+                                                onChange={(e) => setPriceFrom(e.target.value === "" ? "" : Number(e.target.value))}
+                                                className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                            />
+                                            <div
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleIncrement(setPriceFrom, priceFrom)}
+                                                    className="p-1 hover:bg-gray-200 rounded"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="6"
+                                                        viewBox="0 0 10 6"
+                                                        fill="none"
+                                                    >
+                                                        <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDecrement(setPriceFrom, priceFrom)}
+                                                    className="p-1 hover:bg-gray-200 rounded"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="6"
+                                                        viewBox="0 0 10 6"
+                                                        fill="none"
+                                                    >
+                                                        <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
-                                    </label>
+
+                                        {/* Price To */}
+                                        <div className="relative w-1/2">
+                                            <input
+                                                type="number"
+                                                placeholder="Price To"
+                                                value={priceTo}
+                                                onChange={(e) => setPriceTo(e.target.value === "" ? "" : Number(e.target.value))}
+                                                className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700 appearance-none"
+                                            />
+                                            <div
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleIncrement(setPriceTo, priceTo)}
+                                                    className="p-1 hover:bg-gray-200 rounded"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="6"
+                                                        viewBox="0 0 10 6"
+                                                        fill="none"
+                                                    >
+                                                        <path d="M0 6L5 0L10 6H0Z" fill="#575757" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDecrement(setPriceTo, priceTo)}
+                                                    className="p-1 hover:bg-gray-200 rounded"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="6"
+                                                        viewBox="0 0 10 6"
+                                                        fill="none"
+                                                    >
+                                                        <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
+
                             </div>
                         </div>
 
@@ -568,7 +642,7 @@ const VehicleSales = () => {
                                     <div>
                                         <button
                                             onClick={() => setIsVehicleAvailabilityModalOpen(true)}
-                                            className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
+                                            className="ml-auto text-white text-base font-medium rounded-full">
                                             <Image src="/dashboard/availability.svg" alt="availability" height={36}
                                                 width={36} className="h-12 w-12" />
                                         </button>
@@ -582,18 +656,14 @@ const VehicleSales = () => {
                                             <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
                                                 <th className="py-5 px-4 text-left">Physical</th>
                                                 <th className="py-5 px-4 text-left">On Order</th>
-                                                <th className="py-5 px-4 text-left">FT - Progress Level</th>
-                                                <th className="py-5 px-4 text-left">Production Line</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {stockData.map((item, index) => (
                                                 <tr key={index} onClick={handleStockItemClick}
                                                     className="text-lg font-medium text-[#4353FF] underline">
-                                                    <td className="py-4 px-4 cursor-pointer"><a>{item.physical}</a></td>
-                                                    <td className="py-4 px-4 cursor-pointer">{item.onOrder}</td>
-                                                    <td className="py-4 px-4 cursor-pointer">{item.ftProgressLevel}</td>
-                                                    <td className="py-4 px-4 cursor-pointer">{item.productionLine}</td>
+                                                    <td className="py-4 px-4"><a>{item.physical}</a></td>
+                                                    <td className="py-4 px-4">{item.onOrder}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -608,7 +678,7 @@ const VehicleSales = () => {
                             className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
                             <div className="w-full flex justify-between items-center">
                                 <span className="font-semibold text-[22px]">
-                                    2025 Honda Civic Hatchback
+                                    2025 BYD SEALION 6 E-Hybrid Arctic White
                                 </span>
                                 <div className="flex gap-3">
                                     <button
@@ -659,22 +729,20 @@ const VehicleSales = () => {
                                         Vehicle Details
                                     </span>
                                     <div className="text-[23px] mb-3 font-semibold tracking-wide text-[#DB2727] mt-5">
-                                        Rs. {'N/A'} -  Rs. {'N/A'}
+                                        Rs. 20,000,000 - 22,000,000
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {/*{vehicle ? (*/}
                                         {
                                             [
                                                 { label: "Millage:", value: `N/A km` },
-                                                { label: "No. of Owners:", value: 'N/A' },
-                                                { label: "Vehicle No:", value: 'N/A' },
-                                                { label: "Color:", value: 'N/A' },
-                                                { label: "Capacity:", value: `N/A cc` },
-                                                { label: "Model:", value: 'N/A' },
-                                                { label: "Fuel:", value: 'N/A' },
-                                                { label: "Transmission:", value: 'N/A' },
-                                                { label: "Year:", value: 'N/A' },
-                                                { label: "Grade:", value: 'N/A' },
+                                                { label: "No. of Owners:", value: '0' },
+                                                { label: "Vehicle No:", value: 'Brand New' },
+                                                { label: "Color:", value: 'Arctic White' },
+                                                { label: "Capacity:", value: `2000cc` },
+                                                { label: "Model:", value: '2025 BYD SEALION 6 E-Hybrid' },
+                                                { label: "Type:", value: 'Sport Touring Hybrid' },
+                                                { label: "Year:", value: '2025' },
                                             ].map((detail, idx) => (
                                                 <div
                                                     key={idx}
@@ -686,60 +754,6 @@ const VehicleSales = () => {
                                             ))
                                         }
                                     </div>
-                                </div>
-                            </div>
-                        </section>
-                    )}
-
-                    {showStockAvailability && showVehicleDetailsAndLoyaltyAndPromotions && (
-                        <section
-                            id="vehicle-compare-section"
-                            className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                            <div
-                                className="w-full">
-                                <div className="flex flex-row items-center justify-between">
-                                    <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Compare Vehicle Prices</h2>
-                                    {/*<div>*/}
-                                    {/*    <button*/}
-                                    {/*        onClick={() => setIsVehicleAvailabilityModalOpen(true)}*/}
-                                    {/*        className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">*/}
-                                    {/*        <Image src="/dashboard/availability.svg" alt="availability" height={36}*/}
-                                    {/*               width={36} className="h-12 w-12" />*/}
-                                    {/*    </button>*/}
-                                    {/*</div>*/}
-                                </div>
-
-                                {/* Table Headers */}
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-black">
-                                        <thead>
-                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                            <th className="py-5 px-4 text-left">Source</th>
-                                            <th className="py-5 px-4 text-left">Price</th>
-                                            <th className="py-5 px-4 text-left">Manufacture Year</th>
-                                            <th className="py-5 px-4 text-left">Mileage</th>
-                                            <th className="py-5 px-4 text-left">Color</th>
-                                            <th className="py-5 px-4 text-left">No of Owners</th>
-                                            <th className="py-5 px-4 text-left">Vehicle no.</th>
-                                            <th className="py-5 px-4 text-left">Grade</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {compareData.map((item, index) => (
-                                            <tr key={index}
-                                                className="text-lg font-medium text-[#1D1D1D]">
-                                                <td className="py-4 px-4 cursor-pointer">{item.source}</td>
-                                                <td className="py-4 px-4 cursor-pointer truncate">{item.price}</td>
-                                                <td className="py-4 px-4 cursor-pointer">{item.year}</td>
-                                                <td className="py-4 px-4 cursor-pointer">{item.mileage}</td>
-                                                <td className="py-4 px-4 cursor-pointer truncate">{item.color}</td>
-                                                <td className="py-4 px-4 cursor-pointer">{item.owners}</td>
-                                                <td className="py-4 px-4 cursor-pointer">{item.vehicle_no}</td>
-                                                <td className="py-4 px-4 cursor-pointer truncate">{item.grade}</td>
-                                            </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
                         </section>
@@ -908,28 +922,15 @@ const VehicleSales = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    {/*<VerificationDropdown label="Vehicle Make" placeholder="Select Vehicle Make"*/}
-                                    {/*                      isIcon={true}/>*/}
                                     <FormField
-                                        label="Vehicle Make"
-                                        type="select"
-                                        isIcon={true}
-                                        options={vehicleMakeOptions}
-                                        register={register("vehicle_make")}
-                                        error={errors.vehicle_make}
-                                    />
-                                    {/*<VerificationDropdown label="Vehicle Model" placeholder="Select Vehicle Model"*/}
-                                    {/*                      isIcon={true}/>*/}
-                                    <FormField
-                                        label="Vehicle Model"
+                                        label="BYD Model"
                                         type="select"
                                         isIcon={true}
                                         options={vehicleModelOptions}
                                         register={register("vehicle_model")}
                                         error={errors.vehicle_model}
                                     />
-                                    {/*<VerificationDropdown label="Manufacture Year" placeholder="Manufacture Year"*/}
-                                    {/*                      isIcon={true}/>*/}
+
                                     <FormField
                                         label="Manufacture Year"
                                         type="select"
@@ -938,25 +939,22 @@ const VehicleSales = () => {
                                         register={register("manufacture_year")}
                                         error={errors.manufacture_year}
                                     />
-                                    {/*<VerificationDropdown label="Transmission" placeholder="Select Transmission"*/}
-                                    {/*                      isIcon={false}/>*/}
+
                                     <FormField
-                                        label="Transmission"
+                                        label="Color"
                                         type="select"
-                                        options={transmissionOptions}
-                                        register={register("transmission")}
-                                        error={errors.transmission}
+                                        options={colorOptions}
+                                        register={register("color")}
+                                        error={errors.color}
                                     />
-                                    {/*<VerificationDropdown label="Fuel Type" placeholder="Select Fuel Type" isIcon={false}/>*/}
+
                                     <FormField
-                                        label="Fuel Type"
+                                        label="Type"
                                         type="select"
-                                        options={fuelTypeOptions}
-                                        register={register("fuel_type")}
-                                        error={errors.fuel_type}
+                                        options={typeOptions}
+                                        register={register("type")}
+                                        error={errors.type}
                                     />
-                                    {/*<VerificationDropdown label="Down Payment" placeholder="Enter Down Payment"*/}
-                                    {/*                      isIcon={false}/>*/}
 
                                     <FormField
                                         label="Down Payment"
@@ -1068,12 +1066,7 @@ const VehicleSales = () => {
                                         </div>
                                     </div>
                                 </div>
-                                {/*<div className="flex flex-col space-y-2 font-medium text-gray-900">*/}
-                                {/*    <span*/}
-                                {/*        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Additional Note</span>*/}
-                                {/*    <textarea placeholder="Enter Your Note" rows={5}*/}
-                                {/*              className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>*/}
-                                {/*</div>*/}
+
                                 <FormField
                                     label="Additional Note"
                                     type="textarea"
@@ -1082,19 +1075,12 @@ const VehicleSales = () => {
                                     error={errors.additional_note}
                                 />
 
-                                {/*<form action="/submit-page" method="post" className="my-8">*/}
-                                {/*    <input type="checkbox" className="mr-5 text-[#DB2727]" id="subscribe" name="subscribe" value="yes"/>*/}
-                                {/*    <label htmlFor="subscribe" className="text-[19px] font-semibold">Leasing Details</label><br/>*/}
-                                {/*</form>*/}
-
                                 <div className="my-8 flex items-center">
                                     <input
                                         type="checkbox"
                                         className="mr-4 accent-[#DB2727] h-4 w-4 cursor-pointer"
                                         id="enable-leasing"
                                         {...register("enable_leasing")}
-                                    // name="subscribe"
-                                    // value="yes"
                                     />
                                     <label htmlFor="enable-leasing" className="text-[19px] font-semibold">
                                         Leasing Details
@@ -1163,9 +1149,6 @@ const VehicleSales = () => {
                                     </div>
                                 )}
                             </div>
-                            {/*{submitSuccess && (*/}
-                            {/*    <div className="text-green-600 text-sm mt-4">Vehicle sale created successfully!</div>*/}
-                            {/*)}*/}
                         </form>
                     </section>
 
@@ -1173,7 +1156,7 @@ const VehicleSales = () => {
                         className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
                         <div
                             className="w-full">
-                            <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Last Vehicle
+                            <h2 className="text-xl md:text-[22px] font-semibold text-black mb-8 px-4">Last BYD
                                 Purchases</h2>
 
                             {/* Table Headers */}
@@ -1181,20 +1164,20 @@ const VehicleSales = () => {
                                 <table className="w-full text-black">
                                     <thead>
                                         <tr className="border-b-2 border-gray-300 text-gray-500 font-medium text-lg">
-                                            <th className="py- px-4 text-left">Vehicle Make</th>
-                                            <th className="py-5 px-4 text-left">Vehicle Model</th>
                                             <th className="py-5 px-4 text-left">Manufacture Year</th>
-                                            <th className="py-5 px-4 text-left">Transmission</th>
+                                            <th className="py-5 px-4 text-left">Model</th>
+                                            <th className="py-5 px-4 text-left">Type</th>
+                                            <th className="py-5 px-4 text-left">Color</th>
                                             <th className="py-5 px-4 text-left">Price</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {vehicleData.map((vehicle, index) => (
                                             <tr key={index} className="text-lg font-medium">
-                                                <td className="py-4 px-4">{vehicle.make}</td>
-                                                <td className="py-4 px-4">{vehicle.model}</td>
                                                 <td className="py-4 px-4">{vehicle.year}</td>
-                                                <td className="py-4 px-4">{vehicle.transmission}</td>
+                                                <td className="py-4 px-4">{vehicle.model}</td>
+                                                <td className="py-4 px-4">{vehicle.type}</td>
+                                                <td className="py-4 px-4">{vehicle.color}</td>
                                                 <td className="py-4 px-4">{vehicle.price}</td>
                                             </tr>
                                         ))}
@@ -1231,7 +1214,7 @@ const VehicleSales = () => {
 
                 {isVehicleAvailabilityModalOpen && (
                     <Modal
-                        title="Unavailable Vehicle"
+                        title="Unavailable BYD Vehicle"
                         onClose={() => {
                             setIsVehicleAvailabilityModalOpen(false);
                             // setUnavailableSubmitSuccess(false);
@@ -1249,31 +1232,22 @@ const VehicleSales = () => {
                                     <Image src="/search.gif" alt="search" width={128} height={128}
                                         className="w-32 h-32" />
                                     <div className="text-center">
-                                        <h2 className="font-semibold text-xl text-[#000000]">Oops! That Spare Part is
-                                            Not
-                                            Available</h2>
+                                        <h2 className="font-semibold text-xl text-[#000000]">Oops! That Vehicle is Not Available</h2>
                                         <h3 className="text-[#575757] text-[15px] font-medium">Please add it to the
-                                            unavailable Spare Parts list.</h3>
+                                            unavailable vehicle list.</h3>
                                     </div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <FormField
-                                    label="Vehicle Make"
-                                    type="select"
-                                    isIcon={true}
-                                    options={vehicleMakeOptions}
-                                    register={registerUnavailable("vehicle_make")}
-                                    error={unavailableErrors.vehicle_make}
-                                />
+
 
                                 <FormField
-                                    label="Vehicle Model"
+                                    label="BYD Model"
                                     type="select"
                                     isIcon={true}
                                     options={vehicleModelOptions}
-                                    register={registerUnavailable("vehicle_model")}
-                                    error={unavailableErrors.vehicle_model}
+                                    register={registerUnavailable("model")}
+                                    error={unavailableErrors.model}
                                 />
 
                                 <FormField
@@ -1286,19 +1260,19 @@ const VehicleSales = () => {
                                 />
 
                                 <FormField
-                                    label="Transmission"
+                                    label="Color"
                                     type="select"
-                                    options={transmissionOptions}
-                                    register={registerUnavailable("transmission")}
-                                    error={unavailableErrors.transmission}
+                                    options={colorOptions}
+                                    register={registerUnavailable("color")}
+                                    error={unavailableErrors.color}
                                 />
 
                                 <FormField
-                                    label="Fuel Type"
+                                    label="Type"
                                     type="select"
-                                    options={fuelTypeOptions}
-                                    register={registerUnavailable("fuel_type")}
-                                    error={unavailableErrors.fuel_type}
+                                    options={typeOptions}
+                                    register={registerUnavailable("type")}
+                                    error={unavailableErrors.type}
                                 />
 
                                 <FormField
@@ -1419,39 +1393,6 @@ const VehicleSales = () => {
     );
 }
 
-type VerificationDropdownProps = {
-    label: string;
-    placeholder: string;
-    isIcon: boolean;
-};
 
-function VerificationDropdown({ label, placeholder, isIcon }: VerificationDropdownProps) {
-    return (
-        <label className="flex flex-col space-y-2 font-medium text-gray-900">
-            <span className="text-[#1D1D1D] font-medium text-[17px] montserrat">{label}</span>
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder={placeholder}
-                    className={`w-full ${isIcon ? "px-10" : "px-4"} py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700`}
-                />
-                {
-                    isIcon && (
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="20" height="20"
-                            viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M14.1935 13.5122L16.6532 15.9719M15.8762 9.1838C15.8762 10.7723 15.2451 12.2958 14.1219 13.419C12.9986 14.5422 11.4752 15.1733 9.88669 15.1733C8.29818 15.1733 6.77473 14.5422 5.65149 13.419C4.52825 12.2958 3.89722 10.7723 3.89722 9.1838C3.89722 7.5953 4.52825 6.07185 5.65149 4.94861C6.77473 3.82537 8.29818 3.19434 9.88669 3.19434C11.4752 3.19434 12.9986 3.82537 14.1219 4.94861C15.2451 6.07185 15.8762 7.5953 15.8762 9.1838Z"
-                                stroke="#575757" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    )
-                }
-                <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" width="10" height="6"
-                    viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z" fill="#575757" />
-                </svg>
-            </div>
-        </label>
-    );
-}
 
-export default VehicleSales;
+export default BydSales;
