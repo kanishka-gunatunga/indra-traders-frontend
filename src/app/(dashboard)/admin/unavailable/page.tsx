@@ -9,10 +9,72 @@ import { useBydUnavailableSales } from "@/hooks/useBydSales";
 
 export default function Unavailable() {
 
-    const { data: vehicleSales, isLoading: loadingVehicle } = useUnavailableVehicleSales();
-    const { data: services, isLoading: loadingService } = useUnavailableServices();
-    const { data: spareParts, isLoading: loadingSpare } = useUnavailableSpareParts();
-    const { data: bydUnavailableSales, isLoading: loadingBydUnavailable } = useBydUnavailableSales();
+    // Pagination State
+    const [currentVehiclePage, setCurrentVehiclePage] = React.useState(1);
+    const [currentServicePage, setCurrentServicePage] = React.useState(1);
+    const [currentSparePage, setCurrentSparePage] = React.useState(1);
+    const [currentBydPage, setCurrentBydPage] = React.useState(1);
+
+    const ITEMS_PER_PAGE = 5;
+
+    const { data: vehicleSales, isLoading: loadingVehicle } = useUnavailableVehicleSales(currentVehiclePage, ITEMS_PER_PAGE);
+    const { data: services, isLoading: loadingService } = useUnavailableServices(currentServicePage, ITEMS_PER_PAGE);
+    const { data: spareParts, isLoading: loadingSpare } = useUnavailableSpareParts(currentSparePage, ITEMS_PER_PAGE);
+    const { data: bydUnavailableSales, isLoading: loadingBydUnavailable } = useBydUnavailableSales(currentBydPage, ITEMS_PER_PAGE);
+
+    // Pagination Component
+    const Pagination = ({ currentPage, totalItems, onPageChange }: { currentPage: number, totalItems: number, onPageChange: (page: number) => void }) => {
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        if (totalPages <= 1) return null;
+
+        const handlePageChange = (page: number) => {
+            if (page >= 1 && page <= totalPages) {
+                onPageChange(page);
+            }
+        };
+
+        return (
+            <div className="flex items-center justify-center gap-2 mt-4">
+                <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                    Previous
+                </button>
+
+                {Array.from({ length: Math.min(5, totalPages || 1) }).map((_, idx) => {
+                    // Start page window logic to show current page in view
+                    let startPage = Math.max(1, currentPage - 2);
+                    if (startPage + 4 > totalPages) startPage = Math.max(1, totalPages - 4);
+
+                    const pageNum = startPage + idx;
+                    if (pageNum > totalPages) return null;
+
+                    return (
+                        <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`w-10 h-10 rounded-lg text-sm font-medium flex items-center justify-center transition-colors border cursor-pointer
+                            ${currentPage === pageNum
+                                    ? 'bg-[#E52F2F] text-white border-[#E52F2F]'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                        >
+                            {pageNum}
+                        </button>
+                    )
+                })}
+
+                <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                    Next
+                </button>
+            </div>
+        );
+    };
 
     return (
         <div
@@ -57,7 +119,7 @@ export default function Unavailable() {
                                 {/* Table body (scrollable vertically) */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {loadingVehicle ? <p>Loading...</p> :
-                                        (vehicleSales?.map((item: any, idx: number) => (
+                                        (vehicleSales?.data?.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
@@ -80,6 +142,11 @@ export default function Unavailable() {
                                 </div>
                             </div>
                         </div>
+                        <Pagination
+                            currentPage={currentVehiclePage}
+                            totalItems={vehicleSales?.meta?.total || 0}
+                            onPageChange={setCurrentVehiclePage}
+                        />
                     </div>
                 </section>
 
@@ -112,7 +179,7 @@ export default function Unavailable() {
                                 {/* Table body (scrollable vertically) */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {loadingService ? <p>Loading...</p> :
-                                        (services?.map((item: any, idx: number) => (
+                                        (services?.data?.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
@@ -129,6 +196,11 @@ export default function Unavailable() {
                                 </div>
                             </div>
                         </div>
+                        <Pagination
+                            currentPage={currentServicePage}
+                            totalItems={services?.meta?.total || 0}
+                            onPageChange={setCurrentServicePage}
+                        />
                     </div>
                 </section>
 
@@ -161,7 +233,7 @@ export default function Unavailable() {
                                 {/* Table body (scrollable vertically) */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {loadingSpare ? <p>Loading...</p> :
-                                        (spareParts?.map((item: any, idx: number) => (
+                                        (spareParts?.data?.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
@@ -178,6 +250,11 @@ export default function Unavailable() {
                                 </div>
                             </div>
                         </div>
+                        <Pagination
+                            currentPage={currentSparePage}
+                            totalItems={spareParts?.meta?.total || 0}
+                            onPageChange={setCurrentSparePage}
+                        />
                     </div>
                 </section>
 
@@ -212,7 +289,7 @@ export default function Unavailable() {
                                 {/* Table body (scrollable vertically) */}
                                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
                                     {loadingBydUnavailable ? <p>Loading...</p> :
-                                        (bydUnavailableSales?.map((item: any, idx: number) => (
+                                        (bydUnavailableSales?.data?.map((item: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
@@ -231,6 +308,11 @@ export default function Unavailable() {
                                 </div>
                             </div>
                         </div>
+                        <Pagination
+                            currentPage={currentBydPage}
+                            totalItems={bydUnavailableSales?.meta?.total || 0}
+                            onPageChange={setCurrentBydPage}
+                        />
                     </div>
                 </section>
             </main>

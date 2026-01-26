@@ -210,9 +210,9 @@ export const getServiceBookingBranches = async () => {
     return res.data;
 }
 
-export const getScheduledServices = async (branchId?: number | null, date?: string) => {
+export const getScheduledServices = async (branchId?: number | null, date?: string, page: number = 1, limit: number = 10) => {
     const res = await axiosInstance.get('/service-park/bookings/scheduled', {
-        params: { branchId, date }
+        params: { branchId, date, page, limit }
     });
     return res.data;
 };

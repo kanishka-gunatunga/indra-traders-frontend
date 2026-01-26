@@ -84,7 +84,7 @@ const RedSpinner = () => (
     <div className="flex justify-center items-center w-full py-20">
         <div
             className="w-12 h-12 border-4 border-gray-200 rounded-full animate-spin"
-            style={{ borderTopColor: '#DB2727' }}
+            style={{borderTopColor: '#DB2727'}}
             role="status"
             aria-label="loading"
         />
@@ -270,11 +270,14 @@ const ServiceParkBooking = () => {
                 setSelectedSlots([]);
                 setIsConfirmModalOpen(false);
             },
-            onError: (err: any) => showToast(err.response?.data?.message || "Failed", "error")
+            onError: (err: any) => {
+                showToast(err.response?.data?.message || "Failed", "error");
+                console.log(err)
+            }
         });
     };
 
-    console.log("customer ID: ", bookingState.vehicleData?.customer_id );
+    console.log("customer ID: ", bookingState.vehicleData?.customer_id);
 
     const branchName = branches?.find((b: any) => b.id === selectedBranchId)?.name || "Unknown Branch";
 

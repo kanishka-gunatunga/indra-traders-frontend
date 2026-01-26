@@ -16,10 +16,10 @@ export const ROLE_DASHBOARDS = {
 };
 
 export const ROLE_PERMISSIONS = {
-    ADMIN: ["/admin", "/sales-agent"],
-    CALLAGENT: ["/call-agent"],
-    TELEMARKETER: ["/tele-marketer"],
-    SALES01: ["/sales-agent"],
-    SALES02: ["/sales-agent"],
-    SALES03: ["/sales-agent"],
+    ADMIN: ["/admin", "/sales-agent", "/profile"],
+    CALLAGENT: ["/call-agent", "/profile"],
+    TELEMARKETER: ["/tele-marketer", "/profile"],
+    SALES01: ["/sales-agent", "/profile"],
+    SALES02: ["/sales-agent", "/profile"],
+    SALES03: ["/sales-agent", "/profile"],
 };

@@ -219,6 +219,12 @@ const SideMenu = () => {
                     </Link>
                 )}
 
+                {hasRole(["CALLAGENT"]) && (
+                    <Link href="/call-agent/booking-schedule" className={`w-12 h-12 bg-[#FFFFFF8C] bg-opacity/55 rounded-full flex items-center justify-center hover:bg-red-100 transition ${getLinkClasses("/booking-schedule")}`}>
+                        <Image src="/date-time.svg" alt="" width={32} height={32} className="w-6 h-6" />
+                    </Link>
+                )}
+
                 {hasRole(["ADMIN"]) && (
                     <Link href="/admin/activity-log">
                         <div className={getLinkClasses("/admin/activity-log")}>

@@ -7,8 +7,10 @@ export const createUnavailableVehicleSale = async (data: any) => {
     return res.data;
 };
 
-export const fetchUnavailableVehicleSales = async () => {
-    const res = await axiosInstance.get("/unavailable/vehicle-sales");
+export const fetchUnavailableVehicleSales = async (page = 1, limit = 10) => {
+    const res = await axiosInstance.get("/unavailable/vehicle-sales", {
+        params: { page, limit }
+    });
     return res.data;
 };
 
@@ -22,8 +24,10 @@ export const createUnavailableService = async (data: any) => {
     return res.data;
 };
 
-export const fetchUnavailableServices = async () => {
-    const res = await axiosInstance.get("/unavailable/services");
+export const fetchUnavailableServices = async (page = 1, limit = 10) => {
+    const res = await axiosInstance.get("/unavailable/services", {
+        params: { page, limit }
+    });
     return res.data;
 };
 
@@ -37,8 +41,10 @@ export const createUnavailableSparePart = async (data: any) => {
     return res.data;
 };
 
-export const fetchUnavailableSpareParts = async () => {
-    const res = await axiosInstance.get("/unavailable/spare-parts");
+export const fetchUnavailableSpareParts = async (page = 1, limit = 10) => {
+    const res = await axiosInstance.get("/unavailable/spare-parts", {
+        params: { page, limit }
+    });
     return res.data;
 };
 

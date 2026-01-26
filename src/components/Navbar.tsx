@@ -166,6 +166,14 @@ const Navbar = () => {
                                         </p>
                                     </div>
 
+                                    <Link
+                                        href="/profile"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+                                    >
+                                        View Profile
+                                    </Link>
+
                                     <button
                                         onClick={() => {
                                             setIsDropdownOpen(false);
@@ -180,8 +188,8 @@ const Navbar = () => {
                         </div>
                     </div>
                 </div>
-            </header>
-        </div>
+            </header >
+        </div >
     );
 };
 

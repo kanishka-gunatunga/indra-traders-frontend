@@ -389,11 +389,12 @@ export const useSubmitBooking = () => {
     });
 };
 
-export const useScheduledServices = (branchId?: number | null, date?: string) => {
+export const useScheduledServices = (branchId?: number | null, date?: string, page: number = 1) => {
     return useQuery({
-        queryKey: ['scheduledServices', branchId, date],
-        queryFn: () => getScheduledServices(branchId, date),
-        refetchInterval: 5000
+        queryKey: ['scheduledServices', branchId, date, page],
+        queryFn: () => getScheduledServices(branchId, date, page),
+        refetchInterval: 5000,
+        placeholderData: keepPreviousData
     });
 };
 
