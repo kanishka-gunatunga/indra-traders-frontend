@@ -6,17 +6,12 @@ import {
     fetchUnavailableSpareParts, fetchUnavailableSparePartById, createUnavailableSparePart
 } from "@/services/unavailableService";
 
-export const useUnavailableVehicleSales = (page = 1, limit = 10) =>
-    useQuery({
-        queryKey: ["unavailableVehicleSales", page, limit],
-        queryFn: () => fetchUnavailableVehicleSales(page, limit)
-    });
+// ... (imports)
 
-export const useUnavailableVehicleSaleById = (id: number | string) =>
+export const useUnavailableVehicleSales = (page = 1, limit = 10, filters = {}) =>
     useQuery({
-        queryKey: ["unavailableVehicleSale", id],
-        queryFn: () => fetchUnavailableVehicleSaleById(id),
-        enabled: !!id
+        queryKey: ["unavailableVehicleSales", page, limit, filters],
+        queryFn: () => fetchUnavailableVehicleSales(page, limit, filters)
     });
 
 export const useCreateUnavailableVehicleSale = () =>
@@ -24,28 +19,20 @@ export const useCreateUnavailableVehicleSale = () =>
         mutationFn: createUnavailableVehicleSale
     });
 
-export const useUnavailableServices = (page = 1, limit = 10) =>
+// ... (other hooks)
+
+export const useUnavailableServices = (page = 1, limit = 10, filters = {}) =>
     useQuery({
-        queryKey: ["unavailableServices", page, limit],
-        queryFn: () => fetchUnavailableServices(page, limit)
+        queryKey: ["unavailableServices", page, limit, filters],
+        queryFn: () => fetchUnavailableServices(page, limit, filters)
     });
 
-export const useUnavailableServiceById = (id: number | string) =>
-    useQuery({
-        queryKey: ["unavailableService", id],
-        queryFn: () => fetchUnavailableServiceById(id),
-        enabled: !!id
-    });
+// ... (other hooks)
 
-export const useCreateUnavailableService = () =>
-    useMutation({
-        mutationFn: createUnavailableService
-    });
-
-export const useUnavailableSpareParts = (page = 1, limit = 10) =>
+export const useUnavailableSpareParts = (page = 1, limit = 10, filters = {}) =>
     useQuery({
-        queryKey: ["unavailableSpareParts", page, limit],
-        queryFn: () => fetchUnavailableSpareParts(page, limit)
+        queryKey: ["unavailableSpareParts", page, limit, filters],
+        queryFn: () => fetchUnavailableSpareParts(page, limit, filters)
     });
 
 export const useUnavailableSparePartById = (id: number | string) =>

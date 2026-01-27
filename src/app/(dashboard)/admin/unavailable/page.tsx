@@ -6,10 +6,22 @@ import Image from "next/image";
 import React from "react";
 import { useUnavailableServices, useUnavailableSpareParts, useUnavailableVehicleSales } from "@/hooks/useUnavailable";
 import { useBydUnavailableSales } from "@/hooks/useBydSales";
+import Modal from "@/components/Modal";
+import { useCurrentUser } from "@/utils/auth";
 
 export default function Unavailable() {
 
-    // Pagination State
+    const user = useCurrentUser();
+
+    // Filter States
+    const [filtersVehicle, setFiltersVehicle] = React.useState<any>({});
+    const [filtersService, setFiltersService] = React.useState<any>({});
+    const [filtersSpare, setFiltersSpare] = React.useState<any>({});
+    const [filtersByd, setFiltersByd] = React.useState<any>({});
+
+    const [activeFilterSection, setActiveFilterSection] = React.useState<string | null>(null);
+
+    // Pagination State (Restored)
     const [currentVehiclePage, setCurrentVehiclePage] = React.useState(1);
     const [currentServicePage, setCurrentServicePage] = React.useState(1);
     const [currentSparePage, setCurrentSparePage] = React.useState(1);
@@ -17,10 +29,128 @@ export default function Unavailable() {
 
     const ITEMS_PER_PAGE = 5;
 
-    const { data: vehicleSales, isLoading: loadingVehicle } = useUnavailableVehicleSales(currentVehiclePage, ITEMS_PER_PAGE);
-    const { data: services, isLoading: loadingService } = useUnavailableServices(currentServicePage, ITEMS_PER_PAGE);
-    const { data: spareParts, isLoading: loadingSpare } = useUnavailableSpareParts(currentSparePage, ITEMS_PER_PAGE);
-    const { data: bydUnavailableSales, isLoading: loadingBydUnavailable } = useBydUnavailableSales(currentBydPage, ITEMS_PER_PAGE);
+    const { data: vehicleSales, isLoading: loadingVehicle } = useUnavailableVehicleSales(currentVehiclePage, ITEMS_PER_PAGE, filtersVehicle);
+    const { data: services, isLoading: loadingService } = useUnavailableServices(currentServicePage, ITEMS_PER_PAGE, filtersService);
+    const { data: spareParts, isLoading: loadingSpare } = useUnavailableSpareParts(currentSparePage, ITEMS_PER_PAGE, filtersSpare);
+    const { data: bydUnavailableSales, isLoading: loadingBydUnavailable } = useBydUnavailableSales(currentBydPage, ITEMS_PER_PAGE, filtersByd);
+
+    // Hardcoded OPTIONS for demo (In real app, fetch dynamically or use text inputs)
+    const OPTIONS = {
+        VEHICLE: {
+            MaKe: ["Toyota", "Honda", "Nissan", "Suzuki"],
+            Model: ["Corolla", "Civic", "Alto", "WagonR"],
+            Year: ["2020", "2021", "2022", "2023", "2024"]
+        },
+        SERVICE: {
+            Repair: ["Engine", "Body", "Electrical"],
+            Paint: ["Full", "Touchup"],
+            Search: [] // Text input
+        },
+        SPARE: {
+            Make: ["Toyota", "Nissan"],
+            Model: ["Axio", "Leaf"],
+            Year: ["2018", "2019"]
+        },
+        BYD: {
+            Model: ["Atto 3", "Dolphin", "Seal"],
+            Year: ["2023", "2024"],
+            Color: ["White", "Black", "Blue"]
+        }
+    }
+
+    const FilterModalWrapper = ({ section, onClose }: { section: string, onClose: () => void }) => {
+        const [localFilters, setLocalFilters] = React.useState<any>({});
+
+        const handleOptionClick = (key: string, value: string) => {
+            setLocalFilters((prev: any) => {
+                const current = prev[key];
+                if (current === value) {
+                    const { [key]: _, ...rest } = prev;
+                    return rest;
+                }
+                return { ...prev, [key]: value };
+            });
+        };
+
+        const applyFilters = () => {
+            if (section === "VEHICLE") setFiltersVehicle(localFilters);
+            if (section === "SERVICE") setFiltersService(localFilters);
+            if (section === "SPARE") setFiltersSpare(localFilters);
+            if (section === "BYD") setFiltersByd(localFilters);
+            onClose();
+        };
+
+        const renderOptions = (label: string, key: string, options: string[]) => (
+            <div className="w-full mt-5">
+                <span className="font-montserrat font-semibold text-lg leading-[100%]">{label}</span>
+                <div className="w-full mt-5 flex gap-3 flex-wrap">
+                    {options.map(opt => (
+                        <button
+                            key={opt}
+                            onClick={() => handleOptionClick(key, opt)}
+                            className={`px-4 py-1 rounded-full border text-sm transition ${localFilters[key] === opt ? "bg-blue-500 text-white border-blue-500" : "bg-gray-200 text-gray-700 border-transparent hover:bg-gray-300"}`}
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+
+        return (
+            <Modal
+                title={`Filter ${section}`}
+                onClose={onClose}
+                actionButton={{
+                    label: "Apply",
+                    onClick: applyFilters,
+                }}
+            >
+                <div className="w-[600px]">
+                    {section === "VEHICLE" && (
+                        <>
+                            {renderOptions("Make", "make", OPTIONS.VEHICLE.MaKe)}
+                            {renderOptions("Model", "model", OPTIONS.VEHICLE.Model)}
+                            {renderOptions("Year", "year", OPTIONS.VEHICLE.Year)}
+                        </>
+                    )}
+                    {section === "SERVICE" && (
+                        <>
+                            <div className="w-full mt-5">
+                                <span className="font-montserrat font-semibold text-lg leading-[100%]">Search Note</span>
+                                <input
+                                    className="w-full mt-2 p-2 border rounded-lg"
+                                    placeholder="Search..."
+                                    onChange={(e) => setLocalFilters({ ...localFilters, search: e.target.value })}
+                                />
+                            </div>
+                            {renderOptions("Unavailable Repair", "unavailable_repair", OPTIONS.SERVICE.Repair)}
+                            {renderOptions("Unavailable Paint", "unavailable_paint", OPTIONS.SERVICE.Paint)}
+                        </>
+                    )}
+                    {section === "SPARE" && (
+                        <>
+                            {renderOptions("Make", "make", OPTIONS.SPARE.Make)}
+                            {renderOptions("Model", "model", OPTIONS.SPARE.Model)}
+                            {renderOptions("Part No (Text)", "part_no", [])}
+                            <input
+                                className="w-full mt-2 p-2 border rounded-lg"
+                                placeholder="Type Part No..."
+                                onChange={(e) => setLocalFilters({ ...localFilters, part_no: e.target.value })}
+                            />
+                        </>
+                    )}
+                    {section === "BYD" && (
+                        <>
+                            {renderOptions("Model", "model", OPTIONS.BYD.Model)}
+                            {renderOptions("Year", "year", OPTIONS.BYD.Year)}
+                            {renderOptions("Color", "color", OPTIONS.BYD.Color)}
+                        </>
+                    )}
+                </div>
+            </Modal>
+        );
+    }
 
     // Pagination Component
     const Pagination = ({ currentPage, totalItems, onPageChange }: { currentPage: number, totalItems: number, onPageChange: (page: number) => void }) => {
@@ -79,10 +209,13 @@ export default function Unavailable() {
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
+
+            {activeFilterSection && <FilterModalWrapper section={activeFilterSection} onClose={() => setActiveFilterSection(null)} />}
+
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
+
                 <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
+                    name={user?.full_name || "Sophie Eleanor"}
                     title="Unavailable Items"
                 />
 
@@ -92,7 +225,9 @@ export default function Unavailable() {
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">Unavailable Vehicles</span>
 
-                        <button className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                        <button
+                            onClick={() => setActiveFilterSection("VEHICLE")}
+                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center cursor-pointer hover:bg-gray-50 transition">
                             <Image
                                 src={"/images/admin/flowbite_filter-outline.svg"}
                                 width={24}
@@ -155,7 +290,9 @@ export default function Unavailable() {
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">Unavailable Services</span>
 
-                        <button className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                        <button
+                            onClick={() => setActiveFilterSection("SERVICE")}
+                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center cursor-pointer hover:bg-gray-50 transition">
                             <Image
                                 src={"/images/admin/flowbite_filter-outline.svg"}
                                 width={24}
@@ -209,7 +346,9 @@ export default function Unavailable() {
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">Unavailable Spare Part</span>
 
-                        <button className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                        <button
+                            onClick={() => setActiveFilterSection("SPARE")}
+                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center cursor-pointer hover:bg-gray-50 transition">
                             <Image
                                 src={"/images/admin/flowbite_filter-outline.svg"}
                                 width={24}
@@ -263,7 +402,9 @@ export default function Unavailable() {
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">Unavailable BYD Vehicles</span>
 
-                        <button className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                        <button
+                            onClick={() => setActiveFilterSection("BYD")}
+                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center cursor-pointer hover:bg-gray-50 transition">
                             <Image
                                 src={"/images/admin/flowbite_filter-outline.svg"}
                                 width={24}

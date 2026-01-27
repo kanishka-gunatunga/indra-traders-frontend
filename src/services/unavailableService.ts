@@ -1,15 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axiosInstance from "@/utils/axiosinstance";
 
-
 export const createUnavailableVehicleSale = async (data: any) => {
     const res = await axiosInstance.post("/unavailable/vehicle-sales", data);
     return res.data;
 };
 
-export const fetchUnavailableVehicleSales = async (page = 1, limit = 10) => {
+export const fetchUnavailableVehicleSales = async (page = 1, limit = 10, filters = {}) => {
     const res = await axiosInstance.get("/unavailable/vehicle-sales", {
-        params: { page, limit }
+        params: { page, limit, ...filters }
     });
     return res.data;
 };
@@ -24,9 +23,9 @@ export const createUnavailableService = async (data: any) => {
     return res.data;
 };
 
-export const fetchUnavailableServices = async (page = 1, limit = 10) => {
+export const fetchUnavailableServices = async (page = 1, limit = 10, filters = {}) => {
     const res = await axiosInstance.get("/unavailable/services", {
-        params: { page, limit }
+        params: { page, limit, ...filters }
     });
     return res.data;
 };
@@ -41,9 +40,9 @@ export const createUnavailableSparePart = async (data: any) => {
     return res.data;
 };
 
-export const fetchUnavailableSpareParts = async (page = 1, limit = 10) => {
+export const fetchUnavailableSpareParts = async (page = 1, limit = 10, filters = {}) => {
     const res = await axiosInstance.get("/unavailable/spare-parts", {
-        params: { page, limit }
+        params: { page, limit, ...filters }
     });
     return res.data;
 };

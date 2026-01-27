@@ -1,15 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { LeadService } from "@/services/lead.service";
 import { message } from "antd";
 
-export const useLeads = () => {
+export const useLeads = (filters: any = {}) => {
     return useQuery({
-        queryKey: ["all-leads"],
+        queryKey: ["all-leads", filters],
         queryFn: async () => {
-            const response = await LeadService.getAllLeads();
+            const response = await LeadService.getAllLeads(filters);
             return response.data;
         },
-        placeholderData: (previousData) => previousData, // Keep previous data while fetching to avoid flash
+        placeholderData: keepPreviousData,
     });
 };
 

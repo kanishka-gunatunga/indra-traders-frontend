@@ -1,17 +1,22 @@
-"use client";
-
+"use client"
 import React, { useEffect, useState } from "react";
 import Header from "@/components/Header";
 import { userService } from "@/services/userService";
-import { toast } from "react-hot-toast";
 import { useCurrentUser } from "@/utils/auth";
 import RedSpinner from "@/components/RedSpinner";
+import Toast from "@/components/Toast";
+import { Eye, EyeOff } from "lucide-react";
 
 const ProfilePage = () => {
     const user = useCurrentUser();
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [toastConfig, setToastConfig] = useState<{ visible: boolean; message: string; type: "success" | "error" }>({
+        visible: false,
+        message: "",
+        type: "success"
+    });
 
     // Form State
     const [firstName, setFirstName] = useState("");
@@ -24,12 +29,22 @@ const ProfilePage = () => {
     // Password Reset State
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     useEffect(() => {
         if (user?.id) {
             fetchProfile();
         }
     }, [user?.id]);
+
+    const showToast = (message: string, type: "success" | "error") => {
+        setToastConfig({ visible: true, message, type });
+    };
+
+    const handleCloseToast = () => {
+        setToastConfig((prev) => ({ ...prev, visible: false }));
+    };
 
     const fetchProfile = async () => {
         if (!user?.id) return;
@@ -51,7 +66,7 @@ const ProfilePage = () => {
             setRole(userData.user_role || "");
         } catch (error) {
             console.error("Error fetching profile:", error);
-            toast.error("Failed to load profile");
+            showToast("Failed to load profile", "error");
         } finally {
             setLoading(false);
         }
@@ -61,7 +76,7 @@ const ProfilePage = () => {
         e.preventDefault();
 
         if (password && password !== confirmPassword) {
-            toast.error("Passwords do not match");
+            showToast("Passwords do not match", "error");
             return;
         }
 
@@ -80,7 +95,7 @@ const ProfilePage = () => {
             }
 
             await userService.updateProfile(updateData);
-            toast.success("Profile updated successfully");
+            showToast("Profile updated successfully", "success");
 
             // Clear password fields on success
             setPassword("");
@@ -88,7 +103,7 @@ const ProfilePage = () => {
 
         } catch (error: any) {
             console.error("Error updating profile:", error);
-            toast.error(error.response?.data?.message || "Failed to update profile");
+            showToast(error.response?.data?.message || "Failed to update profile", "error");
         } finally {
             setSaving(false);
         }
@@ -104,6 +119,14 @@ const ProfilePage = () => {
 
     return (
         <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
+
+            <Toast
+                message={toastConfig.message}
+                type={toastConfig.type}
+                visible={toastConfig.visible}
+                onClose={handleCloseToast}
+            />
+
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
                 <Header
                     name={firstName + " " + lastName}
@@ -135,7 +158,7 @@ const ProfilePage = () => {
                                 </div>
 
                                 {/* Last Name */}
-                                <div className="col-span-2">
+                                <div className="col-span-2 md:col-span-1">
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
                                     <input
                                         type="text"
@@ -202,24 +225,42 @@ const ProfilePage = () => {
                             <div className="grid grid-cols-2 gap-x-12 gap-y-6">
                                 <div className="col-span-2 md:col-span-1">
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none"
-                                        placeholder="Enter new password to change"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none"
+                                            placeholder="Enter new password to change"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        >
+                                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="col-span-2 md:col-span-1">
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password</label>
-                                    <input
-                                        type="password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none"
-                                        placeholder="Confirm new password"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl bg-white border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none"
+                                            placeholder="Confirm new password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

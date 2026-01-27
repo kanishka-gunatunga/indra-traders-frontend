@@ -181,9 +181,11 @@ export const useCreateBydUnavailableSale = () => {
     });
 };
 
-export const useBydUnavailableSales = (page = 1, limit = 10) => {
+import { fetchBydUnavailableSales } from "@/services/bydSaleService";
+
+export const useBydUnavailableSales = (page = 1, limit = 10, filters = {}) => {
     return useQuery({
-        queryKey: ["byd-unavailable-sales", page, limit],
-        queryFn: () => BydSaleService.getUnavailable(page, limit).then((res: { data: any; }) => res.data),
+        queryKey: ["byd-unavailable-sales", page, limit, filters],
+        queryFn: () => fetchBydUnavailableSales(page, limit, filters),
     });
 };
