@@ -1,5 +1,5 @@
 import axiosInstance from "@/utils/axiosinstance";
-import { ServiceCenterBooking, ServiceLine } from "@/types/serviceCenter";
+import { ServiceCenterBooking, ServiceLine, CalendarDotBooking } from "@/types/serviceCenter";
 
 // Get all service types (REPAIR, PAINT, ADDON)
 export const getServiceTypes = async (): Promise<string[]> => {
@@ -79,7 +79,45 @@ export const getBookings = async (date: string, branchId: number, lineId?: numbe
     }
 }
 
-// Get all bookings for calendar dots (for a date range or all bookings)
+// Get calendar dots data (only date and status)
+export const getCalendarDots = async (
+    branchId: number,
+    startDate?: string,
+    endDate?: string,
+    lineId?: number,
+    serviceType?: string
+): Promise<CalendarDotBooking[]> => {
+    try {
+        const params = new URLSearchParams({
+            branchId: branchId.toString(),
+        });
+
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (lineId) params.append('lineId', lineId.toString());
+        if (serviceType) params.append('serviceType', serviceType);
+
+        const res = await axiosInstance.get(`/service-center/bookings/calendar-dots?${params}`);
+        return res.data;
+    } catch (error) {
+        const axiosError = error as { 
+            message?: string; 
+            response?: { 
+                status?: number; 
+                statusText?: string; 
+                data?: { message?: string } 
+            } 
+        };
+        console.error('[ServiceCenterService] Failed to fetch calendar dots:', {
+            message: axiosError.message,
+            status: axiosError.response?.status,
+            statusText: axiosError.response?.statusText
+        });
+        throw new Error(axiosError.response?.data?.message || 'Failed to fetch calendar dots');
+    }
+}
+
+// Legacy function - kept for backward compatibility
 export const getAllBookingsForCalendar = async (
     branchId: number,
     startDate?: string,

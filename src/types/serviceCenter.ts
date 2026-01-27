@@ -12,7 +12,6 @@ export interface BookingDetails {
     vehicleCode: string;  // vehicle_no from backend
     customerName: string;
     phoneNumber: string;
-    vehicleModel: string;
     status: DatabaseStatus;  
 }
 
@@ -29,7 +28,6 @@ export interface BookingFormData {
     vehicleCode: string;
     phoneNumber: string;
     customerName: string;
-    vehicleModel: string;
 }
 
 export interface ServiceCenterBooking {
@@ -51,4 +49,9 @@ export interface ServiceLine {
     name: string;
     type: string;  // "REPAIR" | "PAINT" | "ADDON"
     advisor: string;
+}
+
+export interface CalendarDotBooking {
+    date: string;           // YYYY-MM-DD
+    status: DatabaseStatus;
 }

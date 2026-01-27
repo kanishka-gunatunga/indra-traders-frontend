@@ -75,7 +75,6 @@ export default function ServiceCenterDashboard() {
         vehicleCode: '',
         phoneNumber: '',
         customerName: '',
-        vehicleModel: '',
     });
 
     const {
@@ -151,7 +150,6 @@ export default function ServiceCenterDashboard() {
             vehicleCode: booking.vehicle_no || '',
             customerName: booking.customer_name || '',
             phoneNumber: booking.phone_number || '',
-            vehicleModel: '', // Not in API response
             status: booking.status,
         };
     };
@@ -173,7 +171,6 @@ export default function ServiceCenterDashboard() {
                 vehicleCode: '',
                 phoneNumber: '',
                 customerName: '',
-                vehicleModel: '',
             });
             setIsModalOpen(true);
         } else {
@@ -194,7 +191,6 @@ export default function ServiceCenterDashboard() {
                     vehicleCode: bookingDetails.vehicleCode,
                     phoneNumber: bookingDetails.phoneNumber,
                     customerName: bookingDetails.customerName,
-                    vehicleModel: bookingDetails.vehicleModel,
                 });
                 setIsModalOpen(true);
             }
@@ -264,7 +260,6 @@ export default function ServiceCenterDashboard() {
             vehicleCode: '',
             phoneNumber: '',
             customerName: '',
-            vehicleModel: '',
         });
     };
 
@@ -681,28 +676,6 @@ export default function ServiceCenterDashboard() {
                                         )}
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
-                                            Vehicle Model
-                                        </label>
-                                        {isAvailableSlot ? (
-                                            <input
-                                                type="text"
-                                                value={formData.vehicleModel}
-                                                onChange={(e) => setFormData({ ...formData, vehicleModel: e.target.value })}
-                                                className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
-                                                style={INPUT_STYLE}
-                                                placeholder="Enter vehicle model"
-                                            />
-                                        ) : (
-                                            <div
-                                                className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
-                                                style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
-                                            >
-                                                {getBookingDetails(selectedBooking.slotStart)?.vehicleModel || 'Toyota Corolla'}
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
                             </div>
 
