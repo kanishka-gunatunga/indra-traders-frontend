@@ -1,4 +1,5 @@
 import { AvailableSlot, DashboardStats, ProcessedScheduledService, ScheduledServiceResponse } from "@/types/serviceBooking";
+import { timeToMinutes, minutesToTime, generateTimeSlotStrings } from "@/utils/timeSlotUtils";
 
 const WORKING_HOURS = {
     START: "08:00",
@@ -67,44 +68,11 @@ export function calculateStats(services: ProcessedScheduledService[]): Dashboard
     }
 }
 
-export function timeToMinutes(time: string): number{
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-}
-
-export function minutesToTime(minutes: number): string{
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}`;
-}
-
 export function formatTime12Hour(time: string): string{
     const [hours, minutes] = time.split(':').map(Number);
     const period = hours >= 12 ? 'PM' : 'AM';
     const hour12 = hours % 12 || 12;
     return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
-}
-
-export function generateTimeSlots(
-    startTime: string,
-    endTime: string,
-    slotDurationMinutes: number
-): string[] {
-    
-    const startMinutes = timeToMinutes(startTime);
-    const endMinutes = timeToMinutes(endTime);
-
-    const slots: string[] = [];
-    
-    let currentMinutes = startMinutes;
-    while (currentMinutes <= endMinutes){
-        const slotTime = minutesToTime(currentMinutes);
-        slots.push(slotTime);
-
-        currentMinutes += slotDurationMinutes;
-    }
-
-    return slots;
 }
 
 export function calculateAvailableSlots(
@@ -115,7 +83,7 @@ export function calculateAvailableSlots(
     const uniqueBaysFromServices = [...new Set(services.map(s => s.bay))];
     const baysToProcess = uniqueBaysFromServices.length > 0 ? uniqueBaysFromServices : allBays;
 
-    const allSlots = generateTimeSlots(
+    const allSlots = generateTimeSlotStrings(
         WORKING_HOURS.START,
         WORKING_HOURS.END,
         WORKING_HOURS.SLOT_DURATION_MINUTES

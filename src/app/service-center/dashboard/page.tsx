@@ -2,15 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { LogOut, Users, Clock, Info, Sparkles, X, Save, XCircle } from 'lucide-react';
+import { LogOut, Users, Clock, Info, Sparkles, X, Save, XCircle, Loader2, AlertCircle } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Calendar, ConfigProvider, Select } from 'antd';
 import dayjs from 'dayjs';
 import { BookingDetails, BookingFormData, SelectedBooking, SlotStatus } from '@/types/serviceCenter';
+import { useServiceCenterBookings } from '@/hooks/useServiceCenterBookings';
+import { generateTimeSlots } from '@/utils/timeSlotUtils';
 
-const TIME_SLOT_START = 8 * 60;
-const TIME_SLOT_END = 17 * 60;
-const TIME_SLOT_INTERVAL = 30;
 
 const COLORS = {
     primary: '#DB2727',
@@ -62,38 +61,15 @@ const LABEL_STYLE = {
     fontWeight: 500,
 } as const;
 
-const generateTimeSlots = () => {
-    const slots = [];
-    let start = TIME_SLOT_START;
-
-    while (start < TIME_SLOT_END) {
-        const startH = Math.floor(start / 60).toString().padStart(2, '0');
-        const startM = (start % 60).toString().padStart(2, '0');
-        const endMins = start + TIME_SLOT_INTERVAL;
-        const endH = Math.floor(endMins / 60).toString().padStart(2, '0');
-        const endM = (endMins % 60).toString().padStart(2, '0');
-
-        slots.push({
-            start: `${startH}:${startM}`,
-            end: `${endH}:${endM}`,
-            label: `${startH}:${startM} - ${endH}:${endM}`,
-        });
-        start += TIME_SLOT_INTERVAL;
-    }
-    return slots;
-};
-
-const TIME_SLOTS = generateTimeSlots();
-
 
 export default function ServiceCenterDashboard() {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
-    const [selectedServiceType, setSelectedServiceType] = useState<string | null>('Repair');
-    const [selectedLineId, setSelectedLineId] = useState<string | null>('line3');
+    const [selectedServiceType, setSelectedServiceType] = useState<string | null>(null);
+    const [selectedLineId, setSelectedLineId] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState<SelectedBooking | null>(null);
-    const [bookingStatus, setBookingStatus] = useState<string>('booked');
+    const [bookingStatus, setBookingStatus] = useState<"PENDING" | "BOOKED" | "COMPLETED" | "CANCELLED">('BOOKED');
     const [isAvailableSlot, setIsAvailableSlot] = useState(false);
     const [formData, setFormData] = useState<BookingFormData>({
         vehicleCode: '',
@@ -102,54 +78,48 @@ export default function ServiceCenterDashboard() {
         vehicleModel: '',
     });
 
+    const {
+        serviceTypes,
+        serviceLines,
+        bookings,
+        calendarDots,
+        stats,
+        loading,
+        error,
+        createBooking,
+        updateBooking
+    } = useServiceCenterBookings(
+        selectedDate,
+        selectedLineId,
+        selectedServiceType
+    );
+
+    const TIME_SLOTS = generateTimeSlots();
+
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
 
     const handleSelectDate = (value: dayjs.Dayjs) => {
         setSelectedDate(value);
     };
 
     const dateCellRender = (date: dayjs.Dayjs) => {
-        const mockDots: Record<string, string[]> = {
-            '2025-12-30': ['green', 'orange'],
-            '2026-01-03': ['green', 'orange'],
-            '2026-01-04': ['red'],
-            '2026-01-05': ['green'],
-            '2026-01-06': ['green', 'orange'],
-            '2026-01-07': ['red', 'orange'],
-            '2026-01-08': ['red'],
-            '2026-01-09': ['green', 'orange'],
-            '2026-01-10': ['green'],
-            '2026-01-12': ['red'],
-            '2026-01-14': ['red', 'orange'],
-            '2026-01-15': ['green', 'orange'],
-            '2026-01-16': ['red'],
-            '2026-01-18': ['green', 'orange'],
-            '2026-01-20': ['red'],
-            '2026-01-21': ['green', 'orange'],
-            '2026-01-24': ['red'],
-            '2026-01-25': ['green'],
-            '2026-01-27': ['green', 'orange'],
-            '2026-01-28': ['red'],
-            '2026-01-30': ['green', 'orange'],
-            '2026-02-03': ['green', 'orange'],
-            '2026-02-04': ['red'],
-            '2026-02-05': ['green'],
-            '2026-02-06': ['green', 'orange'],
-            '2026-02-07': ['red', 'orange'],
-            '2026-02-08': ['red'],
-        };
         const dateStr = date.format('YYYY-MM-DD');
-        const dotColors = mockDots[dateStr] || [];
+        
+        const dotColors = calendarDots[dateStr] || [];
+        
         return (
             <div className="flex justify-start items-end w-full gap-[4px]">
                 {dotColors.slice(0, 3).map((color: string, i: number) => (
                     <span
                         key={i}
                         className={`w-[7px] h-[7px] rounded-full ${
-                            color === 'green' ? 'bg-[#039855]' : color === 'red' ? 'bg-[#DB2727]' : 'bg-[#FF961B]'
+                            color === 'green' ? 'bg-[#039855]' : 
+                            color === 'red' ? 'bg-[#DB2727]' : 
+                            'bg-[#FF961B]'
                         }`}
                     />
                 ))}
@@ -158,64 +128,46 @@ export default function ServiceCenterDashboard() {
     };
 
     const getSlotStatus = (slotStart: string): SlotStatus => {
-        if (slotStart === '08:00') {
-            return { status: 'booked', vehicleCode: 'CAB - 5482', vehicleNo: '5' };
+        const booking = bookings.find(b => b.start_time === slotStart);
+
+        if(!booking) {
+            return { status: null, vehicleCode: null }
         }
-        if (slotStart === '09:30') {
-            return { status: 'pending', vehicleCode: 'CAB - 4862', vehicleNo: '5' };
+        
+        return {
+            status: booking.status,
+            vehicleCode: booking.vehicle_no,
         }
-        return { status: 'available', vehicleCode: null, vehicleNo: null };
     };
 
     const getBookingDetails = (slotStart: string): BookingDetails | null => {
-        const slotStatus = getSlotStatus(slotStart);
+        const booking = bookings.find(b => b.start_time === slotStart);
 
-        if (slotStatus.status === 'available') {
+        if (!booking) {
             return null;
         }
 
-        const mockData: Record<string, BookingDetails> = {
-            '08:00': {
-                vehicleCode: 'CAB - 5482',
-                vehicleNo: '5',
-                customerName: 'Rajesh Kumar',
-                phoneNumber: '077-1234567',
-                vehicleModel: 'Toyota Corolla',
-                status: 'booked',
-            },
-            '09:30': {
-                vehicleCode: 'CAB - 4862',
-                vehicleNo: '5',
-                customerName: 'Priya Sharma',
-                phoneNumber: '077-9876543',
-                vehicleModel: 'Honda Civic',
-                status: 'pending',
-            },
-        };
-
-        return mockData[slotStart] || {
-            vehicleCode: slotStatus.vehicleCode || 'N/A',
-            vehicleNo: slotStatus.vehicleNo || 'N/A',
-            customerName: 'John Doe',
-            phoneNumber: '077-0000000',
-            vehicleModel: 'Unknown',
-            status: slotStatus.status,
+        return {
+            vehicleCode: booking.vehicle_no || '',
+            customerName: booking.customer_name || '',
+            phoneNumber: booking.phone_number || '',
+            vehicleModel: '', // Not in API response
+            status: booking.status,
         };
     };
 
     const handleSlotClick = (slot: { start: string; end: string; label: string }) => {
         const slotStatus = getSlotStatus(slot.start);
 
-        if (slotStatus.status === 'available') {
+        if (slotStatus.status === null) {
             setSelectedBooking({
                 slotStart: slot.start,
                 slotEnd: slot.end,
                 slotLabel: slot.label,
                 vehicleCode: '',
-                vehicleNo: '',
-                status: 'available',
+                status: null,
             });
-            setBookingStatus('booked');
+            setBookingStatus('BOOKED');
             setIsAvailableSlot(true);
             setFormData({
                 vehicleCode: '',
@@ -227,13 +179,14 @@ export default function ServiceCenterDashboard() {
         } else {
             const bookingDetails = getBookingDetails(slot.start);
             if (bookingDetails) {
+                const booking = bookings.find(b => b.start_time === slot.start);
                 setSelectedBooking({
                     slotStart: slot.start,
                     slotEnd: slot.end,
                     slotLabel: slot.label,
                     vehicleCode: bookingDetails.vehicleCode,
-                    vehicleNo: bookingDetails.vehicleNo,
                     status: bookingDetails.status,
+                    bookingId: booking?.id,
                 });
                 setBookingStatus(bookingDetails.status);
                 setIsAvailableSlot(false);
@@ -248,14 +201,59 @@ export default function ServiceCenterDashboard() {
         }
     };
 
-    const handleSave = () => {
-        console.log('Saving booking with status:', bookingStatus);
-        setIsModalOpen(false);
+    const handleSave = async () => {
+        if (!selectedBooking || !selectedLineId) return;
+        
+        try {
+            if (isAvailableSlot) {
+                // Create new booking
+                await createBooking({
+                    line_id: Number(selectedLineId),
+                    date: selectedDate.format('YYYY-MM-DD'),
+                    start_time: selectedBooking.slotStart,
+                    end_time: selectedBooking.slotEnd,
+                    vehicle_no: formData.vehicleCode,
+                    customer_name: formData.customerName,
+                    phone_number: formData.phoneNumber,
+                    status: 'BOOKED'
+                });
+            } else if (selectedBooking.bookingId) {
+                // Update existing booking status
+                await updateBooking(selectedBooking.bookingId, bookingStatus);
+            }
+            
+            setIsModalOpen(false);
+        } catch (err) {
+            const error = err as { 
+                response?: { 
+                    status?: number; 
+                    data?: { message?: string } 
+                }; 
+                message?: string 
+            };
+            if (error.response?.status === 409) {
+                alert('This slot is already booked. Please choose another time.');
+            } else {
+                alert('Failed to save booking: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+            }
+        }
     };
 
-    const handleCancelBooking = () => {
-        console.log('Cancelling booking');
-        setIsModalOpen(false);
+    const handleCancelBooking = async () => {
+        if (!selectedBooking?.bookingId) return;
+        
+        try {
+            await updateBooking(selectedBooking.bookingId, 'CANCELLED');
+            setIsModalOpen(false);
+        } catch (err) {
+            const error = err as { 
+                response?: { 
+                    data?: { message?: string } 
+                }; 
+                message?: string 
+            };
+            alert('Failed to cancel booking: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+        }
     };
 
     const handleCloseModal = () => {
@@ -269,6 +267,49 @@ export default function ServiceCenterDashboard() {
             vehicleModel: '',
         });
     };
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-[#F0F2F5]">
+                <div className="bg-white rounded-[2rem] p-12 shadow-lg flex flex-col items-center gap-6 min-w-[20rem]">
+                    <div className="relative">
+                        <Loader2 className="w-16 h-16 text-[#DB2727] animate-spin" />
+                        <div className="absolute inset-0 rounded-full border-4 border-[#DB2727]/20"></div>
+                    </div>
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-[#1D1D1D] montserrat mb-2">Loading Services</h3>
+                        <p className="text-sm text-[#575757] montserrat">Please wait while we fetch your data...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
+    // Error state
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-[#F0F2F5] px-4">
+                <div className="bg-white rounded-[2rem] p-12 shadow-lg flex flex-col items-center gap-6 max-w-md w-full">
+                    <div className="relative">
+                        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
+                            <AlertCircle className="w-10 h-10 text-[#DB2727]" />
+                        </div>
+                    </div>
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-[#1D1D1D] montserrat mb-2">Unable to Load Data</h3>
+                        <p className="text-sm text-[#575757] montserrat mb-4">{error}</p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-6 py-3 bg-[#DB2727] text-white rounded-xl font-semibold montserrat hover:bg-[#C21F1F] transition-colors shadow-sm"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen">
@@ -308,28 +349,28 @@ export default function ServiceCenterDashboard() {
                                     <Users className="w-6 h-6 text-[#575757] mb-3" />
                                     <span className="text-[0.9375rem] font-semibold text-[#1D1D1D] montserrat">Total Scheduled</span>
                                 </div>
-                                <div className="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold bg-[#FFD4D4] text-[#DB2727]">0</div>
+                                <div className="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold bg-[#FFD4D4] text-[#DB2727]">{stats.totalScheduled}</div>
                             </div>
                             <div className="bg-white rounded-[1.25rem] p-4 pr-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-start justify-between">
                                 <div className="flex flex-col">
                                     <Clock className="w-6 h-6 text-[#FF961B] mb-3" />
                                     <span className="text-[0.9375rem] font-semibold text-[#1D1D1D] montserrat">In Progress</span>
                                 </div>
-                                <div className="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold bg-[#FFE0B3] text-[#E67700]">0</div>
+                                <div className="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold bg-[#FFE0B3] text-[#E67700]">{stats.inProgress}</div>
                             </div>
                             <div className="bg-white rounded-[1.25rem] p-4 pr-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-start justify-between">
                                 <div className="flex flex-col">
                                     <Info className="w-6 h-6 text-[#DB2727] mb-3" />
                                     <span className="text-[0.9375rem] font-semibold text-[#1D1D1D] montserrat">Upcoming</span>
                                 </div>
-                                <div className="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold bg-[#DB272733] text-[#DB2727]">0</div>
+                                <div className="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold bg-[#DB272733] text-[#DB2727]">{stats.upcoming}</div>
                             </div>
                             <div className="bg-white rounded-[1.25rem] p-4 pr-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex items-start justify-between">
                                 <div className="flex flex-col">
                                     <Sparkles className="w-6 h-6 text-[#039855] mb-3" />
                                     <span className="text-[0.9375rem] font-semibold text-[#1D1D1D] montserrat">Available Slots</span>
                                 </div>
-                                <div className="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold bg-[#C3F3C8] text-[#1D7C3D]">0</div>
+                                <div className="w-10 h-10 flex items-center justify-center rounded-full text-lg font-bold bg-[#C3F3C8] text-[#1D7C3D]">{stats.availableSlots}</div>
                             </div>
                         </div>
 
@@ -354,7 +395,10 @@ export default function ServiceCenterDashboard() {
                                             placeholder="Service Type"
                                             variant="borderless"
                                             suffixIcon={DROPDOWN_ARROW_SVG}
-                                            options={[{ value: 'Repair', label: 'Repair' }]}
+                                            options={serviceTypes.map(type => ({
+                                                value: type,
+                                                label: type.charAt(0) + type.slice(1).toLowerCase() // "REPAIR" -> "Repair"
+                                            }))}
                                             value={selectedServiceType}
                                             onChange={(val) => {
                                                 setSelectedServiceType(val);
@@ -366,9 +410,12 @@ export default function ServiceCenterDashboard() {
                                             placeholder="Select Line"
                                             variant="borderless"
                                             suffixIcon={DROPDOWN_ARROW_SVG}
-                                            options={[{ value: 'line3', label: 'Line 3 - Brake Service' }]}
-                                            value={selectedLineId}
-                                            onChange={setSelectedLineId}
+                                            options={serviceLines.map(line => ({
+                                                value: line.id.toString(),
+                                                label: line.name
+                                            }))}
+                                            value={selectedLineId?.toString()}
+                                            onChange={(val) => setSelectedLineId(val ? Number(val) : null)}
                                         />
                                     </div>
                                 </div>
@@ -438,9 +485,9 @@ export default function ServiceCenterDashboard() {
                                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
                                         {TIME_SLOTS.map((slot) => {
                                             const slotStatus = getSlotStatus(slot.start);
-                                            const isAvailable = slotStatus.status === 'available';
-                                            const isBooked = slotStatus.status === 'booked';
-                                            const isPending = slotStatus.status === 'pending';
+                                            const isAvailable = slotStatus.status === null;
+                                            const isBooked = slotStatus.status === 'BOOKED';
+                                            const isPending = slotStatus.status === 'PENDING';
 
                                             return (
                                                 <div key={slot.start} className="flex items-center gap-6 relative group">
@@ -452,28 +499,26 @@ export default function ServiceCenterDashboard() {
                                                     </div>
                                                     <div
                                                         onClick={() => handleSlotClick(slot)}
-                                                        className={`flex-1 rounded-[20px] p-4 flex justify-between items-center transition-all duration-200 shadow-sm border-2 ${
-                                                            isAvailable
+                                                        className={`flex-1 rounded-[20px] p-4 flex justify-between items-center transition-all duration-200 shadow-sm border-2 ${isAvailable
                                                                 ? 'bg-[#D9FFD9] cursor-pointer hover:shadow-md border-[#A7FFA7]'
                                                                 : isBooked
-                                                                ? 'bg-[#FFB3B3] border-[#FF9191] cursor-pointer hover:shadow-md'
-                                                                : isPending
-                                                                ? 'bg-[#FFD9B3] cursor-pointer hover:shadow-md border-[#FFDAA3]'
-                                                                : 'bg-[#A7FFA780] cursor-pointer hover:shadow-md'
-                                                        }`}
+                                                                    ? 'bg-[#FFB3B3] border-[#FF9191] cursor-pointer hover:shadow-md'
+                                                                    : isPending
+                                                                        ? 'bg-[#FFD9B3] cursor-pointer hover:shadow-md border-[#FFDAA3]'
+                                                                        : 'bg-[#A7FFA780] cursor-pointer hover:shadow-md'
+                                                            }`}
                                                         style={{ boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)' }}
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <div
-                                                                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${
-                                                                    isAvailable
+                                                                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${isAvailable
                                                                         ? 'bg-[#FFFFFF80] text-[#039855]'
                                                                         : isBooked
-                                                                        ? 'bg-[#FFFFFF80] text-[#F52A2A]'
-                                                                        : isPending
-                                                                        ? 'bg-[#FFFFFF80] text-[#F52A2A]'
-                                                                        : 'bg-[#A7FFA7] text-white'
-                                                                }`}
+                                                                            ? 'bg-[#FFFFFF80] text-[#F52A2A]'
+                                                                            : isPending
+                                                                                ? 'bg-[#FFFFFF80] text-[#F52A2A]'
+                                                                                : 'bg-[#A7FFA7] text-white'
+                                                                    }`}
                                                                 style={{
                                                                     boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.15)',
                                                                     fontFamily: FONT_FAMILY,
@@ -482,7 +527,7 @@ export default function ServiceCenterDashboard() {
                                                                     lineHeight: '18px',
                                                                 }}
                                                             >
-                                                                {isAvailable ? '+' : slotStatus.vehicleNo || '5'}
+                                                                {isAvailable ? '+' : selectedDate.date()}
                                                             </div>
                                                             <div>
                                                                 <h4
@@ -496,11 +541,7 @@ export default function ServiceCenterDashboard() {
                                                                 >
                                                                     {isAvailable
                                                                         ? 'Available'
-                                                                        : isBooked
-                                                                        ? slotStatus.vehicleCode || `CAB - ${slotStatus.vehicleNo}`
-                                                                        : isPending
-                                                                        ? slotStatus.vehicleCode || `CAB - ${slotStatus.vehicleNo}`
-                                                                        : 'Available'}
+                                                                        : slotStatus.vehicleCode || 'N/A'}
                                                                 </h4>
                                                                 <p
                                                                     className="text-sm font-medium text-gray-600"
@@ -516,15 +557,14 @@ export default function ServiceCenterDashboard() {
                                                             </div>
                                                         </div>
                                                         <div
-                                                            className={`w-[95px] h-[30px] flex items-center justify-center rounded-full text-xs font-semibold gap-2 ${
-                                                                isAvailable
+                                                            className={`w-[95px] h-[30px] flex items-center justify-center rounded-full text-xs font-semibold gap-2 ${isAvailable
                                                                     ? 'bg-[#FFFFFF99] text-[#039855]'
                                                                     : isBooked
-                                                                    ? 'bg-[#FFFFFF99] text-[#DB2727]'
-                                                                    : isPending
-                                                                    ? 'bg-[#FFFFFF99] text-[#FF961B]'
-                                                                    : 'bg-[#A7FFA7] text-[#1D1D1D]'
-                                                            }`}
+                                                                        ? 'bg-[#FFFFFF99] text-[#DB2727]'
+                                                                        : isPending
+                                                                            ? 'bg-[#FFFFFF99] text-[#FF961B]'
+                                                                            : 'bg-[#A7FFA7] text-[#1D1D1D]'
+                                                                }`}
                                                             style={{
                                                                 fontFamily: FONT_FAMILY,
                                                                 fontWeight: 600,
