@@ -10,8 +10,9 @@ export const complaintService = {
         return res.data;
     },
 
-    getAll: async () => {
-        const res = await axiosInstance.get(API_URL);
+    getAll: async (filters?: any) => {
+        const params = new URLSearchParams(filters).toString();
+        const res = await axiosInstance.get(`${API_URL}${params ? `?${params}` : ""}`);
         return res.data;
     },
 

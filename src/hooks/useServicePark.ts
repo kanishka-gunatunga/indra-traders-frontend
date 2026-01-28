@@ -31,7 +31,8 @@ import {
     deletePackage,
     deleteService,
     updateBranch, deleteBranch, getBranchCatalog, validatePromo, getPromos, getDailyBookings, submitBooking,
-    getBookingAvailability
+    getBookingAvailability,
+    getScheduledServices, getBookingById, cancelBooking, rescheduleBooking
 } from "@/services/serviceParkService";
 
 
@@ -384,6 +385,48 @@ export const useSubmitBooking = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['dailyBookings'] });
             queryClient.invalidateQueries({ queryKey: ['bookingAvailability'] });
+        },
+    });
+};
+
+export const useScheduledServices = (branchId?: number | null, date?: string, page: number = 1) => {
+    return useQuery({
+        queryKey: ['scheduledServices', branchId, date, page],
+        queryFn: () => getScheduledServices(branchId, date, page),
+        refetchInterval: 5000,
+        placeholderData: keepPreviousData
+    });
+};
+
+export const useServiceBooking = (id: number) => {
+    return useQuery({
+        queryKey: ['serviceBooking', id],
+        queryFn: () => getBookingById(id),
+        enabled: !!id
+    });
+};
+
+export const useCancelBooking = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: cancelBooking,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['scheduledServices'] });
+            queryClient.invalidateQueries({ queryKey: ['dailyBookings'] });
+            queryClient.invalidateQueries({ queryKey: ['bookingAvailability'] });
+        },
+    });
+};
+
+export const useRescheduleBooking = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) => rescheduleBooking(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['scheduledServices'] });
+            queryClient.invalidateQueries({ queryKey: ['dailyBookings'] });
+            queryClient.invalidateQueries({ queryKey: ['bookingAvailability'] });
+            queryClient.invalidateQueries({ queryKey: ['serviceBooking'] });
         },
     });
 };

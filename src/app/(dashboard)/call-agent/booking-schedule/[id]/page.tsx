@@ -3,25 +3,29 @@
 
 "use client"
 import Image from "next/image";
-import React, {useEffect, useMemo, useState} from "react";
-import {Badge, Calendar, ConfigProvider, Select} from "antd";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { Badge, Calendar, ConfigProvider, Select } from "antd";
 import dayjs from "dayjs";
-import {useSelector, useDispatch} from "react-redux";
-import {useToast} from "@/hooks/useToast";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {useForm} from "react-hook-form";
+import { useToast } from "@/hooks/useToast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useParams } from "next/navigation";
+import { useSelector, useDispatch } from "react-redux";
+import { z } from "zod";
+import { removeBookingItem } from "@/redux/slices/bookingSlice";
 import {
     useBookingAvailability,
     useBranchDetails,
     useBranches,
     useDailyBookings,
-    useSubmitBooking
+    useRescheduleBooking,
+    useServiceBooking
 } from "@/hooks/useServicePark";
-import {vehicleHistorySchema} from "../page";
 import FormField from "@/components/FormField";
 import Toast from "@/components/Toast";
-import {removeBookingItem} from "@/redux/slices/bookingSlice";
 import Modal from "@/components/Modal";
+import RedSpinner from "@/components/RedSpinner";
 
 
 interface TimeSlot {
@@ -34,6 +38,16 @@ interface SlotStatus {
     status: 'available' | 'booked' | 'pending';
     data: any | null;
 }
+
+const vehicleHistorySchema = z.object({
+    vehicle_no: z.string().min(1, "Vehicle number is required"),
+    owner_name: z.string().min(1, "Owner name is required"),
+    contact_no: z.string().min(1, "Contact number is required"),
+    mileage: z.string().optional(),
+    oil_type: z.string().optional(),
+    service_center: z.string().optional(),
+    service_advisor: z.string().optional()
+});
 
 const generateTimeSlots = (): TimeSlot[] => {
     const slots = [];
@@ -80,21 +94,17 @@ const getGroupKeyFromServiceType = (serviceType: string | null): string | null =
 };
 
 
-const RedSpinner = () => (
-    <div className="flex justify-center items-center w-full py-20">
-        <div
-            className="w-12 h-12 border-4 border-gray-200 rounded-full animate-spin"
-            style={{borderTopColor: '#DB2727'}}
-            role="status"
-            aria-label="loading"
-        />
-    </div>
-);
 
-const ServiceParkBooking = () => {
-    const {toast, showToast, hideToast} = useToast();
+
+const ReschedulePage = () => {
+    const { id } = useParams();
+    const { toast, showToast, hideToast } = useToast();
     const dispatch = useDispatch();
     const bookingState = useSelector((state: any) => state.booking);
+
+    // Fetch existing booking details
+    const { data: booking, isLoading: loadingBooking } = useServiceBooking(Number(id));
+    const rescheduleMutation = useRescheduleBooking();
 
     const [selectedDate, setSelectedDate] = useState<dayjs.Dayjs>(dayjs());
     const [calendarMonth, setCalendarMonth] = useState<string>(dayjs().format('YYYY-MM'));
@@ -108,7 +118,6 @@ const ServiceParkBooking = () => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
     const isSlotSelectionEnabled = !!selectedBranchId && !!selectedServiceType && !!selectedLineId;
-
 
     const handleConfirmClick = () => {
         if (!selectedBranchId || !selectedLineId || selectedSlots.length === 0) {
@@ -138,11 +147,11 @@ const ServiceParkBooking = () => {
     }, [bookingState.selectedServices]);
 
     const handleRemoveItem = (id: string | number, type: string) => {
-        dispatch(removeBookingItem({id, type}));
+        dispatch(removeBookingItem({ id, type }));
         showToast("Item removed", "success");
     };
 
-    const {register, setValue} = useForm({
+    const { register, setValue } = useForm({
         resolver: zodResolver(vehicleHistorySchema),
         defaultValues: {
             vehicle_no: "", owner_name: "", contact_no: "",
@@ -150,49 +159,61 @@ const ServiceParkBooking = () => {
         }
     });
 
-    const {data: branches} = useBranches();
-    const {data: branchDetails} = useBranchDetails(selectedBranchId!);
+    const { data: branches } = useBranches();
+    const { data: branchDetails } = useBranchDetails(selectedBranchId!);
 
+    // Populate state from existing booking
     useEffect(() => {
-        if (bookingState.isFromServicePark && bookingState.vehicleData) {
-            const vData = bookingState.vehicleData;
-            Object.keys(vData).forEach((key) => setValue(key as any, vData[key]));
-        }
-    }, [bookingState, setValue]);
+        if (booking) {
+            setSelectedBranchId(booking.branch_id);
+            setSelectedLineId(booking.service_line_id);
 
-    useEffect(() => {
-        if (branches && branches.length > 0 && bookingState.vehicleData?.service_center) {
-            const formBranchName = bookingState.vehicleData.service_center;
-
-            const matchedBranch = branches.find((b: any) =>
-                b.name.toLowerCase().trim() === formBranchName.toLowerCase().trim()
-            );
-
-            if (matchedBranch) {
-                setSelectedBranchId(matchedBranch.id);
+            if (booking.booking_date) {
+                const bDate = dayjs(booking.booking_date);
+                setSelectedDate(bDate);
+                setCalendarMonth(bDate.format('YYYY-MM'));
             }
+
+            if (booking.ServiceLine?.type) {
+                setSelectedServiceType(booking.ServiceLine.type);
+            }
+
+            if (booking.related_slots && Array.isArray(booking.related_slots)) {
+                const slots = booking.related_slots.map((t: string) => t.substring(0, 5));
+                setSelectedSlots(slots);
+            } else if (booking.start_time) {
+                const startTime = booking.start_time.substring(0, 5);
+                setSelectedSlots([startTime]);
+            }
+
+            // Populate Form / Vehicle Details
+            setValue("vehicle_no", booking.vehicle_no || "");
+            setValue("owner_name", booking.Customer?.customer_name || "");
+            setValue("contact_no", booking.Customer?.phone_number || "");
+            setValue("service_center", booking.Branch?.name || "");
+            setValue("service_advisor", booking.ServiceLine?.advisor || "");
         }
-    }, [branches, bookingState.vehicleData]);
+    }, [booking, setValue]);
 
     const serviceTypes = React.useMemo(() => {
         if (!branchDetails?.serviceLines) return [];
         const types = new Set(branchDetails.serviceLines.map((l: any) => l.type));
-        return Array.from(types).map(t => ({value: t, label: t}));
+        return Array.from(types).map(t => ({ value: t, label: t }));
     }, [branchDetails]);
 
     const serviceLines = React.useMemo(() => {
         if (!branchDetails?.serviceLines || !selectedServiceType) return [];
         return branchDetails.serviceLines
             .filter((l: any) => l.type === selectedServiceType && l.status === 'ACTIVE')
-            .map((l: any) => ({value: l.id, label: `${l.name} (${l.advisor})`}));
+            .map((l: any) => ({ value: l.id, label: `${l.name} (${l.advisor})` }));
     }, [branchDetails, selectedServiceType]);
 
-    const {data: availabilityData} = useBookingAvailability(selectedBranchId, selectedLineId, calendarMonth);
+    const { data: availabilityData } = useBookingAvailability(selectedBranchId, selectedLineId, calendarMonth);
     const {
         data: dailyBookings,
         isLoading: loadingSlots
     } = useDailyBookings(selectedBranchId, selectedLineId, selectedDateString);
-    const bookingMutation = useSubmitBooking();
+
 
     const disabledDate = (current: dayjs.Dayjs) => {
         if (!availabilityData?.unavailableDates) return false;
@@ -206,9 +227,8 @@ const ServiceParkBooking = () => {
         return (
             <div className="flex justify-center items-end h-full pb-1 gap-1">
                 {dotColors.slice(0, 3).map((color: string, i: number) => (
-                    <span key={i} className={`w-1.5 h-1.5 rounded-full ${
-                        color === 'green' ? 'bg-[#039855]' : color === 'red' ? 'bg-[#DB2727]' : 'bg-[#FF961B]'
-                    }`}/>
+                    <span key={i} className={`w-1.5 h-1.5 rounded-full ${color === 'green' ? 'bg-[#039855]' : color === 'red' ? 'bg-[#DB2727]' : 'bg-[#FF961B]'
+                        }`} />
                 ))}
             </div>
         );
@@ -220,22 +240,34 @@ const ServiceParkBooking = () => {
     };
 
     const getSlotStatus = (slotStart: string): SlotStatus => {
-        if (!dailyBookings) return {status: 'available', data: null};
+        if (!dailyBookings) return { status: 'available', data: null };
 
-        const booking = dailyBookings.find((b: any) => b.start_time.substring(0, 5) === slotStart);
-        if (booking) return {status: 'booked', data: booking};
+        const slotBooking = dailyBookings.find((b: any) => b.start_time.substring(0, 5) === slotStart);
 
-        if (selectedSlots.includes(slotStart)) return {status: 'pending', data: null};
-        return {status: 'available', data: null};
+        if (slotBooking) {
+            // Check if this slot belongs to the current "appointment" (group of slots being edited)
+            const isCurrentBooking = booking?.related_ids?.includes(slotBooking.id) || slotBooking.id === Number(id);
+
+            if (isCurrentBooking) {
+                // fall through to check selectedSlots logic (pending)
+            } else {
+                return { status: 'booked', data: slotBooking };
+            }
+        }
+
+        if (selectedSlots.includes(slotStart)) return { status: 'pending', data: null };
+        return { status: 'available', data: null };
     };
 
     const toggleSlot = (start: string) => {
         if (!isSlotSelectionEnabled) return;
 
-        const {status} = getSlotStatus(start);
+        const { status } = getSlotStatus(start);
         if (status === 'booked') return;
         setSelectedSlots(prev => prev.includes(start) ? prev.filter(s => s !== start) : [...prev, start]);
     };
+
+    const router = useRouter();
 
     const handleSubmitBooking = () => {
         if (!selectedBranchId || !selectedLineId || selectedSlots.length === 0) {
@@ -244,36 +276,25 @@ const ServiceParkBooking = () => {
         }
         const slotsPayload = selectedSlots.map(start => {
             const slotObj = TIME_SLOTS.find(ts => ts.start === start);
-            return {start: slotObj?.start, end: slotObj?.end};
+            return { start: slotObj?.start, end: slotObj?.end };
         });
 
-        const vehicleData = bookingState.vehicleData || {};
-
-        bookingMutation.mutate({
-            branch_id: selectedBranchId,
-            service_line_id: selectedLineId,
-            booking_date: selectedDateString,
-            slots: slotsPayload,
-            // vehicle_no: bookingState.vehicleData?.vehicle_no,
-            // customer_id: bookingState.vehicleData?.customer_id,
-
-            customer_id: vehicleData.customer_id,
-
-            vehicle_no: vehicleData.vehicle_no,
-            owner_name: vehicleData.owner_name,
-            contact_no: vehicleData.contact_no,
-            email: vehicleData.email,
-            address: vehicleData.address,
+        rescheduleMutation.mutate({
+            id: Number(id),
+            data: {
+                branch_id: selectedBranchId,
+                service_line_id: selectedLineId,
+                booking_date: selectedDateString,
+                slots: slotsPayload,
+            }
         }, {
             onSuccess: () => {
-                showToast("Booking created successfully", "success");
+                showToast("Booking rescheduled successfully", "success");
                 setSelectedSlots([]);
                 setIsConfirmModalOpen(false);
+                router.push("/call-agent/booking-schedule");
             },
-            onError: (err: any) => {
-                showToast(err.response?.data?.message || "Failed", "error");
-                console.log(err)
-            }
+            onError: (err: any) => showToast(err.response?.data?.message || "Failed", "error")
         });
     };
 
@@ -294,122 +315,12 @@ const ServiceParkBooking = () => {
     return (
         <div
             className="relative min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
-            <Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast}/>
+            <Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast} />
 
             <div className="max-w-[1800px] mx-auto container">
 
                 <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-                    <h1 className="text-2xl font-extrabold mb-8">Indra Service Park Sales Dashboard</h1>
-
-                    <section className="bg-white/60 rounded-[45px] px-14 py-10 mb-8 border border-white shadow-sm">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="font-semibold text-[22px]">Last Service Details</h2>
-                        </div>
-                        <div className="grid grid-cols-4 gap-6 opacity-80 pointer-events-none">
-                            <FormField label="Mileage" register={register("mileage")}/>
-                            <FormField label="Oil Type" register={register("oil_type")}/>
-                            <FormField label="Service Center" register={register("service_center")}/>
-                            <FormField label="Service Advisor" register={register("service_advisor")}/>
-                        </div>
-                    </section>
-
-                    {Object.entries(groupedItems).map(([key, items]: [string, any[]]) => {
-                        // if (!items || items.length === 0) return null;
-                        //
-                        // const categorySubTotal = items.reduce((sum, item) => sum + item.price, 0);
-                        //
-                        // const title = categoryTitles[key] || key.charAt(0).toUpperCase() + key.slice(1);
-
-                        if (!items || items.length === 0) return null;
-
-                        // --- NEW FILTER LOGIC STARTS HERE ---
-                        // We check if the user has selected a service type in the Schedule dropdown.
-                        // If selected, we ONLY show the section that matches that type.
-                        if (selectedServiceType) {
-                            const targetKey = getGroupKeyFromServiceType(selectedServiceType);
-                            // If we have a target key (e.g. 'repairs') and the current loop key (e.g. 'paints')
-                            // does not match, we return null to hide it.
-                            if (targetKey && key == targetKey) {
-                                return null;
-                            }
-                        }
-                        // --- NEW FILTER LOGIC ENDS HERE ---
-
-                        const categorySubTotal = items.reduce((sum, item) => sum + item.price, 0);
-                        const title = categoryTitles[key] || key.charAt(0).toUpperCase() + key.slice(1);
-
-                        return (
-                            <section
-                                key={key}
-                                id={`${key}-section`}
-                                className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center mb-8 border border-white shadow-sm"
-                            >
-                                <div className="w-full">
-                                    <div className="flex flex-row items-center justify-between mb-6">
-                                        <h2 className="text-xl md:text-[22px] font-semibold text-black px-4">
-                                            {title}
-                                        </h2>
-                                    </div>
-
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-black border-collapse">
-                                            <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                                <th className="py-4 px-4 text-left w-2/3">Description</th>
-                                                <th className="py-4 px-4 text-right w-1/3">Estimate Price</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody>
-                                            {items.map((item, index) => (
-                                                <tr
-                                                    key={`${item.type}-${item.id}`}
-                                                    className="group text-lg font-medium text-[#1D1D1D] hover:bg-red-50/30 transition-colors duration-200 border-b border-gray-200/50 last:border-0"
-                                                >
-                                                    <td className="py-4 px-4 text-[#1D1D1D] pl-8">
-                                                        {item.name}
-                                                    </td>
-                                                    <td className="py-3 px-2 text-right">
-                                                        <div className="flex items-center justify-end gap-4">
-                                                            <span
-                                                                className="text-[#1D1D1D] text-lg font-medium group-hover:mr-2 transition-all duration-200">
-                                                                LKR {item.price.toLocaleString()}
-                                                            </span>
-
-                                                            <button
-                                                                onClick={() => handleRemoveItem(item.id, item.type)}
-                                                                className="opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-200 p-1.5 hover:bg-red-100 rounded-full flex-shrink-0"
-                                                                title="Remove item"
-                                                                aria-label={`Remove ${item.name}`}
-                                                            >
-                                                                <Image
-                                                                    src="/close.svg"
-                                                                    alt="remove"
-                                                                    width={20}
-                                                                    height={20}
-                                                                    className="w-8 h-8 opacity-100"
-                                                                />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-
-                                            <tr className="border-y-1 border-[#575757]">
-                                                <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D]">Total
-                                                    Estimate
-                                                    Price
-                                                </td>
-                                                <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D]">
-                                                    LKR {categorySubTotal.toLocaleString()}
-                                                </td>
-                                            </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </section>
-                        );
-                    })}
+                    <h1 className="text-2xl font-extrabold mb-8">Service Park - Service Schedule</h1>
 
                     <section className="bg-white/60 rounded-[45px] px-14 py-12 mb-8 border border-white shadow-sm">
 
@@ -423,12 +334,12 @@ const ServiceParkBooking = () => {
                                         placeholder="Select Branch"
                                         bordered={false}
                                         suffixIcon={<svg className="" width="10" height="6"
-                                                         viewBox="0 0 10 6" fill="none"
-                                                         xmlns="http://www.w3.org/2000/svg">
+                                            viewBox="0 0 10 6" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg">
                                             <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                  fill="#575757"/>
+                                                fill="#575757" />
                                         </svg>}
-                                        options={branches?.map((b: any) => ({value: b.id, label: b.name}))}
+                                        options={branches?.map((b: any) => ({ value: b.id, label: b.name }))}
                                         value={selectedBranchId}
                                         onChange={(val) => {
                                             setSelectedBranchId(val);
@@ -442,10 +353,10 @@ const ServiceParkBooking = () => {
                                         bordered={false}
                                         disabled={!selectedBranchId}
                                         suffixIcon={<svg className="" width="10" height="6"
-                                                         viewBox="0 0 10 6" fill="none"
-                                                         xmlns="http://www.w3.org/2000/svg">
+                                            viewBox="0 0 10 6" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg">
                                             <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                  fill="#575757"/>
+                                                fill="#575757" />
                                         </svg>}
                                         options={serviceTypes}
                                         value={selectedServiceType}
@@ -460,10 +371,10 @@ const ServiceParkBooking = () => {
                                         bordered={false}
                                         disabled={!selectedServiceType}
                                         suffixIcon={<svg className="" width="10" height="6"
-                                                         viewBox="0 0 10 6" fill="none"
-                                                         xmlns="http://www.w3.org/2000/svg">
+                                            viewBox="0 0 10 6" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg">
                                             <path d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                  fill="#575757"/>
+                                                fill="#575757" />
                                         </svg>}
                                         options={serviceLines}
                                         value={selectedLineId}
@@ -475,10 +386,10 @@ const ServiceParkBooking = () => {
                             <div className="justify-end">
                                 <button
                                     onClick={handleConfirmClick}
-                                    disabled={bookingMutation.isPending || selectedSlots.length === 0}
+                                    disabled={rescheduleMutation.isPending || selectedSlots.length === 0}
                                     className="bg-[#DB2727] text-white px-8 py-2 rounded-full font-medium text-base hover:bg-red-700 transition disabled:bg-gray-400 justify-end"
                                 >
-                                    {bookingMutation.isPending ? "Processing..." : "Confirm Booking"}
+                                    {rescheduleMutation.isPending ? "Processing..." : "Save"}
                                 </button>
                             </div>
                         </div>
@@ -502,7 +413,7 @@ const ServiceParkBooking = () => {
                                         disabledDate={disabledDate}
                                         fullscreen={false}
                                         className="glass-calendar"
-                                        headerRender={({value, onChange}) => {
+                                        headerRender={({ value, onChange }) => {
                                             const current = value.clone();
                                             return (
                                                 <div className="flex items-center justify-between px-2 py-4">
@@ -511,14 +422,14 @@ const ServiceParkBooking = () => {
                                                     </span>
                                                     <div className="flex gap-4">
                                                         <button className="cursor-pointer"
-                                                                onClick={() => onChange(current.subtract(1, 'month'))}>
+                                                            onClick={() => onChange(current.subtract(1, 'month'))}>
                                                             <Image src="/prev-arrow.svg" alt="prev" width={24}
-                                                                   height={24} className="w-4 h-4"/>
+                                                                height={24} className="w-4 h-4" />
                                                         </button>
                                                         <button className="cursor-pointer"
-                                                                onClick={() => onChange(current.add(1, 'month'))}>
+                                                            onClick={() => onChange(current.add(1, 'month'))}>
                                                             <Image src="/next-arrow.svg" alt="next" width={24}
-                                                                   height={24} className="w-4 h-4"/>
+                                                                height={24} className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -563,10 +474,10 @@ const ServiceParkBooking = () => {
                                     {/*        <div className="flex justify-center py-20"><Spin size="large"/></div>*/}
                                     {/*    ) : (*/}
                                     {isSlotSelectionEnabled && loadingSlots ? (
-                                        <RedSpinner/>
+                                        <RedSpinner />
                                     ) : (
                                         TIME_SLOTS.map((slot) => {
-                                            const {status, data} = getSlotStatus(slot.start);
+                                            const { status, data } = getSlotStatus(slot.start);
 
                                             let cardBg = "bg-[#A7FFA780]";
                                             let badgeBg = "bg-[#A7FFA7]";
@@ -603,7 +514,7 @@ const ServiceParkBooking = () => {
 
                                             return (
                                                 <div key={slot.start}
-                                                     className={`flex items-center gap-6 relative group ${!isClickable ? 'cursor-not-allowed' : ''}`}>
+                                                    className={`flex items-center gap-6 relative group ${!isClickable ? 'cursor-not-allowed' : ''}`}>
                                                     <div
                                                         className={`w-[60px] text-right font-medium text-lg ${!isSlotSelectionEnabled ? 'text-gray-300' : 'text-gray-500'}`}>
                                                         {slot.start}
@@ -652,11 +563,11 @@ const ServiceParkBooking = () => {
 
                                                             {isSlotSelectionEnabled && (
                                                                 <svg className="" width="10" height="6"
-                                                                     viewBox="0 0 10 6" fill="none"
-                                                                     xmlns="http://www.w3.org/2000/svg">
+                                                                    viewBox="0 0 10 6" fill="none"
+                                                                    xmlns="http://www.w3.org/2000/svg">
                                                                     <path
                                                                         d="M9.9142 0.58667L5.12263 5.37824L0.331055 0.58667H9.9142Z"
-                                                                        fill="#575757"/>
+                                                                        fill="#575757" />
                                                                 </svg>
                                                             )}
                                                         </div>
@@ -678,9 +589,9 @@ const ServiceParkBooking = () => {
                     title="Service Summary"
                     onClose={() => setIsConfirmModalOpen(false)}
                     actionButton={{
-                        label: bookingMutation.isPending ? "Processing..." : "Confirm",
+                        label: rescheduleMutation.isPending ? "Processing..." : "Confirm",
                         onClick: handleSubmitBooking,
-                        disabled: bookingMutation.isPending,
+                        disabled: rescheduleMutation.isPending,
                     }}
                 >
                     <div className="w-[900px] rounded-[45px] border border-[#E7E7E7] px-8 relative box-border">
@@ -751,7 +662,7 @@ const ServiceParkBooking = () => {
                             <div className="flex flex-col w-full gap-0">
                                 {bookingState.selectedServices?.map((item: any) => (
                                     <div key={`${item.type}-${item.id}`}
-                                         className="flex flex-row items-center w-full px-[10px] h-[42px] mb-[10px]">
+                                        className="flex flex-row items-center w-full px-[10px] h-[42px] mb-[10px]">
                                         <span
                                             className="font-medium text-[18px] leading-[22px] text-[#1D1D1D] flex-grow">
                                             {item.name}
@@ -839,4 +750,4 @@ const ServiceParkBooking = () => {
     );
 }
 
-export default ServiceParkBooking;
+export default ReschedulePage;

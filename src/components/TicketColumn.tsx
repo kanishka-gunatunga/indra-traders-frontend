@@ -7,12 +7,14 @@ interface TicketColumnProps {
   title: string;
   tickets: TicketCardProps[];
   route?: string;
+  draggable?: boolean;
 }
 
-export const TicketColumn = ({ title, tickets, route }: TicketColumnProps) => {
+export const TicketColumn = ({ title, tickets, route, draggable = true }: TicketColumnProps) => {
 
   const { setNodeRef, isOver } = useDroppable({
     id: title,
+    disabled: !draggable, // Also disable droppable if not draggable (optional but consistent)
   });
 
   return (
@@ -36,7 +38,7 @@ export const TicketColumn = ({ title, tickets, route }: TicketColumnProps) => {
             `}
       >
         {tickets.map((ticket, index) => (
-          <TicketCard key={ticket.id} {...ticket} index={index} route={route} />
+          <TicketCard key={ticket.id} {...ticket} index={index} route={route ?? ticket.route} draggable={draggable} />
         ))}
 
         {tickets.length === 0 && (

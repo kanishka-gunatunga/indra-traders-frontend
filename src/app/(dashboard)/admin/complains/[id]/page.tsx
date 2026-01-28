@@ -137,10 +137,10 @@ export default function ComplainDetailsPage() {
                 onClose={hideToast}
             />
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-                <Header
-                    name={user?.full_name || "Sophie Eleanor"}
-                    title="All Complains"
-                />
+                {/*<Header*/}
+                {/*    name={user?.full_name || "Sophie Eleanor"}*/}
+                {/*    title="All Complains"*/}
+                {/*/>*/}
 
                 <section
                     className="relative bg-[#FFFFFF4D] mb-5 bg-opacity-30 rounded-[45px] border border-[#E0E0E0] px-9 py-10 flex flex-col justify-center items-center">

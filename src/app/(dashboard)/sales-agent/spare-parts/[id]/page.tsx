@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import FlowBar, { SalesStatus } from "@/components/FlowBar";
@@ -16,6 +17,7 @@ import {
     useCreateReminder,
     useUpdateSaleStatus, useUpdatePriority, useSaleHistory, usePromoteSale
 } from "@/hooks/useSparePartSales";
+import { useEligibleAgents, useAssignLead } from "@/hooks/useLeads";
 import { message } from "antd";
 import { useCurrentUser } from "@/utils/auth";
 import Image from "next/image";
@@ -71,6 +73,12 @@ export default function SalesDetailsPage() {
     const [reminderDate, setReminderDate] = useState("");
     const [reminderNote, setReminderNote] = useState("");
 
+    const [isAssignModalOpen, setAssignModalOpen] = useState(false);
+    const [selectedAgent, setSelectedAgent] = useState<number | null>(null);
+
+    const { data: eligibleAgents } = useEligibleAgents("IMS", sale?.branch, isAssignModalOpen, sale?.current_level);
+    const assignLeadMutation = useAssignLead();
+
     // const handleAssignClick = () => {
     //     if (status === "New") setStatus("Ongoing");
     // };
@@ -81,25 +89,46 @@ export default function SalesDetailsPage() {
         }
     }, [sale]);
 
-    const handleAssignClick = () => {
-        if (sale && sale.id && status === "New") {
-            assignToMeMutation.mutate(
-                {
-                    id: sale.id, userId
-                },
-                {
-                    onSuccess: () => {
-                        setStatus("Ongoing");
-                        message.success("Sale assigned to you");
-                    },
-                    onError: (err) => {
-                        console.error("Assign spare sale error: ", err);
-                        message.error("Failed to assign sale.");
-                    }
-                }
-            )
+    const handleAssignClick = async () => {
+        if (!sale || !sale.id || status !== "New") return;
+
+        if (user?.user_role === "ADMIN") {
+            setAssignModalOpen(true);
+            return;
         }
+        assignToMeMutation.mutate(
+            {
+                id: sale.id, userId
+            },
+            {
+                onSuccess: () => {
+                    setStatus("Ongoing");
+                    message.success("Sale assigned to you");
+                },
+                onError: (err) => {
+                    console.error("Assign spare sale error: ", err);
+                    message.error("Failed to assign sale.");
+                }
+            }
+        )
     }
+
+
+    const handleAdminAssign = async () => {
+        if (!selectedAgent || !sale) return;
+        try {
+            await assignLeadMutation.mutateAsync({
+                leadType: 'SPARE_PART',
+                leadId: sale.id,
+                salesUserId: selectedAgent,
+                adminId: Number(userId)
+            });
+            setAssignModalOpen(false);
+            setStatus("Ongoing");
+        } catch (error) {
+            console.error("Error assigning lead:", error);
+        }
+    };
 
     const handleSaveActivity = () => {
         if (sale && sale.id && activityText) {
@@ -204,7 +233,9 @@ export default function SalesDetailsPage() {
 
 
     const buttonText =
-        status === "New" ? "Assign to me" : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
+        status === "New"
+            ? (user?.user_role === "ADMIN" ? "Assign to Sales Agent" : "Assign to me")
+            : `Sales person: ${sale.salesUser?.full_name || "Unknown"}`;
 
 
     if (isLoading) {
@@ -316,10 +347,10 @@ export default function SalesDetailsPage() {
                         <button
                             onClick={handleAssignClick}
                             className={`h-[40px] rounded-[22.98px] px-5 font-light flex items-center justify-center text-sm ${status === "New"
-                                    ? "bg-[#DB2727] text-white"
-                                    : "bg-[#EBD4FF] text-[#1D1D1D]"
+                                ? "bg-[#DB2727] text-white"
+                                : "bg-[#EBD4FF] text-[#1D1D1D]"
                                 }`}
-                            disabled={status !== "New" || assignToMeMutation.isPending}
+                            disabled={(status !== "New" && user?.user_role !== "ADMIN") || assignToMeMutation.isPending}
                         >
                             {assignToMeMutation.isPending ? "Assigning..." : buttonText}
                         </button>
@@ -477,12 +508,7 @@ export default function SalesDetailsPage() {
             {isReminderModalOpen && (
                 <Modal
                     title="Add New Reminder"
-                    onClose={() => {
-                        setReminderTitle("");
-                        setReminderDate("");
-                        setReminderNote("");
-                        setReminderModalOpen(false);
-                    }}
+                    onClose={() => setReminderModalOpen(false)}
                     actionButton={{
                         label: createReminderMutation.isPending ? "Saving..." : "Save",
                         onClick: handleSaveReminder,
@@ -494,7 +520,6 @@ export default function SalesDetailsPage() {
                             <label className="block mb-2 font-medium">Task Title</label>
                             <input
                                 type="text"
-                                placeholder="Enter task title"
                                 value={reminderTitle}
                                 onChange={(e) => setReminderTitle(e.target.value)}
                                 className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
@@ -513,12 +538,40 @@ export default function SalesDetailsPage() {
                             <label className="block mb-2 font-medium">Note</label>
                             <input
                                 type="text"
-                                placeholder="Enter note (optional)"
                                 value={reminderNote}
                                 onChange={(e) => setReminderNote(e.target.value)}
                                 className="w-[400px] max-[1345px]:w-[280px] h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 backdrop-blur-[50px] px-4"
                             />
                         </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* Assign Agent Modal (Admin) */}
+            {isAssignModalOpen && (
+                <Modal
+                    title="Assign to Sales Agent"
+                    onClose={() => setAssignModalOpen(false)}
+                    actionButton={{
+                        label: assignLeadMutation.isPending ? "Assigning..." : "Assign",
+                        onClick: handleAdminAssign,
+                        disabled: !selectedAgent || assignLeadMutation.isPending,
+                    }}
+                >
+                    <div className="w-[400px] pb-4">
+                        <label className="block mb-2 font-medium">Select Agent</label>
+                        <select
+                            className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 px-4"
+                            onChange={(e) => setSelectedAgent(Number(e.target.value))}
+                            value={selectedAgent || ""}
+                        >
+                            <option value="" disabled>Select an agent</option>
+                            {eligibleAgents?.map((agent: any) => (
+                                <option key={agent.id} value={agent.id}>
+                                    {agent.full_name} ({agent.user_role})
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </Modal>
             )}

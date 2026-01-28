@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import FlowBar, { SalesStatus } from "@/components/FlowBar";
@@ -16,6 +18,7 @@ import {
     useCreateReminder,
     useUpdatePriority, useSaleHistory, usePromoteSale
 } from "@/hooks/useServicePark";
+import { useEligibleAgents, useAssignLead } from "@/hooks/useLeads";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { message } from "antd";
@@ -51,6 +54,9 @@ export default function SalesDetailsPage() {
     const [isReminderModalOpen, setReminderModalOpen] = useState(false);
     const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
 
+    const [isAssignModalOpen, setAssignModalOpen] = useState(false);
+    const [selectedAgent, setSelectedAgent] = useState<number | null>(null);
+
     const [activityText, setActivityText] = useState("");
     const [reminderTitle, setReminderTitle] = useState("");
     const [reminderDate, setReminderDate] = useState("");
@@ -76,6 +82,9 @@ export default function SalesDetailsPage() {
 
     const updatePriorityMutation = useUpdatePriority();
 
+    const { data: eligibleAgents } = useEligibleAgents("SERVICE_PARK", user?.branch, isAssignModalOpen, saleDetails?.current_level);
+    const assignLeadMutation = useAssignLead();
+
     console.log(saleDetails);
 
     // const handleAssignClick = () => {
@@ -95,6 +104,13 @@ export default function SalesDetailsPage() {
     console.log(saleId);
 
     const handleAssignClick = () => {
+        if (!saleDetails || !saleDetails.id || status !== "New") return;
+
+        if (user?.user_role === "ADMIN") {
+            setAssignModalOpen(true);
+            return;
+        }
+
         if (saleDetails && saleDetails.id && status === "New") {
             assignToMeMutation.mutate(
                 {
@@ -113,6 +129,22 @@ export default function SalesDetailsPage() {
             )
         }
     }
+
+    const handleAdminAssign = async () => {
+        if (!selectedAgent || !saleDetails) return;
+        try {
+            await assignLeadMutation.mutateAsync({
+                leadType: 'SERVICE_PARK',
+                leadId: saleDetails.id,
+                salesUserId: selectedAgent,
+                adminId: Number(userId)
+            });
+            setAssignModalOpen(false);
+            setStatus("Ongoing");
+        } catch (error) {
+            console.error("Error assigning lead:", error);
+        }
+    };
 
     const handleSaveActivity = () => {
         if (saleDetails && saleDetails.id && activityText) {
@@ -526,6 +558,36 @@ export default function SalesDetailsPage() {
                     </div>
                 </Modal>
             )}
+
+            {/* Assign Agent Modal (Admin) */}
+            {isAssignModalOpen && (
+                <Modal
+                    title="Assign to Sales Agent"
+                    onClose={() => setAssignModalOpen(false)}
+                    actionButton={{
+                        label: assignLeadMutation.isPending ? "Assigning..." : "Assign",
+                        onClick: handleAdminAssign,
+                        disabled: !selectedAgent || assignLeadMutation.isPending,
+                    }}
+                >
+                    <div className="w-[400px] pb-4">
+                        <label className="block mb-2 font-medium">Select Agent</label>
+                        <select
+                            className="w-full h-[51px] rounded-[30px] bg-[#FFFFFF80] border border-black/50 px-4"
+                            onChange={(e) => setSelectedAgent(Number(e.target.value))}
+                            value={selectedAgent || ""}
+                        >
+                            <option value="" disabled>Select an agent</option>
+                            {eligibleAgents?.map((agent: any) => (
+                                <option key={agent.id} value={agent.id}>
+                                    {agent.full_name} ({agent.user_role})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </Modal>
+            )}
+
         </div>
     );
 }

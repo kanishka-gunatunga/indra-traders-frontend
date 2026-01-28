@@ -1,126 +1,117 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import Header from "@/components/Header";
 import Modal from "@/components/Modal";
+import { useCustomers } from "@/hooks/useCustomers";
+import { useCurrentUser } from "@/utils/auth";
 import Image from "next/image";
 import React, { useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 
-const customerData = [
-  {
-    fullName: "Guy Hawkins",
-    contact: "071 5425433",
-    email: "Devon@indra.com",
-    vehicleNo: ["CAB - 4875", "CAB - 1234"],
-    branch: "Kandy",
-    customerType: "Individual",
-  },
-  {
-    fullName: "Jane Doe",
-    contact: "071 1234567",
-    email: "Jane@indra.com",
-    vehicleNo: ["CAB - 9999"],
-    branch: "Colombo",
-    customerType: "Corporate",
-  },
-  {
-    fullName: "Guy Hawkins",
-    contact: "071 5425433",
-    email: "Devon@indra.com",
-    vehicleNo: ["CAB - 4875", "CAB - 1234"],
-    branch: "Kandy",
-    customerType: "Individual",
-  },
-  {
-    fullName: "Jane Doe",
-    contact: "071 1234567",
-    email: "Jane@indra.com",
-    vehicleNo: ["CAB - 9999"],
-    branch: "Colombo",
-    customerType: "Corporate",
-  },
-  {
-    fullName: "Guy Hawkins",
-    contact: "071 5425433",
-    email: "Devon@indra.com",
-    vehicleNo: ["CAB - 4875", "CAB - 1234"],
-    branch: "Kandy",
-    customerType: "Individual",
-  },
-  {
-    fullName: "Jane Doe",
-    contact: "071 1234567",
-    email: "Jane@indra.com",
-    vehicleNo: ["CAB - 9999"],
-    branch: "Colombo",
-    customerType: "Corporate",
-  },
-  {
-    fullName: "Jane Doe",
-    contact: "071 1234567",
-    email: "Jane@indra.com",
-    vehicleNo: ["CAB - 9999"],
-    branch: "Colombo",
-    customerType: "Corporate",
-  },
-  {
-    fullName: "Guy Hawkins",
-    contact: "071 5425433",
-    email: "Devon@indra.com",
-    vehicleNo: ["CAB - 4875", "CAB - 1234"],
-    branch: "Kandy",
-    customerType: "Individual",
-  },
-  {
-    fullName: "Jane Doe",
-    contact: "071 1234567",
-    email: "Jane@indra.com",
-    vehicleNo: ["CAB - 9999"],
-    branch: "Colombo",
-    customerType: "Corporate",
-  },
-  {
-    fullName: "Guy Hawkins",
-    contact: "071 5425433",
-    email: "Devon@indra.com",
-    vehicleNo: ["CAB - 4875", "CAB - 1234"],
-    branch: "Kandy",
-    customerType: "Individual",
-  },
-  {
-    fullName: "Jane Doe",
-    contact: "071 1234567",
-    email: "Jane@indra.com",
-    vehicleNo: ["CAB - 9999"],
-    branch: "Colombo",
-    customerType: "Corporate",
-  },
-];
-
-const customerType = ["Individual", "Corporate", "Garage"];
-const leadSource = ["Direct call", "Walk-in", "Facebook", "Website"];
-const branches = ["Bambalapitiya", "Kandy", "Jaffna", "Galle", "Negombo"];
+const customerTypeOptions = ["INDIVIDUAL", "COMPANY"];
+const leadSourceOptions = ["Direct call", "Walk-in", "Facebook", "Website"];
+const branchOptions = ["Bambalapitiya", "Kandy", "Jaffna", "Galle", "Negombo"];
 
 export default function CustomerManagement() {
-  const [isCustomerFilterModalOpen, setIsCustomerFilterModalOpen] =
-    useState(false);
 
-  const [isCustomerDetailsModalOpen, setIsCustomerDetailsModalOpen] =
-    useState(false);
+  const user = useCurrentUser();
 
-  const [selectedCustomerTypes, setSelectedCustomerTypes] = useState<string[]>(
-    []
-  );
+  const [isCustomerFilterModalOpen, setIsCustomerFilterModalOpen] = useState(false);
+  const [isCustomerDetailsModalOpen, setIsCustomerDetailsModalOpen] = useState(false);
+
+  const [selectedCustomerTypes, setSelectedCustomerTypes] = useState<string[]>([]);
   const [selectedLeadSources, setSelectedLeadSources] = useState<string[]>([]);
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  // Search state
+  const [searchUserQuery, setSearchUserQuery] = useState("");
+  const [isSearchUserActive, setIsSearchUserActive] = useState(false);
+  const debouncedSearch = useDebounce(searchUserQuery, 500);
+
+  // The filter modal has checkboxes.
+
+  // Construct filters object
+  const filters: any = {};
+  if (selectedCustomerTypes.length > 0) filters.type = selectedCustomerTypes;
+  if (selectedLeadSources.length > 0) filters.source = selectedLeadSources;
+  if (selectedBranches.length > 0) filters.branch = selectedBranches;
+  if (debouncedSearch) filters.search = debouncedSearch;
+
+  const { data, isLoading } = useCustomers(currentPage, ITEMS_PER_PAGE, filters);
+
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+
+  const handleRowClick = (customer: any) => {
+    setSelectedCustomer(customer);
+    setIsCustomerDetailsModalOpen(true);
+  };
+
+  const Pagination = ({ currentPage, totalItems, onPageChange }: { currentPage: number, totalItems: number, onPageChange: (page: number) => void }) => {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    if (totalPages <= 1) return null;
+
+    const handlePageChange = (page: number) => {
+      if (page >= 1 && page <= totalPages) {
+        onPageChange(page);
+      }
+    };
+
+    return (
+      <div className="flex items-center justify-center gap-2 mt-4">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        >
+          Previous
+        </button>
+
+        {Array.from({ length: Math.min(5, totalPages || 1) }).map((_, idx) => {
+          // Start page window logic to show current page in view
+          let startPage = Math.max(1, currentPage - 2);
+          if (startPage + 4 > totalPages) startPage = Math.max(1, totalPages - 4);
+
+          const pageNum = startPage + idx;
+          if (pageNum > totalPages) return null;
+
+          return (
+            <button
+              key={pageNum}
+              onClick={() => handlePageChange(pageNum)}
+              className={`w-10 h-10 rounded-lg text-sm font-medium flex items-center justify-center transition-colors border cursor-pointer
+                            ${currentPage === pageNum
+                  ? 'bg-[#E52F2F] text-white border-[#E52F2F]'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            >
+              {pageNum}
+            </button>
+          )
+        })}
+
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+        >
+          Next
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
       <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-        <Header
-          name="Sophie Eleanor"
-          location="Bambalapitiya"
-          title="Customer Management"
-        />
+
+        {/*<Header*/}
+        {/*  name={user?.full_name || "Sophie Eleanor"}*/}
+        {/*  title="Customer Management"*/}
+        {/*/>*/}
 
         {/* Customer Management Section */}
         <section className="relative mb-5 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
@@ -129,8 +120,31 @@ export default function CustomerManagement() {
               Customer Management
             </span>
             <div className="flex gap-5">
+              <div className="relative flex items-center justify-end">
+                <input
+                  type="text"
+                  value={searchUserQuery}
+                  onChange={(e) => setSearchUserQuery(e.target.value)}
+                  onBlur={() => !searchUserQuery && setIsSearchUserActive(false)}
+                  placeholder={`Search Customers...`}
+                  className={`
+                                    bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-500
+                                    rounded-full border border-gray-300 outline-none
+                                    transition-all duration-300 ease-in-out h-10 text-sm
+                                    ${isSearchUserActive ? 'w-64 px-4 opacity-100 mr-2 border' : 'w-0 px-0 opacity-0 border-none'}
+                                `}
+                  autoFocus={isSearchUserActive}
+                />
+                <button
+                  onClick={() => setIsSearchUserActive(!isSearchUserActive)}
+                  className={`ml-auto text-white text-base font-medium rounded-full z-10 transition-transform duration-200 cursor-pointer ${isSearchUserActive ? 'scale-90' : ''}`}
+                >
+                  <Image src="/search.svg" alt="search" height={36} width={36}
+                    className="h-12 w-12" />
+                </button>
+              </div>
               <button
-                className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
+                className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => {
                   setIsCustomerFilterModalOpen(true);
                 }}
@@ -159,56 +173,66 @@ export default function CustomerManagement() {
 
                 {/* Table body (scrollable vertically) */}
                 <div className="h-[360px] py-3 overflow-y-auto no-scrollbar">
-                  {customerData.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex text-lg mt-1 text-black hover:bg-gray-50 transition"
-                      onClick={() => setIsCustomerDetailsModalOpen(true)}
-                    >
-                      <div className="w-1/6 px-3 py-2">{item.fullName}</div>
-                      <div className="w-1/6 px-3 py-2">{item.contact}</div>
-                      <div className="w-1/6 px-3 py-2">{item.email}</div>
-                      <div className="w-1/6 px-3 py-2 relative">
-                        {item.vehicleNo.length > 1 ? (
-                          <div className="relative group">
-                            {/* Visible text + arrow */}
-                            <div className="flex items-center gap-3 cursor-pointer select-none">
-                              <span>{item.vehicleNo[0]}</span>
-                              <svg
-                                width="10"
-                                height="6"
-                                viewBox="0 0 10 6"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
-                              </svg>
-                            </div>
-
-                            {/* Dropdown menu */}
-                            <div className="absolute left-0 mt-1 w-max bg-white border border-gray-200 rounded shadow-lg opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all z-10">
-                              {item.vehicleNo.map((v, i) => (
-                                <div
-                                  key={i}
-                                  className="px-2 py-1 hover:bg-gray-100 cursor-pointer whitespace-nowrap text-left"
-                                >
-                                  {v}
+                  {isLoading ? (
+                    <div className="flex justify-center items-center h-full">Loading...</div>
+                  ) : (
+                    data?.data?.map((item: any, idx: number) => {
+                      // Assuming vehicle_number is comma separated string or actual string
+                      const vehicles = item.vehicle_number ? item.vehicle_number.split(',') : [];
+                      return (
+                        <div
+                          key={idx}
+                          className="flex text-lg mt-1 text-black hover:bg-gray-50 transition cursor-pointer"
+                          onClick={() => handleRowClick(item)}
+                        >
+                          <div className="w-1/6 px-3 py-2">{item.customer_name}</div>
+                          <div className="w-1/6 px-3 py-2">{item.phone_number}</div>
+                          <div className="w-1/6 px-3 py-2 break-all flex items-center">{item.email || "-"}</div>
+                          <div className="w-1/6 px-3 py-2 relative">
+                            {vehicles.length > 1 ? (
+                              <div className="relative group">
+                                <div className="flex items-center gap-3 cursor-pointer select-none">
+                                  <span>{vehicles[0]}</span>
+                                  <svg
+                                    width="10"
+                                    height="6"
+                                    viewBox="0 0 10 6"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
+                                  </svg>
                                 </div>
-                              ))}
-                            </div>
+                                <div className="absolute left-0 mt-1 w-max bg-white border border-gray-200 rounded shadow-lg opacity-0 invisible group-hover:visible group-hover:opacity-100 transition-all z-10">
+                                  {vehicles.map((v: string, i: number) => (
+                                    <div
+                                      key={i}
+                                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer whitespace-nowrap text-left"
+                                    >
+                                      {v}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              vehicles[0] || '-'
+                            )}
                           </div>
-                        ) : (
-                          item.vehicleNo[0]
-                        )}
-                      </div>
 
-                      <div className="w-1/6 px-3 py-2">{item.branch}</div>
-                      <div className="w-1/6 px-3 py-2">{item.customerType}</div>
-                    </div>
-                  ))}
+                          <div className="w-1/6 px-3 py-2">{item.convenient_branch || "-"}</div>
+                          <div className="w-1/6 px-3 py-2">{item.customer_type || "-"}</div>
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
               </div>
             </div>
+            <Pagination
+              currentPage={currentPage}
+              totalItems={data?.meta?.total || 0}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </section>
       </main>
@@ -219,14 +243,10 @@ export default function CustomerManagement() {
           title="Filter"
           onClose={() => setIsCustomerFilterModalOpen(false)}
           actionButton={{
-            label: "Apply",
+            label: "Apply Filter",
             onClick: () => {
-              console.log("Selected Types:", selectedCustomerTypes);
-              console.log("Selected Lead Source:", selectedLeadSources);
-              console.log("Selected Branches:", selectedBranches);
-              setSelectedCustomerTypes([]);
-              setSelectedLeadSources([]);
-              setSelectedBranches([]);
+              // Filters are applied automatically via state, but we can close modal here
+              // actually the state is updated on click of options, so we just close
               setIsCustomerFilterModalOpen(false);
             },
           }}
@@ -237,14 +257,13 @@ export default function CustomerManagement() {
               User Role
             </span>
             <div className="w-full mt-5 flex gap-3 flex-wrap">
-              {customerType.map((type) => {
+              {customerTypeOptions.map((type) => {
                 const isSelected = selectedCustomerTypes.includes(type);
                 return (
                   <div
                     key={type}
                     className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                      ${
-                        isSelected ? "bg-blue-500 text-white border-none" : ""
+                      ${isSelected ? "bg-blue-500 text-white border-none" : ""
                       }`}
                     onClick={() => {
                       if (isSelected) {
@@ -269,17 +288,16 @@ export default function CustomerManagement() {
           {/* --- Lead Source --- */}
           <div className="w-full mt-5">
             <span className="font-montserrat font-semibold text-lg leading-[100%]">
-              Department
+              lead source
             </span>
             <div className="w-full mt-5 flex gap-3 flex-wrap">
-              {leadSource.map((source) => {
+              {leadSourceOptions.map((source) => {
                 const isSelected = selectedLeadSources.includes(source);
                 return (
                   <div
                     key={source}
                     className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                      ${
-                        isSelected ? "bg-blue-500 text-white border-none" : ""
+                      ${isSelected ? "bg-blue-500 text-white border-none" : ""
                       }`}
                     onClick={() => {
                       if (isSelected) {
@@ -307,14 +325,13 @@ export default function CustomerManagement() {
               Branch
             </span>
             <div className="w-full mt-5 flex gap-3 flex-wrap">
-              {branches.map((branch) => {
+              {branchOptions.map((branch) => {
                 const isSelected = selectedBranches.includes(branch);
                 return (
                   <div
                     key={branch}
                     className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                      ${
-                        isSelected ? "bg-blue-500 text-white border-none" : ""
+                      ${isSelected ? "bg-blue-500 text-white border-none" : ""
                       }`}
                     onClick={() => {
                       if (isSelected) {
@@ -335,7 +352,7 @@ export default function CustomerManagement() {
         </Modal>
       )}
 
-      {isCustomerDetailsModalOpen && (
+      {isCustomerDetailsModalOpen && selectedCustomer && (
         <Modal
           title="Customer Details"
           onClose={() => setIsCustomerDetailsModalOpen(false)}
@@ -350,6 +367,7 @@ export default function CustomerManagement() {
               />
             ),
             onClick: () => {
+              // Handle edit logic if needed
               setIsCustomerDetailsModalOpen(false);
             },
           }}
@@ -361,21 +379,21 @@ export default function CustomerManagement() {
                 Customer Name:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                Devon Lane
+                {selectedCustomer.customer_name}
               </div>
 
               <div className="flex-shrink-0 w-[150px] text-lg font-semibold">
                 NIC No:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                982345678V
+                {selectedCustomer.id}
               </div>
 
               <div className="flex-shrink-0 w-[150px] text-lg font-semibold">
                 Gender:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                Male
+                {selectedCustomer.gender}
               </div>
             </div>
 
@@ -385,33 +403,21 @@ export default function CustomerManagement() {
                 Contact No:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                077 5898712
+                {selectedCustomer.phone_number}
               </div>
 
               <div className="flex-shrink-0 w-[150px] text-lg font-semibold">
                 Vehicle No:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                CAB - 4875
+                {selectedCustomer.vehicle_number || "-"}
               </div>
 
               <div className="flex-shrink-0 w-[150px] text-lg font-semibold">
                 Customer Type:
               </div>
-              <div className="flex-1 relative min-w-0">
-                <select
-                  className="w-full appearance-none bg-transparent text-lg text-[#575757] pr-6 cursor-pointer focus:outline-none"
-                  defaultValue="Individual"
-                >
-                  <option>Individual</option>
-                  <option>Corporate</option>
-                  <option>Garage</option>
-                </select>
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                    <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
-                  </svg>
-                </span>
+              <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
+                {selectedCustomer.customer_type}
               </div>
             </div>
 
@@ -421,33 +427,21 @@ export default function CustomerManagement() {
                 Whatsapp No:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                077 5898712
+                {selectedCustomer.whatsapp_number || "-"}
               </div>
 
               <div className="flex-shrink-0 w-[150px] text-lg font-semibold">
                 Branch:
               </div>
-              <div className="flex-1 relative min-w-0">
-                <select
-                  className="w-full appearance-none bg-transparent text-lg text-[#575757] pr-6 cursor-pointer focus:outline-none"
-                  defaultValue="Bambalapitiya"
-                >
-                  <option>Bambalapitiya</option>
-                  <option>Ratnapura</option>
-                  <option>Kandy</option>
-                </select>
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                    <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
-                  </svg>
-                </span>
+              <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
+                {selectedCustomer.convenient_branch || "-"}
               </div>
 
               <div className="flex-shrink-0 w-[150px] text-lg font-semibold">
                 Profession:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                Engineer
+                {selectedCustomer.profession || "-"}
               </div>
             </div>
 
@@ -457,34 +451,21 @@ export default function CustomerManagement() {
                 Email:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                Devon@info.com
+                {selectedCustomer.email || "-"}
               </div>
 
               <div className="flex-shrink-0 w-[150px] text-lg font-semibold">
                 City:
               </div>
               <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
-                Maharagama
+                {selectedCustomer.city || "-"}
               </div>
 
               <div className="flex-shrink-0 w-[150px] text-lg font-semibold">
                 Lead Source:
               </div>
-              <div className="flex-1 relative min-w-0">
-                <select
-                  className="w-full appearance-none bg-transparent text-lg text-[#575757] pr-6 cursor-pointer focus:outline-none"
-                  defaultValue="Direct Call"
-                >
-                  <option>Direct Call</option>
-                  <option>Walk-in</option>
-                  <option>Facebook</option>
-                  <option>Website</option>
-                </select>
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-                    <path d="M0 0L5 6L10 0H0Z" fill="#575757" />
-                  </svg>
-                </span>
+              <div className="flex-1 text-lg text-[#575757] break-words min-w-0">
+                {selectedCustomer.lead_source || "-"}
               </div>
             </div>
           </div>

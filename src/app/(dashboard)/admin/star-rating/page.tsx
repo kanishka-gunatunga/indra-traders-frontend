@@ -4,14 +4,14 @@
 "use client"
 import Header from "@/components/Header";
 import Image from "next/image";
-import React, {useEffect, useRef, useState} from "react";
-import {useChatHistory, useRatedSessions} from "@/hooks/useChat";
+import React, { useEffect, useRef, useState } from "react";
+import { useChatHistory, useRatedSessions } from "@/hooks/useChat";
 import Modal from "@/components/Modal";
-import {FaStar} from "react-icons/fa";
-import {useCurrentUser} from "@/utils/auth";
+import { FaStar } from "react-icons/fa";
+import { useCurrentUser } from "@/utils/auth";
 
 
-const StarDisplay = ({count}: { count: number }) => (
+const StarDisplay = ({ count }: { count: number }) => (
     <div className="flex text-yellow-400">
         {[...Array(5)].map((_, i) => (
             <svg
@@ -34,8 +34,8 @@ const StarDisplay = ({count}: { count: number }) => (
 );
 
 
-const SessionHistoryView = ({session}: { session: any }) => {
-    const {data: messages, isLoading} = useChatHistory(session?.chat_id);
+const SessionHistoryView = ({ session }: { session: any }) => {
+    const { data: messages, isLoading } = useChatHistory(session?.chat_id);
     const scrollRef = useRef<HTMLDivElement>(null);
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -97,7 +97,7 @@ const SessionHistoryView = ({session}: { session: any }) => {
                 <div className="text-right">
                     <div className="flex gap-1 text-yellow-400 justify-end">
                         {[...Array(5)].map((_, i) => (
-                            <FaStar key={i} className={i < session.agent_rating ? "block" : "text-gray-300"}/>
+                            <FaStar key={i} className={i < session.agent_rating ? "block" : "text-gray-300"} />
                         ))}
                     </div>
                     <p className="text-sm italic text-gray-600 mt-1">
@@ -122,10 +122,10 @@ const SessionHistoryView = ({session}: { session: any }) => {
                         if (isSystem) {
                             return (
                                 <div key={msg.id} className="flex justify-center my-2">
-                  <span
-                      className="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full border border-yellow-200">
-                    {msg.message}
-                  </span>
+                                    <span
+                                        className="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full border border-yellow-200">
+                                        {msg.message}
+                                    </span>
                                 </div>
                             );
                         }
@@ -136,11 +136,10 @@ const SessionHistoryView = ({session}: { session: any }) => {
                                 className={`flex w-full ${isCustomer ? "justify-start" : "justify-end"}`}
                             >
                                 <div
-                                    className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm shadow-sm relative ${
-                                        isCustomer
+                                    className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm shadow-sm relative ${isCustomer
                                             ? "bg-white text-gray-800 rounded-tl-none border border-gray-200"
                                             : "bg-[#DB2727] text-white rounded-tr-none"
-                                    }`}
+                                        }`}
                                 >
                                     {msg.attachment_url && (
                                         <div className="mb-2 mt-1">
@@ -155,12 +154,12 @@ const SessionHistoryView = ({session}: { session: any }) => {
                                                     href={msg.attachment_url.startsWith('http') ? msg.attachment_url : `${API_URL}${msg.attachment_url}`}
                                                     target="_blank"
                                                     className="flex items-center gap-2 underline"
-                                                    style={{color: isCustomer ? '#DB2727' : 'white'}}
+                                                    style={{ color: isCustomer ? '#DB2727' : 'white' }}
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                                         fill="currentColor" viewBox="0 0 16 16">
+                                                        fill="currentColor" viewBox="0 0 16 16">
                                                         <path
-                                                            d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                                                            d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z" />
                                                     </svg>
                                                     {msg.file_name || "Document"}
                                                 </a>
@@ -172,14 +171,13 @@ const SessionHistoryView = ({session}: { session: any }) => {
                                         {renderBold(msg.message)}
                                     </div>
                                     <span
-                                        className={`text-[10px] block text-right mt-1 ${
-                                            isCustomer ? "text-gray-400" : "text-red-100"
-                                        }`}
+                                        className={`text-[10px] block text-right mt-1 ${isCustomer ? "text-gray-400" : "text-red-100"
+                                            }`}
                                     >
                                         {new Date(msg.createdAt).toLocaleTimeString([], {
                                             timeStyle: "short",
                                         })}
-                                      </span>
+                                    </span>
                                 </div>
                             </div>
                         );
@@ -190,7 +188,7 @@ const SessionHistoryView = ({session}: { session: any }) => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 
@@ -202,7 +200,7 @@ export default function StartRating() {
 
     const user = useCurrentUser();
 
-    const {data, isLoading, isPlaceholderData} = useRatedSessions(page, limit, filter);
+    const { data, isLoading, isPlaceholderData } = useRatedSessions(page, limit, filter);
 
     const sessions = data?.sessions || [];
     const totalPages = Math.max(1, data?.totalPages || 0);
@@ -215,7 +213,7 @@ export default function StartRating() {
 
     const getPageNumbers = () => {
         if (totalPages <= 3) {
-            return Array.from({length: totalPages}, (_, i) => i + 1);
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
         }
         if (page <= 1) return [1, 2, 3];
         if (page >= totalPages) return [totalPages - 2, totalPages - 1, totalPages];
@@ -228,11 +226,11 @@ export default function StartRating() {
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-                <Header
-                    name={user?.full_name || "Sophie Eleanor"}
-                    location={user?.branch || "Bambalapitiya"}
-                    title="Customer’s Star Ratings"
-                />
+                {/*<Header*/}
+                {/*    name={user?.full_name || "Sophie Eleanor"}*/}
+                {/*    location={user?.branch || "Bambalapitiya"}*/}
+                {/*    title="Customer’s Star Ratings"*/}
+                {/*/>*/}
 
                 <section
                     className="relative mb-5 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
@@ -261,12 +259,13 @@ export default function StartRating() {
                                     {/*<div className="w-1/5 px-3 py-2">Star count</div>*/}
                                     {/*<div className="w-2/5 px-3 py-2">Feedback Message</div>*/}
 
-                                    <div className="w-1/6 px-3 py-2">Date</div>
-                                    <div className="w-1/6 px-3 py-2">Customer</div>
-                                    <div className="w-1/6 px-3 py-2">Contact</div>
-                                    <div className="w-1/6 px-3 py-2">Agent</div>
-                                    <div className="w-1/6 px-3 py-2">Rating</div>
-                                    <div className="w-1/6 px-3 py-2">Feedback Message</div>
+                                    <div className="w-1/5 px-3 py-2">Chat ID</div>
+                                    <div className="w-1/5 px-3 py-2">Date</div>
+                                    <div className="w-1/5 px-3 py-2">Customer</div>
+                                    <div className="w-1/5 px-3 py-2">Contact</div>
+                                    <div className="w-1/5 px-3 py-2">Agent</div>
+                                    {/*<div className="w-1/6 px-3 py-2">Rating</div>*/}
+                                    {/*<div className="w-1/6 px-3 py-2">Feedback Message</div>*/}
                                     {/*<div className="w-1/7 px-3 py-2">Status</div>*/}
                                 </div>
 
@@ -284,40 +283,46 @@ export default function StartRating() {
                                                 onClick={() => setSelectedSession(item)}
                                             >
                                                 {/*<div className="w-1/5 px-3 py-2">{item.contactNo}</div>*/}
-                                                <div className="w-1/6 px-3 py-2 text-sm text-gray-600">
-                                                    {new Date(item.createdAt).toLocaleDateString()} <br/>
+
+                                                <div className="w-1/5 px-3 py-2 text-[16px] font-medium truncate"
+                                                    title={item.chat_id}>
+                                                    {item.chat_id || "Guest"}
+                                                </div>
+
+                                                <div className="w-1/5 px-3 py-2 text-[16px] text-gray-600">
+                                                    {new Date(item.createdAt).toLocaleDateString()} <br />
                                                     <span
                                                         className="text-xs">{new Date(item.createdAt).toLocaleTimeString([], {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}</span>
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}</span>
                                                 </div>
                                                 {/*<div className="w-1/5 px-3 py-2">{item.channel}</div>*/}
-                                                <div className="w-1/6 px-3 py-2 text-sm font-medium truncate"
-                                                     title={item.customer_name}>
+                                                <div className="w-1/5 px-3 py-2 text-[16px] font-medium truncate"
+                                                    title={item.customer_name}>
                                                     {item.customer_name || "Guest"}
                                                 </div>
                                                 {/*<div className="w-1/5 px-3 py-2"><StarDisplay count={item.agent_rating} /></div>*/}
-                                                <div className="w-1/6 px-3 py-2 text-sm truncate text-gray-600"
-                                                     title={item.customer_contact || item.chat_id}>
+                                                <div className="w-1/5 px-3 py-2 text-[16px] truncate text-gray-600"
+                                                    title={item.customer_contact || item.chat_id}>
                                                     {item.customer_contact || item.chat_id.substring(0, 12) + "..."}
                                                 </div>
                                                 {/*<div className="w-2/5 px-3 py-2 relative">*/}
                                                 {/*    {item.rating_message || "-"}*/}
                                                 {/*</div>*/}
 
-                                                <div className="w-1/6 px-3 py-2 text-sm">
+                                                <div className="w-1/5 px-3 py-2 text-[16px]">
                                                     {item.agent?.full_name || "Automated Bot"}
                                                 </div>
 
-                                                <div className="w-1/6 px-3 py-2">
-                                                    {item.agent_rating ? <StarDisplay count={item.agent_rating}/> :
-                                                        <span className="text-xs text-gray-400">-</span>}
-                                                </div>
+                                                {/*<div className="w-1/5 px-3 py-2">*/}
+                                                {/*    {item.agent_rating ? <StarDisplay count={item.agent_rating}/> :*/}
+                                                {/*        <span className="text-xs text-gray-400">-</span>}*/}
+                                                {/*</div>*/}
 
-                                                <div className="w-1/6 px-3 py-2 text-sm">
-                                                    {item.rating_message || "-"}
-                                                </div>
+                                                {/*<div className="w-1/5 px-3 py-2 text-sm">*/}
+                                                {/*    {item.rating_message || "-"}*/}
+                                                {/*</div>*/}
 
                                                 {/*<div className="w-1/7 px-3 py-2">*/}
                                                 {/*    <span className={`text-xs px-2 py-1 rounded-full font-medium ${*/}
@@ -348,11 +353,10 @@ export default function StartRating() {
                                             <button
                                                 key={p}
                                                 onClick={() => setPage(p)}
-                                                className={`w-8 h-8 rounded-lg font-semibold transition ${
-                                                    page === p
-                                                        ? "bg-[#DB2727] text-white"
-                                                        : "bg-white/30 text-gray-700 hover:bg-gray-100"
-                                                }`}
+                                                className={`w-8 h-8 rounded-lg font-semibold transition ${page === p
+                                                    ? "bg-[#DB2727] text-white"
+                                                    : "bg-white/30 text-gray-700 hover:bg-gray-100"
+                                                    }`}
                                             >
                                                 {p}
                                             </button>
@@ -378,66 +382,70 @@ export default function StartRating() {
                 </section>
             </main>
 
-            {selectedSession && (
-                <Modal
-                    title="Chat History"
-                    onClose={() => setSelectedSession(null)}
-                >
-                    <SessionHistoryView session={selectedSession}/>
-                </Modal>
-            )}
+            {
+                selectedSession && (
+                    <Modal
+                        title="Chat History"
+                        onClose={() => setSelectedSession(null)}
+                    >
+                        <SessionHistoryView session={selectedSession} />
+                    </Modal>
+                )
+            }
 
 
-            {isFilterModalOpen && (
-                <Modal
-                    title="Filter Sessions"
-                    onClose={() => setIsFilterModalOpen(false)}
-                    actionButton={{
-                        label: "Close",
-                        onClick: () => setIsFilterModalOpen(false)
-                    }}
-                >
-                    <div className="w-full min-w-[300px]">
-                        <div className="flex flex-col gap-3">
-                            <button
-                                onClick={() => {
-                                    setFilter('all');
-                                    setPage(1);
-                                    setIsFilterModalOpen(false);
-                                }}
-                                className={`p-3 rounded-xl border text-left transition ${filter === 'all' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
-                            >
-                                <span className="font-semibold block">All Sessions</span>
-                                <span className="text-xs opacity-70">View both bot and agent chats</span>
-                            </button>
+            {
+                isFilterModalOpen && (
+                    <Modal
+                        title="Filter Sessions"
+                        onClose={() => setIsFilterModalOpen(false)}
+                        actionButton={{
+                            label: "Close",
+                            onClick: () => setIsFilterModalOpen(false)
+                        }}
+                    >
+                        <div className="w-full min-w-[300px]">
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={() => {
+                                        setFilter('all');
+                                        setPage(1);
+                                        setIsFilterModalOpen(false);
+                                    }}
+                                    className={`p-3 rounded-xl border text-left transition ${filter === 'all' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                    <span className="font-semibold block">All Sessions</span>
+                                    <span className="text-xs opacity-70">View both bot and agent chats</span>
+                                </button>
 
-                            <button
-                                onClick={() => {
-                                    setFilter('agent');
-                                    setPage(1);
-                                    setIsFilterModalOpen(false);
-                                }}
-                                className={`p-3 rounded-xl border text-left transition ${filter === 'agent' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
-                            >
-                                <span className="font-semibold block">Live Agent</span>
-                                <span className="text-xs opacity-70">Sessions handled by humans</span>
-                            </button>
+                                <button
+                                    onClick={() => {
+                                        setFilter('agent');
+                                        setPage(1);
+                                        setIsFilterModalOpen(false);
+                                    }}
+                                    className={`p-3 rounded-xl border text-left transition ${filter === 'agent' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                    <span className="font-semibold block">Live Agent</span>
+                                    <span className="text-xs opacity-70">Sessions handled by humans</span>
+                                </button>
 
-                            <button
-                                onClick={() => {
-                                    setFilter('bot');
-                                    setPage(1);
-                                    setIsFilterModalOpen(false);
-                                }}
-                                className={`p-3 rounded-xl border text-left transition ${filter === 'bot' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
-                            >
-                                <span className="font-semibold block">Bot Only</span>
-                                <span className="text-xs opacity-70">Automated sessions</span>
-                            </button>
+                                <button
+                                    onClick={() => {
+                                        setFilter('bot');
+                                        setPage(1);
+                                        setIsFilterModalOpen(false);
+                                    }}
+                                    className={`p-3 rounded-xl border text-left transition ${filter === 'bot' ? 'bg-red-50 border-[#DB2727] text-[#DB2727]' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                    <span className="font-semibold block">Bot Only</span>
+                                    <span className="text-xs opacity-70">Automated sessions</span>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </Modal>
-            )}
-        </div>
+                    </Modal>
+                )
+            }
+        </div >
     );
 }

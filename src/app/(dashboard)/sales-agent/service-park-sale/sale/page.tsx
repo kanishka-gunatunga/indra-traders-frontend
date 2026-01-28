@@ -78,6 +78,7 @@ type MappedTicket = {
     dbId: number;
     priority: number;
     user: string;
+    ticketNumber: string;
     phone: string;
     email: string;
     date: string;
@@ -120,6 +121,7 @@ const mapApiToTicket = (apiSale: any): MappedTicket => ({
     dbId: apiSale.id,
     priority: apiSale.priority,
     user: apiSale.customer?.customer_name || "Unknown",
+    ticketNumber: apiSale.ticket_number,
     phone: apiSale.customer?.phone_number || "",
     email: apiSale.customer?.email || "",
     date: new Date(apiSale.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),

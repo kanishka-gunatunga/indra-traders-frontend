@@ -58,6 +58,11 @@ export const BydSaleService = {
 
     // Unavailable
     createUnavailable: (data: any) => axiosInstance.post("/byd-sales/unavailable", data),
+};
 
-    getUnavailable: () => axiosInstance.get("/byd-sales/unavailable"),
+export const fetchBydUnavailableSales = async (page = 1, limit = 10, filters = {}) => {
+    const res = await axiosInstance.get("/byd-sales/unavailable", {
+        params: { page, limit, ...filters }
+    });
+    return res.data;
 };
