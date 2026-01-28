@@ -27,7 +27,7 @@ import {useRouter} from 'next/navigation';
 import {setBookingData} from "@/redux/slices/bookingSlice";
 
 
-const vehicleHistorySchema = z.object({
+export const vehicleHistorySchema = z.object({
     vehicle_no: z.string().min(2, "Vehicle number is required"),
     odometer: z.string().min(1, "Odometer reading is required"),
     owner_name: z.string().min(2, "Owner name is required"),
@@ -42,7 +42,7 @@ const vehicleHistorySchema = z.object({
     // phone_number: z.string().regex(/^0\d{9}$/, "Invalid phone number"),
 });
 
-const assignToSaleSchema = z.object({
+export const assignToSaleSchema = z.object({
     // vehicle_no: z.string().min(2, "Vehicle number is required"),
     date: z.string().min(1, "Date is required"),
     customer_name: z.string().min(2, "Customer name is required"),
