@@ -89,19 +89,36 @@ export default function Leads() {
     if (!leads) return [];
 
     return leads.map((lead: any) => {
-      let route = "/sales-agent/sales";
+      let route;
       let categoryTag = "ITPL";
 
       switch (lead.type) {
-        case 'VEHICLE': route = "/sales-agent/sales"; categoryTag = "ITPL"; break;
-        case 'FAST_TRACK': route = "/sales-agent/fast-track"; categoryTag = "IFT"; break;
-        case 'SPARE_PART': route = "/sales-agent/spare-parts"; categoryTag = "IMS"; break;
-        case 'SERVICE_PARK': route = "/sales-agent/service-park-sale/sale"; categoryTag = "ISP"; break;
-        case 'BYD': route = "/sales-agent/byd-sales"; categoryTag = "BYD"; break;
+        case 'BYD':
+          route = "/sales-agent/byd-sales";
+          categoryTag = "BYD";
+          break;
+        case 'VEHICLE':
+          route = "/sales-agent/sales";
+          categoryTag = "ITPL";
+          break;
+        case 'FAST_TRACK':
+          route = "/sales-agent/fast-track";
+          categoryTag = "IFT";
+          break;
+        case 'SPARE_PART':
+          route = "/sales-agent/spare-parts";
+          categoryTag = "IMS";
+          break;
+        case 'SERVICE_PARK':
+          route = "/sales-agent/service-park-sale/sale";
+          categoryTag = "ISP";
+          break;
+        default:
+          route = "/sales-agent/byd-sales";
       }
 
       return {
-        id: lead.id, // This is "TYPE_ID" string
+        id: lead.ticket_number, // This is "TYPE_ID" string
         dbId: lead.original_id,
         priority: lead.priority,
         user: lead.user,
@@ -199,7 +216,8 @@ export default function Leads() {
         if (status === 'New') colorClass = "bg-[#F9FAFB] text-[#344054]";
 
         return (
-          <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-center w-[100px] ${colorClass}`}>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium flex items-center justify-center w-[100px] ${colorClass}`}>
             {status}
           </span>
         );
@@ -215,14 +233,15 @@ export default function Leads() {
       key: 'priority',
       render: (priority: number) => {
         const priorityBadges = [
-          "bg-[#FFDDD1] text-[#B54708]", // P0 
+          "bg-[#FFDDD1] text-[#B54708]", // P0
           "bg-[#FFEFD1] text-[#B54708]", // P1
           "bg-[#E9D7FE] text-[#6941C6]", // P2
           "bg-[#D1E9FF] text-[#026AA2]", // P3
         ];
         const badgeStyle = priorityBadges[priority] || priorityBadges[3];
         return (
-          <span className={`px-2 py-0.5 rounded-[6px] text-xs font-medium border border-transparent ${badgeStyle}`}>
+          <span
+            className={`px-2 py-0.5 rounded-[6px] text-xs font-medium border border-transparent ${badgeStyle}`}>
             P{priority}
           </span>
         );
@@ -253,7 +272,8 @@ export default function Leads() {
   }
 
   return (
-    <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden pb-10">
+    <div
+      className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden pb-10">
       <Toast
         message={toast.message}
         type={toast.type}
@@ -262,17 +282,19 @@ export default function Leads() {
       />
 
       <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-        <Header
-          name={user?.full_name || "Sophie Eleanor"}
-          title="All Leads"
-        />
+        {/*<Header*/}
+        {/*  name={user?.full_name || "Sophie Eleanor"}*/}
+        {/*  title="All Leads"*/}
+        {/*/>*/}
 
         {/* Controls Section (Search, Filters, View Toggle) */}
         <div className="flex flex-col gap-4 py-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             {/* Search and Filters same as before */}
             <div className="relative w-full flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                size={20} />
               <input
                 type="text"
                 placeholder="Search leads by ticket no, name or phone..."
@@ -281,7 +303,7 @@ export default function Leads() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            {/* ... Filters Toggle buttons ... (kept same) */}
+
             <div className="flex items-center gap-3 w-full md:w-auto">
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -294,34 +316,19 @@ export default function Leads() {
                   <span className="font-medium">Filters</span>
                 </div>
               </button>
-
-              <div className="flex bg-white rounded-[14px] border border-gray-200 p-1">
-                <button
-                  onClick={() => setViewMode("kanban")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-medium transition-all ${viewMode === "kanban" ? "bg-red-50 text-red-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  <LayoutGrid size={16} />
-                  Kanban
-                </button>
-                <button
-                  onClick={() => setViewMode("table")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-medium transition-all ${viewMode === "table" ? "bg-red-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                  Table
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* Filter Panel (kept same) */}
+
           {isFilterOpen && (
-            <div ref={filterRef} className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
-              {/* Same filter content */}
+            <div ref={filterRef}
+              className="bg-white rounded-[14px] p-6 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
+
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-500">Status</label>
-                  <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-100">
+                  <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-100">
                     <option>All Status</option>
                     <option value="New">New</option>
                     <option value="Ongoing">Ongoing</option>
@@ -331,14 +338,16 @@ export default function Leads() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-500">Priority</label>
-                  <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-100">
+                  <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-100">
                     <option>All Priority</option>
                     {priorityOptions.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-500">Department</label>
-                  <select value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-100">
+                  <select value={department} onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-100">
                     <option>All Departments</option>
                     {departmentOptions.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
@@ -346,8 +355,11 @@ export default function Leads() {
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-gray-500">Date Range</label>
                   <div className="flex gap-2">
-                    <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-1/2 p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-100" />
-                    <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-1/2 p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-100" />
+                    <input type="date" value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="w-1/2 p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-100" />
+                    <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                      className="w-1/2 p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-100" />
                   </div>
                 </div>
               </div>
@@ -356,7 +368,8 @@ export default function Leads() {
         </div>
 
         {/* Content Section */}
-        <section className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] p-6 min-h-[500px]">
+        <section
+          className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] p-6 min-h-[500px]">
           <div className="w-full flex justify-between items-center mb-6 px-4">
             <div className="flex flex-col">
               <span className="font-semibold text-[22px]">
@@ -366,6 +379,34 @@ export default function Leads() {
                 Showing {(meta.page - 1) * meta.limit + 1}-{Math.min(meta.page * meta.limit, meta.total)} of {meta.total} leads
               </div>
             </div>
+
+            <div className="flex bg-white rounded-[14px] border border-gray-200 p-1">
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-medium transition-all ${viewMode === "kanban" ? "bg-red-50 text-red-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                <LayoutGrid size={16} />
+                Kanban
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-medium transition-all ${viewMode === "table" ? "bg-red-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                  strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                Table
+              </button>
+            </div>
+
+
             {isLoading && <div className="text-red-500 text-sm font-medium">Updating...</div>}
           </div>
 
@@ -376,7 +417,7 @@ export default function Leads() {
                   <TicketColumn
                     key={col}
                     title={col}
-                    tickets={tickets.filter((t) => t.status === col)}
+                    tickets={tickets.filter((t: MappedTicket) => t.status === col)}
                     draggable={false} // Disable dragging for Admin
                   />
                 ))}

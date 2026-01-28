@@ -6,6 +6,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useCurrentUser } from "@/utils/auth";
 import Image from "next/image";
 import React, { useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const customerTypeOptions = ["INDIVIDUAL", "COMPANY"];
 const leadSourceOptions = ["Direct call", "Walk-in", "Facebook", "Website"];
@@ -25,8 +26,11 @@ export default function CustomerManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  // Search state? The UI doesn't have a search bar visible in the code I seeing, 
-  // but I can add one or just rely on filters for now.
+  // Search state
+  const [searchUserQuery, setSearchUserQuery] = useState("");
+  const [isSearchUserActive, setIsSearchUserActive] = useState(false);
+  const debouncedSearch = useDebounce(searchUserQuery, 500);
+
   // The filter modal has checkboxes.
 
   // Construct filters object
@@ -34,6 +38,7 @@ export default function CustomerManagement() {
   if (selectedCustomerTypes.length > 0) filters.type = selectedCustomerTypes;
   if (selectedLeadSources.length > 0) filters.source = selectedLeadSources;
   if (selectedBranches.length > 0) filters.branch = selectedBranches;
+  if (debouncedSearch) filters.search = debouncedSearch;
 
   const { data, isLoading } = useCustomers(currentPage, ITEMS_PER_PAGE, filters);
 
@@ -101,10 +106,10 @@ export default function CustomerManagement() {
     <div className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
       <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
 
-        <Header
-          name={user?.full_name || "Sophie Eleanor"}
-          title="Customer Management"
-        />
+        {/*<Header*/}
+        {/*  name={user?.full_name || "Sophie Eleanor"}*/}
+        {/*  title="Customer Management"*/}
+        {/*/>*/}
 
         {/* Customer Management Section */}
         <section className="relative mb-5 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10 flex flex-col justify-center items-center">
@@ -113,6 +118,29 @@ export default function CustomerManagement() {
               Customer Management
             </span>
             <div className="flex gap-5">
+              <div className="relative flex items-center justify-end">
+                <input
+                  type="text"
+                  value={searchUserQuery}
+                  onChange={(e) => setSearchUserQuery(e.target.value)}
+                  onBlur={() => !searchUserQuery && setIsSearchUserActive(false)}
+                  placeholder={`Search Customers...`}
+                  className={`
+                                    bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-500
+                                    rounded-full border border-gray-300 outline-none
+                                    transition-all duration-300 ease-in-out h-10 text-sm
+                                    ${isSearchUserActive ? 'w-64 px-4 opacity-100 mr-2 border' : 'w-0 px-0 opacity-0 border-none'}
+                                `}
+                  autoFocus={isSearchUserActive}
+                />
+                <button
+                  onClick={() => setIsSearchUserActive(!isSearchUserActive)}
+                  className={`ml-auto text-white text-base font-medium rounded-full z-10 transition-transform duration-200 cursor-pointer ${isSearchUserActive ? 'scale-90' : ''}`}
+                >
+                  <Image src="/search.svg" alt="search" height={36} width={36}
+                    className="h-12 w-12" />
+                </button>
+              </div>
               <button
                 className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => {

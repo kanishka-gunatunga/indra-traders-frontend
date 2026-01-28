@@ -18,6 +18,7 @@ export interface TicketCardProps {
     dbId?: string | number;
     ticketNumber?: string;
     categoryTag?: string;
+    draggable?: boolean;
 }
 
 const priorityBackgrounds = [
@@ -43,6 +44,8 @@ const priorityBorders = [
 
 import { PhoneIcon, MailIcon, EyeIcon, UserIcon, CalendarIcon, MessageSquareIcon } from "./KanbanIcons";
 
+// ... existing code ...
+
 export const TicketCard = ({
     id,
     priority,
@@ -55,12 +58,14 @@ export const TicketCard = ({
     email,
     isOverlay = false,
     dbId,
-    categoryTag
+    categoryTag,
+    draggable = true
 }: TicketCardProps) => {
     const router = useRouter();
 
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: id,
+        disabled: !draggable,
     });
 
     const handleClick = () => {

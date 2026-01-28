@@ -6,7 +6,6 @@ import {
     fetchUnavailableSpareParts, fetchUnavailableSparePartById, createUnavailableSparePart
 } from "@/services/unavailableService";
 
-// ... (imports)
 
 export const useUnavailableVehicleSales = (page = 1, limit = 10, filters = {}) =>
     useQuery({
@@ -45,4 +44,23 @@ export const useUnavailableSparePartById = (id: number | string) =>
 export const useCreateUnavailableSparePart = () =>
     useMutation({
         mutationFn: createUnavailableSparePart
+    });
+
+export const useUnavailableVehicleSaleById = (id: number | string) =>
+    useQuery({
+        queryKey: ["unavailableVehicleSale", id],
+        queryFn: () => fetchUnavailableVehicleSaleById(id),
+        enabled: !!id
+    });
+
+export const useUnavailableServiceById = (id: number | string) =>
+    useQuery({
+        queryKey: ["unavailableService", id],
+        queryFn: () => fetchUnavailableServiceById(id),
+        enabled: !!id
+    });
+
+export const useCreateUnavailableService = () =>
+    useMutation({
+        mutationFn: createUnavailableService
     });

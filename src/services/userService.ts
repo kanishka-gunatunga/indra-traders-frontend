@@ -13,6 +13,7 @@ export const userService = {
         user_role?: string;
         department?: string;
         branch?: string;
+        search?: string;
     }) => {
         const params = new URLSearchParams(filters as any).toString();
         const res = await axiosInstance.get(`/users${params ? `?${params}` : ""}`);

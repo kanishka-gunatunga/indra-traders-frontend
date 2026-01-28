@@ -6,12 +6,13 @@
 import Header from "@/components/Header";
 import Modal from "@/components/Modal";
 import Image from "next/image";
-import React, {useState} from "react";
-import {FaEye, FaEyeSlash} from "react-icons/fa";
-import {useCheckHandover, useCreateUser, useUpdateUser, useUsers} from "@/hooks/useUser";
-import {useCurrentUser} from "@/utils/auth";
-import {useToast} from "@/hooks/useToast";
+import React, { useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useCheckHandover, useCreateUser, useUpdateUser, useUsers } from "@/hooks/useUser";
+import { useCurrentUser } from "@/utils/auth";
+import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/Toast";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // const userRoles = [
 //     "Admin",
@@ -34,9 +35,9 @@ const departments = ["ITPL", "ISP", "IMS", "IFT", "BYD"];
 const branches = ["Bambalapitiya", "Kandy", "Jaffna", "Galle", "Negombo"];
 
 const languageOptions = [
-    {code: "en", label: "English", badge: "EN"},
-    {code: "si", label: "Sinhala", badge: "SI"},
-    {code: "ta", label: "Tamil", badge: "TA"},
+    { code: "en", label: "English", badge: "EN" },
+    { code: "si", label: "Sinhala", badge: "SI" },
+    { code: "ta", label: "Tamil", badge: "TA" },
 ];
 
 
@@ -48,15 +49,24 @@ export default function UserManagement() {
         branch: "",
     });
 
+    const [searchUserQuery, setSearchUserQuery] = useState("");
+    const [isSearchUserActive, setIsSearchUserActive] = useState(false);
+    const debouncedSearch = useDebounce(searchUserQuery, 500);
+
+    const filtersWithSearch = React.useMemo(() => ({
+        ...filters,
+        search: debouncedSearch
+    }), [filters, debouncedSearch]);
+
     const user = useCurrentUser();
 
     const checkHandoverMutation = useCheckHandover();
 
-    const {data: users = [], isLoading} = useUsers(filters);
+    const { data: users = [], isLoading } = useUsers(filtersWithSearch);
     const createUserMutation = useCreateUser();
     const updateUserMutation = useUpdateUser();
 
-    const {toast, showToast, hideToast} = useToast();
+    const { toast, showToast, hideToast } = useToast();
 
     const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
@@ -127,7 +137,7 @@ export default function UserManagement() {
         } else {
             newLangs = [...currentLangs, code];
         }
-        setSelectedUser({...selectedUser, languages: newLangs});
+        setSelectedUser({ ...selectedUser, languages: newLangs });
     };
 
     const shouldShowLanguages = (role: string) => role === ROLES.CALL_AGENT;
@@ -204,7 +214,7 @@ export default function UserManagement() {
     const clearError = (field: string) => {
         if (formErrors[field]) {
             setFormErrors(prev => {
-                const newErrors = {...prev};
+                const newErrors = { ...prev };
                 delete newErrors[field];
                 return newErrors;
             });
@@ -265,7 +275,7 @@ export default function UserManagement() {
             branch: shouldShowBranch(selectedUser.user_role) ? selectedUser.branch : null,
             languages: shouldShowLanguages(selectedUser.user_role) ? selectedUser.languages : ["en"],
             // Password is valid to take from state because it's distinct from selectedUser
-            ...(password ? {password, confirm_password: confirmPassword} : {})
+            ...(password ? { password, confirm_password: confirmPassword } : {})
         };
 
         const isRoleChanged = originalUser.user_role !== payload.user_role;
@@ -297,7 +307,7 @@ export default function UserManagement() {
 
     const performUpdate = async (payload: any, transferId?: string) => {
         try {
-            const finalPayload = transferId ? {...payload, transferToUserId: transferId} : payload;
+            const finalPayload = transferId ? { ...payload, transferToUserId: transferId } : payload;
             await updateUserMutation.mutateAsync({
                 id: selectedUser.id,
                 data: finalPayload
@@ -328,11 +338,11 @@ export default function UserManagement() {
             />
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-                <Header
-                    name={user?.full_name || "Sophie Eleanor"}
-                    // location={user?.branch || "Bambalapitiya"}
-                    title="User Management"
-                />
+                {/*<Header*/}
+                {/*    name={user?.full_name || "Sophie Eleanor"}*/}
+                {/*    // location={user?.branch || "Bambalapitiya"}*/}
+                {/*    title="User Management"*/}
+                {/*/>*/}
 
                 {/* User Management Section */}
                 <section
@@ -340,6 +350,29 @@ export default function UserManagement() {
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">User Management</span>
                         <div className="flex gap-5">
+                            <div className="relative flex items-center justify-end">
+                                <input
+                                    type="text"
+                                    value={searchUserQuery}
+                                    onChange={(e) => setSearchUserQuery(e.target.value)}
+                                    onBlur={() => !searchUserQuery && setIsSearchUserActive(false)}
+                                    placeholder={`Search users...`}
+                                    className={`
+                                    bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-500
+                                    rounded-full border border-gray-300 outline-none
+                                    transition-all duration-300 ease-in-out h-10 text-sm
+                                    ${isSearchUserActive ? 'w-64 px-4 opacity-100 mr-2 border' : 'w-0 px-0 opacity-0 border-none'}
+                                `}
+                                    autoFocus={isSearchUserActive}
+                                />
+                                <button
+                                    onClick={() => setIsSearchUserActive(!isSearchUserActive)}
+                                    className={`ml-auto text-white text-base font-medium rounded-full z-10 transition-transform duration-200 cursor-pointer ${isSearchUserActive ? 'scale-90' : ''}`}
+                                >
+                                    <Image src="/search.svg" alt="search" height={36} width={36}
+                                        className="h-12 w-12" />
+                                </button>
+                            </div>
                             <button
                                 className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
                                 onClick={() => setIsFilterUserModalOpen(true)}
@@ -373,13 +406,13 @@ export default function UserManagement() {
                                 {/* Table header */}
                                 <div
                                     className="flex bg-gray-100 text-[#575757] font-normal text-lg montserrat border-b-2 mb-2 border-[#CCCCCC]">
-                                    <div className="w-1/7 px-3 py-2">Full Name</div>
-                                    <div className="w-1/7 px-3 py-2">Contact No.</div>
-                                    <div className="w-1/7 px-3 py-2">Email</div>
-                                    <div className="w-1/7 px-3 py-2">User Role</div>
-                                    <div className="w-1/7 px-3 py-2">Department</div>
-                                    <div className="w-1/7 px-3 py-2">Branch</div>
-                                    <div className="w-1/7 px-3 py-2">Languages</div>
+                                    <div className="w-1/6 px-3 py-2">Full Name</div>
+                                    <div className="w-1/6 px-3 py-2">Contact No.</div>
+                                    <div className="w-1/6 px-3 py-2">Email</div>
+                                    <div className="w-1/6 px-3 py-2">User Role</div>
+                                    <div className="w-1/6 px-3 py-2">Department</div>
+                                    <div className="w-1/6 px-3 py-2">Branch</div>
+                                    {/*<div className="w-1/7 px-3 py-2">Languages</div>*/}
                                 </div>
 
                                 {/* Table body (scrollable vertically) */}
@@ -413,25 +446,25 @@ export default function UserManagement() {
                                                     setIsUserDetailsModalOpen(true);
                                                 }}
                                             >
-                                                <div className="w-1/7 px-3 py-2">{item.full_name}</div>
-                                                <div className="w-1/7 px-3 py-2">{item.contact_no}</div>
-                                                <div className="w-1/7 px-3 py-2" style={{
+                                                <div className="w-1/6 px-3 py-2">{item.full_name}</div>
+                                                <div className="w-1/6 px-3 py-2">{item.contact_no}</div>
+                                                <div className="w-1/6 px-3 py-2" style={{
                                                     wordBreak: "normal",
                                                     overflowWrap: "anywhere",
                                                 }}>{item.email}</div>
-                                                <div className="w-1/7 px-3 py-2">{item.user_role}</div>
-                                                <div className="w-1/7 px-3 py-2">
+                                                <div className="w-1/6 px-3 py-2">{item.user_role}</div>
+                                                <div className="w-1/6 px-3 py-2">
                                                     {item.department || "-"}
                                                 </div>
-                                                <div className="w-1/7 px-3 py-2">{item.branch || "-"}</div>
-                                                <div className="w-1/7 px-3 py-2 flex gap-1 items-center">
-                                                    {parseLanguages(item.languages).map((lang: string) => (
-                                                        <span key={lang}
-                                                              className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded uppercase">
-                                                            {lang}
-                                                        </span>
-                                                    ))}
-                                                </div>
+                                                <div className="w-1/6 px-3 py-2">{item.branch || "-"}</div>
+                                                {/*<div className="w-1/7 px-3 py-2 flex gap-1 items-center">*/}
+                                                {/*    {parseLanguages(item.languages).map((lang: string) => (*/}
+                                                {/*        <span key={lang}*/}
+                                                {/*              className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded uppercase">*/}
+                                                {/*            {lang}*/}
+                                                {/*        </span>*/}
+                                                {/*    ))}*/}
+                                                {/*</div>*/}
                                             </div>
                                         ))
                                     )}
@@ -555,7 +588,7 @@ export default function UserManagement() {
                                             height={19}
                                             alt="Arrow"
                                         />
-                                      </span>
+                                    </span>
                                 </div>
                                 {formErrors.user_role &&
                                     <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.user_role}</p>}
@@ -583,13 +616,13 @@ export default function UserManagement() {
                                         ))}
                                     </select>
                                     <span className="absolute right-4 pointer-events-none">
-                                  <Image
-                                      src={"/images/sales/icon-park-solid_down-one.svg"}
-                                      width={19}
-                                      height={19}
-                                      alt="Arrow"
-                                  />
-                                </span>
+                                        <Image
+                                            src={"/images/sales/icon-park-solid_down-one.svg"}
+                                            width={19}
+                                            height={19}
+                                            alt="Arrow"
+                                        />
+                                    </span>
                                 </div>
                                 {formErrors.department &&
                                     <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.department}</p>}
@@ -615,13 +648,13 @@ export default function UserManagement() {
                                         ))}
                                     </select>
                                     <span className="absolute right-4 pointer-events-none">
-                                  <Image
-                                      src={"/images/sales/icon-park-solid_down-one.svg"}
-                                      width={19}
-                                      height={19}
-                                      alt="Arrow"
-                                  />
-                                </span>
+                                        <Image
+                                            src={"/images/sales/icon-park-solid_down-one.svg"}
+                                            width={19}
+                                            height={19}
+                                            alt="Arrow"
+                                        />
+                                    </span>
                                 </div>
                                 {formErrors.branch &&
                                     <p className="text-red-500 text-xs mt-1 ml-2">{formErrors.branch}</p>}
@@ -648,7 +681,7 @@ export default function UserManagement() {
                                     className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                                     onClick={() => setShowPassword((prev) => !prev)}
                                 >
-                                  {showPassword ? <FaEye/> : <FaEyeSlash/>}
+                                    {showPassword ? <FaEye /> : <FaEyeSlash />}
                                 </span>
                             </div>
                             {formErrors.password &&
@@ -673,7 +706,7 @@ export default function UserManagement() {
                                     className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
                                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                                 >
-                                  {showConfirmPassword ? <FaEye/> : <FaEyeSlash/>}
+                                    {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
                                 </span>
                             </div>
                             {formErrors.confirm_password &&
@@ -694,9 +727,9 @@ export default function UserManagement() {
                                             onClick={() => toggleCreateLanguage(lang.code)}
                                             className={`px-4 py-2 rounded-full cursor-pointer border text-sm font-medium transition
                                 ${isSelected
-                                                ? "bg-blue-600 text-white border-blue-600"
-                                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                            }
+                                                    ? "bg-blue-600 text-white border-blue-600"
+                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                }
                             `}
                                         >
                                             {lang.label}
@@ -729,7 +762,7 @@ export default function UserManagement() {
                     {/* --- User Role --- */}
                     <div className="w-full">
                         <span className="font-montserrat font-semibold text-lg leading-[100%]">
-                          User Role
+                            User Role
                         </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
                             {Object.values(ROLES).map((role) => (
@@ -746,7 +779,7 @@ export default function UserManagement() {
                     {/* --- Department --- */}
                     <div className="w-full mt-5">
                         <span className="font-montserrat font-semibold text-lg leading-[100%]">
-                          Department
+                            Department
                         </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
                             {departments.map((d) => (
@@ -763,7 +796,7 @@ export default function UserManagement() {
                     {/* --- Branch --- */}
                     <div className="w-full mt-5">
                         <span className="font-montserrat font-semibold text-lg leading-[100%]">
-                          Branch
+                            Branch
                         </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
                             {branches.map((b) => (
@@ -908,7 +941,7 @@ export default function UserManagement() {
                                 type="text"
                                 value={selectedUser.full_name}
                                 onChange={(e) => {
-                                    setSelectedUser({...selectedUser, full_name: e.target.value});
+                                    setSelectedUser({ ...selectedUser, full_name: e.target.value });
                                     clearError("full_name");
                                 }}
                                 className={`w-full text-lg text-[#575757] bg-transparent border-b ${formErrors.full_name ? "border-red-500" : "border-gray-400"} focus:outline-none`}
@@ -919,11 +952,11 @@ export default function UserManagement() {
                                 value={selectedUser.user_role}
                                 onChange={(e) => {
                                     const newRole = e.target.value;
-                                    const updates: any = {user_role: newRole};
+                                    const updates: any = { user_role: newRole };
                                     if (newRole === ROLES.ADMIN) updates.branch = "";
                                     if (newRole !== ROLES.CALL_AGENT) updates.languages = ["en"];
 
-                                    setSelectedUser({...selectedUser, ...updates});
+                                    setSelectedUser({ ...selectedUser, ...updates });
                                     clearError("user_role");
                                 }}
                                 className="bg-transparent text-lg text-[#575757] border-b border-gray-400 focus:outline-none"
@@ -938,7 +971,7 @@ export default function UserManagement() {
                                 type="text"
                                 value={selectedUser.contact_no}
                                 onChange={(e) => {
-                                    setSelectedUser({...selectedUser, contact_no: e.target.value});
+                                    setSelectedUser({ ...selectedUser, contact_no: e.target.value });
                                     clearError("contact_no");
                                 }}
                                 className={`w-full text-lg text-[#575757] bg-transparent border-b ${formErrors.contact_no ? "border-red-500" : "border-gray-400"} focus:outline-none`}
@@ -950,7 +983,7 @@ export default function UserManagement() {
                                     <select
                                         value={selectedUser.department}
                                         onChange={(e) => {
-                                            setSelectedUser({...selectedUser, department: e.target.value});
+                                            setSelectedUser({ ...selectedUser, department: e.target.value });
                                             clearError("department");
                                         }}
                                         className={`w-full bg-transparent text-lg text-[#575757] border-b ${formErrors.department ? "border-red-500" : "border-gray-400"} focus:outline-none`}
@@ -976,7 +1009,7 @@ export default function UserManagement() {
                                 type="text"
                                 value={selectedUser.email}
                                 onChange={(e) => {
-                                    setSelectedUser({...selectedUser, email: e.target.value});
+                                    setSelectedUser({ ...selectedUser, email: e.target.value });
                                     clearError("email");
                                 }}
                                 className={`w-full text-lg text-[#575757] bg-transparent border-b ${formErrors.email ? "border-red-500" : "border-gray-400"} focus:outline-none`}
@@ -988,7 +1021,7 @@ export default function UserManagement() {
                                     <select
                                         value={selectedUser.branch}
                                         onChange={(e) => {
-                                            setSelectedUser({...selectedUser, branch: e.target.value});
+                                            setSelectedUser({ ...selectedUser, branch: e.target.value });
                                             clearError("branch");
                                         }}
                                         className={`w-full bg-transparent text-lg text-[#575757] border-b ${formErrors.branch ? "border-red-500" : "border-gray-400"} focus:outline-none`}
@@ -1008,6 +1041,59 @@ export default function UserManagement() {
 
                         </div>
 
+                        <div className="grid grid-cols-[150px_1fr_150px_1fr] gap-4 items-start">
+                            <div className="text-lg font-semibold">Password:</div>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        clearError("password");
+                                    }}
+                                    className={`w-full text-lg text-[#575757] bg-transparent border-b ${formErrors.password ? "border-red-500" : "border-gray-400"} focus:outline-none pr-8`}
+                                    placeholder="Change Password"
+                                />
+                                <span
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer"
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                >
+                                    {showPassword ? <FaEye /> : <FaEyeSlash />}
+                                </span>
+                            </div>
+
+                            {/* <div className="text-lg font-semibold">Confirm Password:</div> */}
+                            <div className="text-lg font-semibold">Confirm:</div> {/* Shortened label to fit layout if needed, or keep Confirm Password */}
+
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    value={confirmPassword}
+                                    onChange={(e) => {
+                                        setConfirmPassword(e.target.value);
+                                        clearError("confirm_password");
+                                    }}
+                                    className={`w-full text-lg text-[#575757] bg-transparent border-b ${formErrors.confirm_password ? "border-red-500" : "border-gray-400"} focus:outline-none pr-8`}
+                                    placeholder="Confirm Change"
+                                />
+                                <span
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer"
+                                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                >
+                                    {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-[150px_1fr_150px_1fr] gap-4 items-start">
+                            <div className="pl-[165px]">
+                                {formErrors.password && <p className="text-red-500 text-xs">{formErrors.password}</p>}
+                            </div>
+                            <div className="pl-[165px]">
+                                {formErrors.confirm_password && <p className="text-red-500 text-xs">{formErrors.confirm_password}</p>}
+                            </div>
+                        </div>
+
                         {shouldShowLanguages(selectedUser.user_role) && (
                             <div className="grid grid-cols-[150px_1fr] gap-4 items-start pt-2">
                                 <div className="text-lg font-semibold">Languages:</div>
@@ -1022,9 +1108,9 @@ export default function UserManagement() {
                                                 onClick={() => toggleUpdateLanguage(lang.code)}
                                                 className={`px-4 py-1 rounded-full border text-sm font-medium transition
                                   ${isSelected
-                                                    ? "bg-blue-600 text-white border-blue-600"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                                }
+                                                        ? "bg-blue-600 text-white border-blue-600"
+                                                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                                    }
                               `}
                                             >
                                                 {lang.label}
@@ -1058,7 +1144,7 @@ export default function UserManagement() {
                     <div className="w-full min-w-[500px] p-2">
                         <div
                             className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-xl mb-6 flex items-start gap-3">
-                            <Image src="/error-white.svg" width={24} height={24} alt="warning"/>
+                            <Image src="/error-white.svg" width={24} height={24} alt="warning" />
                             <div>
                                 <h4 className="font-bold">Active Leads Detected</h4>
                                 <p className="text-sm mt-1">
@@ -1093,8 +1179,8 @@ export default function UserManagement() {
                                 )}
                             </select>
                             <span className="absolute right-4 pointer-events-none">
-                     <Image src={"/images/sales/icon-park-solid_down-one.svg"} width={19} height={19} alt="Arrow"/>
-                </span>
+                                <Image src={"/images/sales/icon-park-solid_down-one.svg"} width={19} height={19} alt="Arrow" />
+                            </span>
                         </div>
 
                         {replacementUsers.length === 0 && (
@@ -1112,7 +1198,7 @@ export default function UserManagement() {
 }
 
 
-function FilterTag({label, isSelected, onClick}: { label: string, isSelected: boolean, onClick: () => void }) {
+function FilterTag({ label, isSelected, onClick }: { label: string, isSelected: boolean, onClick: () => void }) {
     return (
         <button
             type="button"

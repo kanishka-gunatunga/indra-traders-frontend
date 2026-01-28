@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
-import {complaintService} from "@/services/complaintService";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { complaintService } from "@/services/complaintService";
 
 export const complaintKeys = {
     all: ["complaints"] as const,
     lists: () => [...complaintKeys.all, "list"] as const,
-    listByContact: (phone: string) => [...complaintKeys.lists(), {phone}] as const,
+    listByContact: (phone: string) => [...complaintKeys.lists(), { phone }] as const,
     details: () => [...complaintKeys.all, "detail"] as const,
     detail: (id: number) => [...complaintKeys.details(), id] as const,
 };
 
 
-export const useComplaints = () => {
+export const useComplaints = (filters?: any) => {
     return useQuery({
-        queryKey: complaintKeys.lists(),
-        queryFn: complaintService.getAll,
+        queryKey: [...complaintKeys.lists(), filters],
+        queryFn: () => complaintService.getAll(filters),
     });
 };
 
@@ -44,7 +44,7 @@ export const useCreateComplaint = () => {
     return useMutation({
         mutationFn: (data: any) => complaintService.create(data),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: complaintKeys.lists()});
+            queryClient.invalidateQueries({ queryKey: complaintKeys.lists() });
         },
     });
 };
@@ -54,11 +54,11 @@ export const useUpdateComplaint = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, data}: { id: number; data: any }) =>
+        mutationFn: ({ id, data }: { id: number; data: any }) =>
             complaintService.update(id, data),
         onSuccess: (_data, variables) => {
-            queryClient.invalidateQueries({queryKey: complaintKeys.detail(variables.id)});
-            queryClient.invalidateQueries({queryKey: complaintKeys.lists()});
+            queryClient.invalidateQueries({ queryKey: complaintKeys.detail(variables.id) });
+            queryClient.invalidateQueries({ queryKey: complaintKeys.lists() });
         },
     });
 };

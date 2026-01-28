@@ -5,11 +5,11 @@
 import Header from "@/components/Header";
 import Modal from "@/components/Modal";
 import Image from "next/image";
-import React, {useState} from "react";
-import {useCurrentUser} from "@/utils/auth";
-import {useToast} from "@/hooks/useToast";
+import React, { useState } from "react";
+import { useCurrentUser } from "@/utils/auth";
+import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/Toast";
-import {Trash2, Edit2} from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 import {
     useAllServices,
     useBranches,
@@ -21,20 +21,20 @@ import {
     useUpdateService,
     useDeleteService, useDeleteBranch,
 
-} from "@/hooks/useServicePark" ;
+} from "@/hooks/useServicePark";
 import CreatePackageModal from "@/components/CreatePackageModal";
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function ServiceParkConfig() {
     const router = useRouter();
     const user = useCurrentUser();
-    const {toast, showToast, hideToast} = useToast();
+    const { toast, showToast, hideToast } = useToast();
 
     const deleteBranchMutation = useDeleteBranch();
 
-    const {data: services = [], isLoading: loadingServices} = useAllServices();
-    const {data: packages = [], isLoading: loadingPackages} = usePackages();
-    const {data: branches = [], isLoading: loadingBranches} = useBranches();
+    const { data: services = [], isLoading: loadingServices } = useAllServices();
+    const { data: packages = [], isLoading: loadingPackages } = usePackages();
+    const { data: branches = [], isLoading: loadingBranches } = useBranches();
 
     const createServiceMutation = useCreateService();
     const updateServiceMutation = useUpdateService();
@@ -52,7 +52,7 @@ export default function ServiceParkConfig() {
     const [editingService, setEditingService] = useState<any | null>(null);
     const [editingPackage, setEditingPackage] = useState<any | null>(null);
 
-    const [serviceForm, setServiceForm] = useState({name: "", type: "REPAIR", base_price: ""});
+    const [serviceForm, setServiceForm] = useState({ name: "", type: "REPAIR", base_price: "" });
 
     const openServiceModal = (service?: any) => {
         if (service) {
@@ -64,7 +64,7 @@ export default function ServiceParkConfig() {
             });
         } else {
             setEditingService(null);
-            setServiceForm({name: "", type: "REPAIR", base_price: ""});
+            setServiceForm({ name: "", type: "REPAIR", base_price: "" });
         }
         setIsServiceModalOpen(true);
     };
@@ -87,7 +87,7 @@ export default function ServiceParkConfig() {
             };
 
             if (editingService) {
-                await updateServiceMutation.mutateAsync({id: editingService.id, data: payload});
+                await updateServiceMutation.mutateAsync({ id: editingService.id, data: payload });
                 showToast("Service updated successfully", "success");
             } else {
                 await createServiceMutation.mutateAsync(payload);
@@ -112,7 +112,7 @@ export default function ServiceParkConfig() {
     const handleSavePackage = async (data: any) => {
         try {
             if (editingPackage) {
-                await updatePackageMutation.mutateAsync({id: editingPackage.id, data});
+                await updatePackageMutation.mutateAsync({ id: editingPackage.id, data });
                 showToast("Package updated successfully", "success");
             } else {
                 await createPackageMutation.mutateAsync(data);
@@ -152,14 +152,14 @@ export default function ServiceParkConfig() {
     return (
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
-            <Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast}/>
+            <Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast} />
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8 pb-20">
-                <Header
-                    name={user?.full_name || "Admin User"}
-                    location={user?.branch || "Bambalapitiya"}
-                    title="Service Park Configuration"
-                />
+                {/*<Header*/}
+                {/*    name={user?.full_name || "Admin User"}*/}
+                {/*    location={user?.branch || "Bambalapitiya"}*/}
+                {/*    title="Service Park Configuration"*/}
+                {/*/>*/}
 
                 <section
                     className="relative bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-8 flex flex-col">
@@ -183,7 +183,7 @@ export default function ServiceParkConfig() {
                             className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition cursor-pointer"
                             onClick={() => activeTab === "SERVICES" ? openServiceModal() : openPackageModal()}
                         >
-                            <Image src={"/images/sales/plus.svg"} width={24} height={24} alt="Add"/>
+                            <Image src={"/images/sales/plus.svg"} width={24} height={24} alt="Add" />
                         </button>
                     </div>
 
@@ -212,18 +212,18 @@ export default function ServiceParkConfig() {
                                         ) : (
                                             services.map((svc: any) => (
                                                 <div key={svc.id}
-                                                     className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer">
+                                                    className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer">
                                                     <div
                                                         onClick={() => openServiceModal(svc)}
                                                         className="w-1/4 px-3 py-2 pl-8 font-medium text-left flex items-center gap-2">
                                                         {svc.name}
                                                     </div>
                                                     <div className="w-1/4 px-3 py-2 text-center">
-                                    <span
-                                        onClick={() => openServiceModal(svc)}
-                                        className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
-                                        {svc.type}
-                                    </span>
+                                                        <span
+                                                            onClick={() => openServiceModal(svc)}
+                                                            className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                                                            {svc.type}
+                                                        </span>
                                                     </div>
                                                     <div
                                                         onClick={() => openServiceModal(svc)}
@@ -234,7 +234,7 @@ export default function ServiceParkConfig() {
                                                         <button
                                                             onClick={() => openServiceModal(svc)}
                                                             className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 cursor-pointer">
-                                                            <Edit2 size={18}/>
+                                                            <Edit2 size={18} />
                                                         </button>
                                                         <button
                                                             onClick={(e) => {
@@ -242,7 +242,7 @@ export default function ServiceParkConfig() {
                                                                 handleDeleteService(svc.id);
                                                             }}
                                                             className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 cursor-pointer">
-                                                            <Trash2 size={18}/>
+                                                            <Trash2 size={18} />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -256,7 +256,7 @@ export default function ServiceParkConfig() {
                                             ) : (
                                                 packages.map((pkg: any) => (
                                                     <div key={pkg.id}
-                                                         className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer">
+                                                        className="flex text-lg mt-1 text-black hover:bg-gray-50 transition items-center cursor-pointer">
                                                         <div
                                                             onClick={() => openPackageModal(pkg)}
                                                             className="w-1/4 px-3 py-2 pl-8 font-medium text-left flex items-center gap-2">
@@ -275,14 +275,14 @@ export default function ServiceParkConfig() {
                                                         </div>
                                                         <div className="w-1/4 px-3 py-2 flex justify-center gap-3">
                                                             <button onClick={() => openPackageModal(pkg)}
-                                                                    className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 cursor-pointer">
-                                                                <Edit2 size={18}/></button>
+                                                                className="text-gray-400 hover:text-blue-600 p-2 rounded-full hover:bg-blue-50 cursor-pointer">
+                                                                <Edit2 size={18} /></button>
                                                             <button onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleDeletePackage(pkg.id);
                                                             }}
-                                                                    className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 cursor-pointer">
-                                                                <Trash2 size={18}/></button>
+                                                                className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 cursor-pointer">
+                                                                <Trash2 size={18} /></button>
                                                         </div>
                                                     </div>
                                                 ))
@@ -302,7 +302,7 @@ export default function ServiceParkConfig() {
                             className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center hover:bg-gray-50 transition cursor-pointer"
                             onClick={() => router.push("/admin/service-park/create-branch")}
                         >
-                            <Image src={"/images/sales/plus.svg"} width={24} height={24} alt="Add"/>
+                            <Image src={"/images/sales/plus.svg"} width={24} height={24} alt="Add" />
                         </button>
                     </div>
 
@@ -340,7 +340,7 @@ export default function ServiceParkConfig() {
                                                     {branch.contact_number}
                                                 </div>
                                                 <div className="w-1/5 px-3 py-2 text-center text-base truncate"
-                                                     title={branch.address}>
+                                                    title={branch.address}>
                                                     {branch.address}
                                                 </div>
                                                 <div className="w-1/5 px-3 py-2 flex justify-center items-center gap-2">
@@ -357,7 +357,7 @@ export default function ServiceParkConfig() {
                                                         }}
                                                         className="text-gray-400 hover:text-red-600 p-2 rounded-full hover:bg-red-50 cursor-pointer"
                                                     >
-                                                        <Trash2 size={18}/>
+                                                        <Trash2 size={18} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -374,21 +374,21 @@ export default function ServiceParkConfig() {
                 <Modal
                     title={editingService ? "Edit Service" : "Add New Global Service"}
                     onClose={() => setIsServiceModalOpen(false)}
-                    actionButton={{label: editingService ? "Save" : "Create", onClick: handleSaveService}}
+                    actionButton={{ label: editingService ? "Save" : "Create", onClick: handleSaveService }}
                 >
                     <div className="space-y-4 w-[800px]">
                         <div>
                             <label className="block text-sm font-medium mb-1">Name</label>
                             <input value={serviceForm.name}
-                                   onChange={e => setServiceForm({...serviceForm, name: e.target.value})}
-                                   className="input-field" placeholder="e.g. Full Body Wash"/>
+                                onChange={e => setServiceForm({ ...serviceForm, name: e.target.value })}
+                                className="input-field" placeholder="e.g. Full Body Wash" />
                         </div>
                         <div className="flex gap-4">
                             <div className="w-1/2">
                                 <label className="block text-sm font-medium mb-1">Type</label>
                                 <select value={serviceForm.type}
-                                        onChange={e => setServiceForm({...serviceForm, type: e.target.value})}
-                                        className="input-field">
+                                    onChange={e => setServiceForm({ ...serviceForm, type: e.target.value })}
+                                    className="input-field">
                                     <option value="REPAIR">Repair</option>
                                     <option value="PAINT">Paint</option>
                                     <option value="ADDON">Add-on</option>
@@ -397,8 +397,8 @@ export default function ServiceParkConfig() {
                             <div className="w-1/2">
                                 <label className="block text-sm font-medium mb-1">Base Price (LKR)</label>
                                 <input type="number" value={serviceForm.base_price}
-                                       onChange={e => setServiceForm({...serviceForm, base_price: e.target.value})}
-                                       className="input-field" placeholder="0.00"/>
+                                    onChange={e => setServiceForm({ ...serviceForm, base_price: e.target.value })}
+                                    className="input-field" placeholder="0.00" />
                             </div>
                         </div>
                     </div>

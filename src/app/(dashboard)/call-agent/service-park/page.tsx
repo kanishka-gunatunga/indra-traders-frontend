@@ -27,7 +27,7 @@ import {useRouter} from 'next/navigation';
 import {setBookingData} from "@/redux/slices/bookingSlice";
 
 
-export const vehicleHistorySchema = z.object({
+const vehicleHistorySchema = z.object({
     vehicle_no: z.string().min(2, "Vehicle number is required"),
     odometer: z.string().min(1, "Odometer reading is required"),
     owner_name: z.string().min(2, "Owner name is required"),
@@ -42,7 +42,7 @@ export const vehicleHistorySchema = z.object({
     // phone_number: z.string().regex(/^0\d{9}$/, "Invalid phone number"),
 });
 
-export const assignToSaleSchema = z.object({
+const assignToSaleSchema = z.object({
     // vehicle_no: z.string().min(2, "Vehicle number is required"),
     date: z.string().min(1, "Date is required"),
     customer_name: z.string().min(2, "Customer name is required"),
@@ -54,7 +54,7 @@ export const assignToSaleSchema = z.object({
     additional_note: z.string().optional(),
 });
 
-export const unavailableServiceSchema = z.object({
+const unavailableServiceSchema = z.object({
     unavailable_repair: z.string().optional(),
     unavailable_paint: z.string().optional(),
     unavailable_add_on: z.string().optional(),
@@ -473,7 +473,7 @@ const ServicePark = () => {
                     showToast("Unavailable service added successfully", "success");
                     resetUnavailable();
                 },
-                onError: (error) => {
+                onError: (error: any) => {
                     console.error("Error creating unavailable vehicle sale:", error);
                 },
             });

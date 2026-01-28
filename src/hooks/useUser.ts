@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
-import {userService} from "@/services/userService";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { userService } from "@/services/userService";
 import axiosInstance from "@/utils/axiosinstance";
 
 export const useUsers = (filters?: {
     user_role?: string;
     department?: string;
     branch?: string;
+    search?: string;
 }) => {
     return useQuery({
         queryKey: ["users", filters],
@@ -28,7 +29,7 @@ export const useCreateUser = () => {
     return useMutation({
         mutationFn: userService.createUser,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["users"]});
+            queryClient.invalidateQueries({ queryKey: ["users"] });
         },
     });
 };
@@ -53,10 +54,10 @@ export const useCheckHandover = () => {
 export const useUpdateUser = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({id, data}: { id: string; data: any }) =>
+        mutationFn: ({ id, data }: { id: string; data: any }) =>
             userService.updateUser(id, data),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["users"]});
+            queryClient.invalidateQueries({ queryKey: ["users"] });
         },
     });
 };
@@ -66,7 +67,7 @@ export const useDeleteUser = () => {
     return useMutation({
         mutationFn: userService.deleteUser,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["users"]});
+            queryClient.invalidateQueries({ queryKey: ["users"] });
         },
     });
 };

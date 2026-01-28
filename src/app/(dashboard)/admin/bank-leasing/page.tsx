@@ -6,12 +6,12 @@
 import Header from "@/components/Header";
 import Modal from "@/components/Modal";
 import Image from "next/image";
-import React, {useState} from "react";
-import {useCurrentUser} from "@/utils/auth";
-import {useToast} from "@/hooks/useToast";
+import React, { useState } from "react";
+import { useCurrentUser } from "@/utils/auth";
+import { useToast } from "@/hooks/useToast";
 import Toast from "@/components/Toast";
 import { useAllBanks, useCreateBank, useDeleteBank, useUpdateBank } from "@/hooks/useLeasing";
-import {Plus, Trash2} from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 const STANDARD_MONTHS = [12, 24, 36, 48, 60];
 
@@ -25,7 +25,7 @@ export default function BankLeasing() {
     const deleteBankMutation = useDeleteBank();
 
 
-    const {toast, showToast, hideToast} = useToast();
+    const { toast, showToast, hideToast } = useToast();
 
     const [selectedBank, setSelectedBank] = useState<any | null>(null);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -177,11 +177,11 @@ export default function BankLeasing() {
             />
 
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-                <Header
-                    name={user?.full_name || "Sophie Eleanor"}
-                    location={user?.branch || "Bambalapitiya"}
-                    title="Leasing Configuration"
-                />
+                {/*<Header*/}
+                {/*    name={user?.full_name || "Sophie Eleanor"}*/}
+                {/*    location={user?.branch || "Bambalapitiya"}*/}
+                {/*    title="Leasing Configuration"*/}
+                {/*/>*/}
 
                 {/* User Management Section */}
                 <section
@@ -326,9 +326,9 @@ export default function BankLeasing() {
                                         onClick={() => toggleMonthSelection(month)}
                                         className={`px-5 py-2 rounded-full border text-sm font-medium transition shadow-sm
                                             ${isSelected
-                                            ? "bg-[#DB2727] text-white border-[#DB2727]"
-                                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                        }
+                                                ? "bg-[#DB2727] text-white border-[#DB2727]"
+                                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            }
                                         `}
                                     >
                                         {month}
@@ -416,9 +416,9 @@ export default function BankLeasing() {
                                         onClick={() => toggleMonthSelection(month)}
                                         className={`px-5 py-2 rounded-full border text-sm font-medium transition shadow-sm
                                             ${isSelected
-                                            ? "bg-[#DB2727] text-white border-[#DB2727]"
-                                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                                        }
+                                                ? "bg-[#DB2727] text-white border-[#DB2727]"
+                                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                            }
                                         `}
                                     >
                                         {month}

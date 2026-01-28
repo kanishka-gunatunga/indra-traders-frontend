@@ -7,10 +7,11 @@ import Modal from "@/components/Modal";
 import Image from "next/image";
 import React, { useMemo, useState } from "react";
 import { useComplaints } from "@/hooks/useComplaint";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Complaint } from "@/types/complaint.types";
 import { useRouter } from "next/navigation";
 import { useNearestReminders } from "@/hooks/useReminder";
-import {useCurrentUser} from "@/utils/auth";
+import { useCurrentUser } from "@/utils/auth";
 
 const category = ["ITPL", "ISP", "IMS", "IFT", "BYD"];
 const status = ["New", "In Review", "Processing", "Approval", "Completed"];
@@ -21,7 +22,14 @@ export default function Complains() {
 
     const user = useCurrentUser();
 
-    const { data: complaints, isLoading, isError } = useComplaints();
+    // Search State
+    const [searchUserQuery, setSearchUserQuery] = useState("");
+    const [isSearchUserActive, setIsSearchUserActive] = useState(false);
+    const debouncedSearch = useDebounce(searchUserQuery, 500);
+
+    const { data: complaints, isLoading, isError } = useComplaints({
+        search: debouncedSearch
+    });
     const { data: reminderData } = useNearestReminders();
 
     // Demo data for Upcoming Events
@@ -35,6 +43,8 @@ export default function Complains() {
 
     const [isFilterComplainsModalOpen, setIsFilterComplainsModalOpen] =
         useState(false);
+
+
 
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -60,11 +70,11 @@ export default function Complains() {
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-                <Header
-                    name={user?.full_name || "Sophie Eleanor"}
-                    // location={user?.branch || "Bambalapitiya"}
-                    title="All Complains"
-                />
+                {/*<Header*/}
+                {/*    name={user?.full_name || "Sophie Eleanor"}*/}
+                {/*    // location={user?.branch || "Bambalapitiya"}*/}
+                {/*    title="All Complains"*/}
+                {/*/>*/}
 
                 {/* All Complains Section */}
                 <section
@@ -72,17 +82,43 @@ export default function Complains() {
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">All Complains</span>
 
-                        <button
-                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
-                            onClick={() => setIsFilterComplainsModalOpen(true)}
-                        >
-                            <Image
-                                src={"/images/admin/flowbite_filter-outline.svg"}
-                                width={24}
-                                height={24}
-                                alt="Filter icon"
-                            />
-                        </button>
+
+                        <div className="flex gap-5">
+                            <div className="relative flex items-center justify-end">
+                                <input
+                                    type="text"
+                                    value={searchUserQuery}
+                                    onChange={(e) => setSearchUserQuery(e.target.value)}
+                                    onBlur={() => !searchUserQuery && setIsSearchUserActive(false)}
+                                    placeholder={`Search Complains...`}
+                                    className={`
+                                    bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-500
+                                    rounded-full border border-gray-300 outline-none
+                                    transition-all duration-300 ease-in-out h-10 text-sm
+                                    ${isSearchUserActive ? 'w-64 px-4 opacity-100 mr-2 border' : 'w-0 px-0 opacity-0 border-none'}
+                                `}
+                                    autoFocus={isSearchUserActive}
+                                />
+                                <button
+                                    onClick={() => setIsSearchUserActive(!isSearchUserActive)}
+                                    className={`ml-auto text-white text-base font-medium rounded-full z-10 transition-transform duration-200 cursor-pointer ${isSearchUserActive ? 'scale-90' : ''}`}
+                                >
+                                    <Image src="/search.svg" alt="search" height={36} width={36}
+                                        className="h-12 w-12" />
+                                </button>
+                            </div>
+                            <button
+                                className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
+                                onClick={() => setIsFilterComplainsModalOpen(true)}
+                            >
+                                <Image
+                                    src={"/images/admin/flowbite_filter-outline.svg"}
+                                    width={24}
+                                    height={24}
+                                    alt="Filter icon"
+                                />
+                            </button>
+                        </div>
                     </div>
 
                     {isLoading ? (
