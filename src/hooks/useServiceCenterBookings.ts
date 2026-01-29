@@ -20,6 +20,7 @@ export function useServiceCenterBookings(
 ) {
     const { data: session } = useSession();
     const branchId = session?.user?.branchId ? Number(session.user.branchId) : null;
+    const branchName = session?.user?.branchName || null;
 
     const [serviceTypes, setServiceTypes] = useState<string[]>([]);
     const [serviceLines, setServiceLines] = useState<ServiceLine[]>([]);
@@ -81,17 +82,17 @@ export function useServiceCenterBookings(
 
         const fetchMonthBookings = async (forceRefresh = false) => {
             try {
-                
+
                 const monthKey = selectedDate.format('YYYY-MM');
-                
-                
+
+
                 if (!forceRefresh && fetchedMonthsRef.current.has(monthKey)) {
-                    return; 
+                    return;
                 }
 
                 const startDate = selectedDate.startOf('month').format('YYYY-MM-DD');
                 const endDate = selectedDate.endOf('month').format('YYYY-MM-DD');
-                
+
                 const monthDots = await getCalendarDots(
                     branchId,
                     startDate,
@@ -99,27 +100,27 @@ export function useServiceCenterBookings(
                     selectedLineId || undefined,
                     selectedServiceType || undefined
                 );
-                
-                
+
+
                 setCalendarDotsCache(prev => ({
                     ...prev,
                     [monthKey]: monthDots
                 }));
-                
+
                 fetchedMonthsRef.current.add(monthKey);
             } catch (err) {
                 console.error('[useServiceCenterBookings] Failed to fetch calendar bookings:', err);
-                
+
             }
         };
 
         fetchMonthBookings();
-        
-        
+
+
         const intervalId = setInterval(() => {
-            fetchMonthBookings(true); 
+            fetchMonthBookings(true);
         }, 5 * 60 * 1000);
-        
+
         return () => clearInterval(intervalId);
     }, [branchId, selectedDate, selectedLineId, selectedServiceType]);
 
@@ -137,7 +138,7 @@ export function useServiceCenterBookings(
                 setError(null);
 
                 const dateStr = selectedDate.format('YYYY-MM-DD');
-                
+
                 const fetchedBookings = await getBookings(
                     dateStr,
                     branchId,
@@ -149,7 +150,7 @@ export function useServiceCenterBookings(
 
                 const calculatedStats = calculateServiceCenterStats(fetchedBookings, totalTimeSlots);
                 setStats(calculatedStats);
-                
+
                 if (isInitialLoad.current) {
                     isInitialLoad.current = false;
                     setLoading(false);
@@ -183,16 +184,24 @@ export function useServiceCenterBookings(
         vehicle_no: string;
         customer_name: string;
         phone_number: string;
+        email?: string;
+        address?: string;
+        vehicle_model?: string;
+        odometer?: string;
+        mileage?: string;
+        oil_type?: string;
+        service_advisor?: string;
+        vehicle_make?: string;
         status?: string;
     }) => {
         if (!branchId) throw new Error('Branch ID is required');
-        
+
         try {
             const newBooking = await createBookingAPI({
                 branch_id: branchId,
                 ...data
             });
-            
+
             const dateStr = selectedDate.format('YYYY-MM-DD');
             const fetchedBookings = await getBookings(
                 dateStr,
@@ -201,11 +210,11 @@ export function useServiceCenterBookings(
                 selectedServiceType || undefined
             );
             setBookings(fetchedBookings);
-            
+
             const calculatedStats = calculateServiceCenterStats(fetchedBookings, totalTimeSlots);
             setStats(calculatedStats);
-            
-            
+
+
             const monthKey = selectedDate.format('YYYY-MM');
             const startDate = selectedDate.startOf('month').format('YYYY-MM-DD');
             const endDate = selectedDate.endOf('month').format('YYYY-MM-DD');
@@ -220,7 +229,7 @@ export function useServiceCenterBookings(
                 ...prev,
                 [monthKey]: monthDots
             }));
-            
+
             return newBooking;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to create booking';
@@ -231,10 +240,10 @@ export function useServiceCenterBookings(
 
     const updateBooking = async (id: number, status: "PENDING" | "BOOKED" | "COMPLETED" | "CANCELLED") => {
         if (!branchId) throw new Error('Branch ID is required');
-        
+
         try {
             const updatedBooking = await updateBookingStatusAPI(id, status);
-            
+
             const dateStr = selectedDate.format('YYYY-MM-DD');
             const fetchedBookings = await getBookings(
                 dateStr,
@@ -243,11 +252,11 @@ export function useServiceCenterBookings(
                 selectedServiceType || undefined
             );
             setBookings(fetchedBookings);
-            
+
             const calculatedStats = calculateServiceCenterStats(fetchedBookings, totalTimeSlots);
             setStats(calculatedStats);
-            
-            
+
+
             const monthKey = selectedDate.format('YYYY-MM');
             const startDate = selectedDate.startOf('month').format('YYYY-MM-DD');
             const endDate = selectedDate.endOf('month').format('YYYY-MM-DD');
@@ -262,7 +271,7 @@ export function useServiceCenterBookings(
                 ...prev,
                 [monthKey]: monthDots
             }));
-            
+
             return updatedBooking;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to update booking';
@@ -274,17 +283,17 @@ export function useServiceCenterBookings(
 
     const calendarDots = React.useMemo(() => {
         const dotsMap: Record<string, string[]> = {};
-        
-       
+
+
         const allCachedDots = Object.values(calendarDotsCache).flat();
-        
+
         allCachedDots.forEach(dot => {
             const dateStr = dot.date;
             if (!dotsMap[dateStr]) {
                 dotsMap[dateStr] = [];
             }
-            
-           
+
+
             if (dot.status === 'COMPLETED' || dot.status === 'BOOKED') {
                 if (!dotsMap[dateStr].includes('green')) {
                     dotsMap[dateStr].push('green');
@@ -294,9 +303,9 @@ export function useServiceCenterBookings(
                     dotsMap[dateStr].push('orange');
                 }
             }
-            
+
         });
-        
+
         return dotsMap;
     }, [calendarDotsCache]);
 
@@ -308,6 +317,7 @@ export function useServiceCenterBookings(
         stats,
         loading,
         error,
+        branchName,
         createBooking,
         updateBooking
     };

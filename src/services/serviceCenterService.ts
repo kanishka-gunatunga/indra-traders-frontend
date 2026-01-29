@@ -7,13 +7,13 @@ export const getServiceTypes = async (): Promise<string[]> => {
         const res = await axiosInstance.get('/service-center/service-types');
         return res.data;
     } catch (error) {
-        const axiosError = error as { 
-            message?: string; 
-            response?: { 
-                status?: number; 
-                statusText?: string; 
-                data?: { message?: string } 
-            } 
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
         };
         console.error('[ServiceCenterService] Failed to fetch service types:', {
             message: axiosError.message,
@@ -30,13 +30,13 @@ export const getServiceLines = async (branchId: number): Promise<ServiceLine[]> 
         const res = await axiosInstance.get(`/service-park/branches/${branchId}/lines`);
         return res.data;
     } catch (error) {
-        const axiosError = error as { 
-            message?: string; 
-            response?: { 
-                status?: number; 
-                statusText?: string; 
-                data?: { message?: string } 
-            } 
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
         };
 
         console.error('[ServiceCenterService] Failed to fetch service lines:', {
@@ -62,13 +62,13 @@ export const getBookings = async (date: string, branchId: number, lineId?: numbe
         const res = await axiosInstance.get(`/service-center/bookings?${params}`);
         return res.data;
     } catch (error) {
-        const axiosError = error as { 
-            message?: string; 
-            response?: { 
-                status?: number; 
-                statusText?: string; 
-                data?: { message?: string } 
-            } 
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
         };
         console.error('[ServiceCenterService] Failed to fetch bookings:', {
             message: axiosError.message,
@@ -100,13 +100,13 @@ export const getCalendarDots = async (
         const res = await axiosInstance.get(`/service-center/bookings/calendar-dots?${params}`);
         return res.data;
     } catch (error) {
-        const axiosError = error as { 
-            message?: string; 
-            response?: { 
-                status?: number; 
-                statusText?: string; 
-                data?: { message?: string } 
-            } 
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
         };
         console.error('[ServiceCenterService] Failed to fetch calendar dots:', {
             message: axiosError.message,
@@ -138,13 +138,13 @@ export const getAllBookingsForCalendar = async (
         const res = await axiosInstance.get(`/service-center/bookings/all?${params}`);
         return res.data;
     } catch (error) {
-        const axiosError = error as { 
-            message?: string; 
-            response?: { 
-                status?: number; 
-                statusText?: string; 
-                data?: { message?: string } 
-            } 
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
         };
         console.error('[ServiceCenterService] Failed to fetch calendar bookings:', {
             message: axiosError.message,
@@ -156,18 +156,18 @@ export const getAllBookingsForCalendar = async (
 }
 
 //  Get a single booking by ID
-export const getBookingById = async (id: number): Promise<ServiceCenterBooking> =>{
+export const getBookingById = async (id: number): Promise<ServiceCenterBooking> => {
     try {
         const res = await axiosInstance.get(`/service-center/bookings/${id}`);
         return res.data;
     } catch (error) {
-        const axiosError = error as { 
-            message?: string; 
-            response?: { 
-                status?: number; 
-                statusText?: string; 
-                data?: { message?: string } 
-            } 
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
         };
         console.error('[ServiceCenterService] Failed to fetch booking:', {
             message: axiosError.message,
@@ -188,19 +188,31 @@ export const createBooking = async (data: {
     vehicle_no: string;
     customer_name: string;
     phone_number: string;
+    email?: string;
+    address?: string;
+    vehicle_model?: string;
+    odometer?: string;
+    mileage?: string;
+    oil_type?: string;
+    service_advisor?: string;
+    vehicle_make?: string;
     status?: string;
 }): Promise<ServiceCenterBooking> => {
     try {
+        // Debug: Log the exact payload being sent to API
+        console.log('[ServiceCenterService] Creating booking with data:', JSON.stringify(data, null, 2));
+
         const res = await axiosInstance.post('/service-center/bookings', data);
+        console.log('[ServiceCenterService] Booking created, response:', res.data);
         return res.data;
     } catch (error) {
-        const axiosError = error as { 
-            message?: string; 
-            response?: { 
-                status?: number; 
-                statusText?: string; 
-                data?: { message?: string } 
-            } 
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
         };
         console.error('[ServiceCenterService] Failed to create booking:', {
             message: axiosError.message,
@@ -220,13 +232,13 @@ export const updateBookingStatus = async (
         const res = await axiosInstance.put(`/service-center/bookings/${id}`, { status });
         return res.data;
     } catch (error) {
-        const axiosError = error as { 
-            message?: string; 
-            response?: { 
-                status?: number; 
-                statusText?: string; 
-                data?: { message?: string } 
-            } 
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
         };
         console.error('[ServiceCenterService] Failed to update booking:', {
             message: axiosError.message,

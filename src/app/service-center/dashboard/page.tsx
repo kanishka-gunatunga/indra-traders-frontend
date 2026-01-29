@@ -8,6 +8,8 @@ import { Calendar, ConfigProvider, Select } from 'antd';
 import dayjs from 'dayjs';
 import { BookingDetails, BookingFormData, SelectedBooking, SlotStatus } from '@/types/serviceCenter';
 import { useServiceCenterBookings } from '@/hooks/useServiceCenterBookings';
+import { useToast } from '@/hooks/useToast';
+import Toast from '@/components/Toast';
 import { generateTimeSlots } from '@/utils/timeSlotUtils';
 
 
@@ -71,10 +73,20 @@ export default function ServiceCenterDashboard() {
     const [selectedBooking, setSelectedBooking] = useState<SelectedBooking | null>(null);
     const [bookingStatus, setBookingStatus] = useState<"PENDING" | "BOOKED" | "COMPLETED" | "CANCELLED">('BOOKED');
     const [isAvailableSlot, setIsAvailableSlot] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast, showToast, hideToast } = useToast();
     const [formData, setFormData] = useState<BookingFormData>({
         vehicleCode: '',
         phoneNumber: '',
         customerName: '',
+        email: '',
+        address: '',
+        vehicleModel: '',
+        odometer: '',
+        mileage: '',
+        oilType: '',
+        serviceAdvisor: '',
+        vehicleMake: '',
     });
 
     const {
@@ -85,6 +97,7 @@ export default function ServiceCenterDashboard() {
         stats,
         loading,
         error,
+        branchName,
         createBooking,
         updateBooking
     } = useServiceCenterBookings(
@@ -107,19 +120,18 @@ export default function ServiceCenterDashboard() {
 
     const dateCellRender = (date: dayjs.Dayjs) => {
         const dateStr = date.format('YYYY-MM-DD');
-        
+
         const dotColors = calendarDots[dateStr] || [];
-        
+
         return (
             <div className="flex justify-start items-end w-full gap-[4px]">
                 {dotColors.slice(0, 3).map((color: string, i: number) => (
                     <span
                         key={i}
-                        className={`w-[7px] h-[7px] rounded-full ${
-                            color === 'green' ? 'bg-[#039855]' : 
-                            color === 'red' ? 'bg-[#DB2727]' : 
-                            'bg-[#FF961B]'
-                        }`}
+                        className={`w-[7px] h-[7px] rounded-full ${color === 'green' ? 'bg-[#039855]' :
+                            color === 'red' ? 'bg-[#DB2727]' :
+                                'bg-[#FF961B]'
+                            }`}
                     />
                 ))}
             </div>
@@ -129,10 +141,10 @@ export default function ServiceCenterDashboard() {
     const getSlotStatus = (slotStart: string): SlotStatus => {
         const booking = bookings.find(b => b.start_time === slotStart);
 
-        if(!booking) {
+        if (!booking) {
             return { status: null, vehicleCode: null }
         }
-        
+
         return {
             status: booking.status,
             vehicleCode: booking.vehicle_no,
@@ -150,6 +162,14 @@ export default function ServiceCenterDashboard() {
             vehicleCode: booking.vehicle_no || '',
             customerName: booking.customer_name || '',
             phoneNumber: booking.phone_number || '',
+            email: booking.email || '',
+            address: booking.address || '',
+            vehicleModel: booking.vehicle_model || '',
+            odometer: booking.odometer || '',
+            mileage: booking.mileage || '',
+            oilType: booking.oil_type || '',
+            serviceAdvisor: booking.service_advisor || '',
+            vehicleMake: booking.vehicle_make || '',
             status: booking.status,
         };
     };
@@ -171,6 +191,14 @@ export default function ServiceCenterDashboard() {
                 vehicleCode: '',
                 phoneNumber: '',
                 customerName: '',
+                email: '',
+                address: '',
+                vehicleModel: '',
+                odometer: '',
+                mileage: '',
+                oilType: '',
+                serviceAdvisor: '',
+                vehicleMake: '',
             });
             setIsModalOpen(true);
         } else {
@@ -191,6 +219,14 @@ export default function ServiceCenterDashboard() {
                     vehicleCode: bookingDetails.vehicleCode,
                     phoneNumber: bookingDetails.phoneNumber,
                     customerName: bookingDetails.customerName,
+                    email: bookingDetails.email,
+                    address: bookingDetails.address,
+                    vehicleModel: bookingDetails.vehicleModel,
+                    odometer: bookingDetails.odometer,
+                    mileage: bookingDetails.mileage,
+                    oilType: bookingDetails.oilType,
+                    serviceAdvisor: bookingDetails.serviceAdvisor,
+                    vehicleMake: bookingDetails.vehicleMake,
                 });
                 setIsModalOpen(true);
             }
@@ -198,57 +234,117 @@ export default function ServiceCenterDashboard() {
     };
 
     const handleSave = async () => {
-        if (!selectedBooking || !selectedLineId) return;
-        
+        // Validate required selections
+        if (!selectedBooking) {
+            showToast('No time slot selected. Please select a time slot.', 'error');
+            return;
+        }
+
+        // Only require Service Line for new bookings, not for editing
+        if (isAvailableSlot && !selectedLineId) {
+            showToast('Please select a Service Line before creating a booking.', 'error');
+            return;
+        }
+
+        // Validate booking date - prevent booking in the past (only for new bookings)
+        const bookingDate = selectedDate.format('YYYY-MM-DD');
+        const today = dayjs().format('YYYY-MM-DD');
+
+        if (isAvailableSlot && bookingDate < today) {
+            showToast('Cannot create a booking for a past date.', 'error');
+            return;
+        }
+
+        // Validate required fields for new bookings
+        if (isAvailableSlot) {
+            if (!formData.customerName.trim()) {
+                showToast('Customer Name is required.', 'error');
+                return;
+            }
+            if (!formData.phoneNumber.trim()) {
+                showToast('Phone Number is required.', 'error');
+                return;
+            }
+            if (!formData.vehicleCode.trim()) {
+                showToast('Vehicle Number is required.', 'error');
+                return;
+            }
+        }
+
+        setIsSaving(true);
+
         try {
             if (isAvailableSlot) {
-                // Create new booking
-                await createBooking({
+                // Create new booking - date is from calendar selection
+                const bookingData = {
                     line_id: Number(selectedLineId),
-                    date: selectedDate.format('YYYY-MM-DD'),
+                    date: bookingDate,
                     start_time: selectedBooking.slotStart,
                     end_time: selectedBooking.slotEnd,
-                    vehicle_no: formData.vehicleCode,
-                    customer_name: formData.customerName,
-                    phone_number: formData.phoneNumber,
+                    vehicle_no: formData.vehicleCode.trim(),
+                    customer_name: formData.customerName.trim(),
+                    phone_number: formData.phoneNumber.trim(),
+                    email: formData.email.trim() || undefined,
+                    address: formData.address.trim() || undefined,
+                    vehicle_model: formData.vehicleModel.trim() || undefined,
+                    odometer: formData.odometer.trim() || undefined,
+                    mileage: formData.mileage.trim() || undefined,
+                    oil_type: formData.oilType.trim() || undefined,
+                    service_advisor: formData.serviceAdvisor.trim() || undefined,
+                    vehicle_make: formData.vehicleMake.trim() || undefined,
                     status: 'BOOKED'
-                });
+                };
+
+                // Debug: Log what's being sent
+                console.log('[BookingCreate] Form data:', formData);
+                console.log('[BookingCreate] Sending to API:', bookingData);
+
+                await createBooking(bookingData);
+                showToast('Booking created successfully!', 'success');
             } else if (selectedBooking.bookingId) {
                 // Update existing booking status
                 await updateBooking(selectedBooking.bookingId, bookingStatus);
+                showToast('Booking updated successfully!', 'success');
             }
-            
+
             setIsModalOpen(false);
         } catch (err) {
-            const error = err as { 
-                response?: { 
-                    status?: number; 
-                    data?: { message?: string } 
-                }; 
-                message?: string 
+            const error = err as {
+                response?: {
+                    status?: number;
+                    data?: { message?: string }
+                };
+                message?: string
             };
+            console.error('Save booking error:', error);
             if (error.response?.status === 409) {
-                alert('This slot is already booked. Please choose another time.');
+                showToast('This slot is already booked. Please choose another time.', 'error');
             } else {
-                alert('Failed to save booking: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+                showToast('Failed to save booking: ' + (error.response?.data?.message || error.message || 'Unknown error'), 'error');
             }
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const handleCancelBooking = async () => {
         if (!selectedBooking?.bookingId) return;
-        
+
+        setIsSaving(true);
         try {
             await updateBooking(selectedBooking.bookingId, 'CANCELLED');
+            showToast('Booking cancelled successfully!', 'success');
             setIsModalOpen(false);
         } catch (err) {
-            const error = err as { 
-                response?: { 
-                    data?: { message?: string } 
-                }; 
-                message?: string 
+            const error = err as {
+                response?: {
+                    data?: { message?: string }
+                };
+                message?: string
             };
-            alert('Failed to cancel booking: ' + (error.response?.data?.message || error.message || 'Unknown error'));
+            showToast('Failed to cancel booking: ' + (error.response?.data?.message || error.message || 'Unknown error'), 'error');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -256,10 +352,19 @@ export default function ServiceCenterDashboard() {
         setIsModalOpen(false);
         setSelectedBooking(null);
         setIsAvailableSlot(false);
+        setIsSaving(false);
         setFormData({
             vehicleCode: '',
             phoneNumber: '',
             customerName: '',
+            email: '',
+            address: '',
+            vehicleModel: '',
+            odometer: '',
+            mileage: '',
+            oilType: '',
+            serviceAdvisor: '',
+            vehicleMake: '',
         });
     };
 
@@ -280,7 +385,7 @@ export default function ServiceCenterDashboard() {
             </div>
         );
     }
-    
+
     // Error state
     if (error) {
         return (
@@ -314,7 +419,7 @@ export default function ServiceCenterDashboard() {
                         <div className="flex items-center gap-4">
                             <Image src="/indra-logo.png" alt="Logo" width={48} height={48} className="object-contain w-12 h-12" />
                             <div>
-                                <h1 className="text-xl font-bold text-[#1D1D1D] montserrat">Colombo Service Park</h1>
+                                <h1 className="text-xl font-bold text-[#1D1D1D] montserrat">{branchName || 'Service Center'}</h1>
                                 <p className="text-[0.8125rem] text-[#575757] montserrat font-medium">Today&#39;s Service Schedule</p>
                             </div>
                         </div>
@@ -477,6 +582,22 @@ export default function ServiceCenterDashboard() {
                                 </div>
 
                                 <div className="w-full lg:w-3/5 relative">
+                                    {/* Visual indicator of selected date and filter by line and service type */}
+                                    {/* <div className="mb-4 px-2">
+                                        <p className="text-sm text-[#575757] montserrat font-medium">
+                                            Showing bookings for: <span className="font-semibold text-[#1D1D1D]">{selectedDate.format('DD MMMM YYYY')}</span>
+                                            {selectedLineId && (
+                                                <span className="ml-2 text-xs bg-[#DB2727] text-white px-2 py-1 rounded-full">
+                                                    Filtered by Line
+                                                </span>
+                                            )}
+                                            {selectedServiceType && (
+                                                <span className="ml-2 text-xs bg-[#DB2727] text-white px-2 py-1 rounded-full">
+                                                    Filtered by Service Type
+                                                </span>
+                                            )}
+                                        </p>
+                                    </div> */}
                                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
                                         {TIME_SLOTS.map((slot) => {
                                             const slotStatus = getSlotStatus(slot.start);
@@ -495,24 +616,24 @@ export default function ServiceCenterDashboard() {
                                                     <div
                                                         onClick={() => handleSlotClick(slot)}
                                                         className={`flex-1 rounded-[20px] p-4 flex justify-between items-center transition-all duration-200 shadow-sm border-2 ${isAvailable
-                                                                ? 'bg-[#D9FFD9] cursor-pointer hover:shadow-md border-[#A7FFA7]'
-                                                                : isBooked
-                                                                    ? 'bg-[#FFB3B3] border-[#FF9191] cursor-pointer hover:shadow-md'
-                                                                    : isPending
-                                                                        ? 'bg-[#FFD9B3] cursor-pointer hover:shadow-md border-[#FFDAA3]'
-                                                                        : 'bg-[#A7FFA780] cursor-pointer hover:shadow-md'
+                                                            ? 'bg-[#D9FFD9] cursor-pointer hover:shadow-md border-[#A7FFA7]'
+                                                            : isBooked
+                                                                ? 'bg-[#FFB3B3] border-[#FF9191] cursor-pointer hover:shadow-md'
+                                                                : isPending
+                                                                    ? 'bg-[#FFD9B3] cursor-pointer hover:shadow-md border-[#FFDAA3]'
+                                                                    : 'bg-[#A7FFA780] cursor-pointer hover:shadow-md'
                                                             }`}
                                                         style={{ boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)' }}
                                                     >
                                                         <div className="flex items-center gap-4">
                                                             <div
                                                                 className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${isAvailable
-                                                                        ? 'bg-[#FFFFFF80] text-[#039855]'
-                                                                        : isBooked
+                                                                    ? 'bg-[#FFFFFF80] text-[#039855]'
+                                                                    : isBooked
+                                                                        ? 'bg-[#FFFFFF80] text-[#F52A2A]'
+                                                                        : isPending
                                                                             ? 'bg-[#FFFFFF80] text-[#F52A2A]'
-                                                                            : isPending
-                                                                                ? 'bg-[#FFFFFF80] text-[#F52A2A]'
-                                                                                : 'bg-[#A7FFA7] text-white'
+                                                                            : 'bg-[#A7FFA7] text-white'
                                                                     }`}
                                                                 style={{
                                                                     boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.15)',
@@ -553,12 +674,12 @@ export default function ServiceCenterDashboard() {
                                                         </div>
                                                         <div
                                                             className={`w-[95px] h-[30px] flex items-center justify-center rounded-full text-xs font-semibold gap-2 ${isAvailable
-                                                                    ? 'bg-[#FFFFFF99] text-[#039855]'
-                                                                    : isBooked
-                                                                        ? 'bg-[#FFFFFF99] text-[#DB2727]'
-                                                                        : isPending
-                                                                            ? 'bg-[#FFFFFF99] text-[#FF961B]'
-                                                                            : 'bg-[#A7FFA7] text-[#1D1D1D]'
+                                                                ? 'bg-[#FFFFFF99] text-[#039855]'
+                                                                : isBooked
+                                                                    ? 'bg-[#FFFFFF99] text-[#DB2727]'
+                                                                    : isPending
+                                                                        ? 'bg-[#FFFFFF99] text-[#FF961B]'
+                                                                        : 'bg-[#A7FFA7] text-[#1D1D1D]'
                                                                 }`}
                                                             style={{
                                                                 fontFamily: FONT_FAMILY,
@@ -583,7 +704,7 @@ export default function ServiceCenterDashboard() {
             {isModalOpen && selectedBooking && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={handleCloseModal}>
                     <div className="absolute inset-0 bg-black/40" />
-                    <div className="relative bg-white rounded-[20px] shadow-2xl p-8 max-w-[600px] w-full mx-4 z-10" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative bg-white rounded-[20px] shadow-2xl p-8 max-w-[1200px] w-full mx-4 z-10" onClick={(e) => e.stopPropagation()}>
                         <button
                             onClick={handleCloseModal}
                             className="absolute top-6 right-6 text-black hover:text-gray-600 transition-colors"
@@ -603,148 +724,403 @@ export default function ServiceCenterDashboard() {
                         </h2>
 
                         <div className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
-                                            Vehicle Number
-                                        </label>
-                                        {isAvailableSlot ? (
-                                            <input
-                                                type="text"
-                                                value={formData.vehicleCode}
-                                                onChange={(e) => setFormData({ ...formData, vehicleCode: e.target.value })}
-                                                className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
-                                                style={INPUT_STYLE}
-                                                placeholder="Enter vehicle number"
-                                            />
-                                        ) : (
-                                            <div
-                                                className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
-                                                style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
-                                            >
-                                                {selectedBooking.vehicleCode}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
-                                            Phone Number
-                                        </label>
-                                        {isAvailableSlot ? (
-                                            <input
-                                                type="text"
-                                                value={formData.phoneNumber}
-                                                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                                className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
-                                                style={INPUT_STYLE}
-                                                placeholder="Enter phone number"
-                                            />
-                                        ) : (
-                                            <div
-                                                className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
-                                                style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
-                                            >
-                                                {getBookingDetails(selectedBooking.slotStart)?.phoneNumber || '077-1234567'}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
-                                            Customer Name
-                                        </label>
-                                        {isAvailableSlot ? (
-                                            <input
-                                                type="text"
-                                                value={formData.customerName}
-                                                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                                                className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
-                                                style={INPUT_STYLE}
-                                                placeholder="Enter customer name"
-                                            />
-                                        ) : (
-                                            <div
-                                                className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
-                                                style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
-                                            >
-                                                {getBookingDetails(selectedBooking.slotStart)?.customerName || 'Rajesh Kumar'}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
-                                    Time Slot
-                                </label>
-                                <div
-                                    className="bg-[#F3F4F6] rounded-[15px] text-sm px-4 py-3 text-[#1D1D1D80]"
-                                    style={{ fontFamily: FONT_FAMILY, fontWeight: 400 }}
-                                >
-                                    {selectedBooking.slotLabel}
-                                </div>
-                            </div>
-
-                            {!isAvailableSlot && (
+                            {/* Row 1: Customer Name, Phone Number, Email */}
+                            <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
-                                        Status
+                                        Customer Name
                                     </label>
-                                    <Select
-                                        value={bookingStatus}
-                                        onChange={setBookingStatus}
-                                        className="status-select"
-                                        style={{ width: '100%' }}
-                                        suffixIcon={STATUS_ARROW_SVG}
-                                        options={[
-                                            { value: 'booked', label: 'Booked' },
-                                            { value: 'pending', label: 'Pending' },
-                                            { value: 'available', label: 'Available' },
-                                        ]}
-                                    />
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.customerName}
+                                            onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter customer name"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.customerName || ''}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Phone Number
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.phoneNumber}
+                                            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter phone number"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.phoneNumber || ''}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Email
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter email"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.email || ''}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Row 2: Address, Vehicle Number, Vehicle Model */}
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Address
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.address}
+                                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter address"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.address || ''}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Vehicle Number
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.vehicleCode}
+                                            onChange={(e) => setFormData({ ...formData, vehicleCode: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter vehicle number"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {selectedBooking.vehicleCode || ''}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Vehicle Model
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.vehicleModel}
+                                            onChange={(e) => setFormData({ ...formData, vehicleModel: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter vehicle model"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.vehicleModel || ''}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Row 3: Odometer, Mileage, Oil Type */}
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Odometer
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.odometer}
+                                            onChange={(e) => setFormData({ ...formData, odometer: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter odometer"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.odometer || ''}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Mileage
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.mileage}
+                                            onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter mileage"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.mileage || ''}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Oil Type
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.oilType}
+                                            onChange={(e) => setFormData({ ...formData, oilType: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter oil type"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.oilType || ''}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Row 4: Service Advisor, Vehicle Make, Time Slot, Status */}
+                            <div className="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Service Advisor
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.serviceAdvisor}
+                                            onChange={(e) => setFormData({ ...formData, serviceAdvisor: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter service advisor"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.serviceAdvisor || ''}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Vehicle Make
+                                    </label>
+                                    {isAvailableSlot ? (
+                                        <input
+                                            type="text"
+                                            value={formData.vehicleMake}
+                                            onChange={(e) => setFormData({ ...formData, vehicleMake: e.target.value })}
+                                            className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
+                                            style={INPUT_STYLE}
+                                            placeholder="Enter vehicle make"
+                                        />
+                                    ) : (
+                                        <div
+                                            className="bg-[#F9FAFB] text-sm font-semibold rounded-lg px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 600 }}
+                                        >
+                                            {getBookingDetails(selectedBooking.slotStart)?.vehicleMake || ''}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                        Time Slot
+                                    </label>
+                                    <div
+                                        className="bg-[#F3F4F6] rounded-[15px] text-sm px-4 py-3 text-[#1D1D1D80]"
+                                        style={{ fontFamily: FONT_FAMILY, fontWeight: 400 }}
+                                    >
+                                        {selectedBooking.slotLabel}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Row 5: Status and Booking Date (edit mode) OR Booking Date and Save (create mode) */}
+                            {!isAvailableSlot ? (
+                                <div className="grid grid-cols-2 gap-4 items-end">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                            Status
+                                        </label>
+                                        <Select
+                                            value={bookingStatus}
+                                            onChange={setBookingStatus}
+                                            className="status-select"
+                                            style={{ width: '100%' }}
+                                            suffixIcon={STATUS_ARROW_SVG}
+                                            options={[
+                                                { value: 'BOOKED', label: 'Booked' },
+                                                { value: 'PENDING', label: 'Pending' },
+                                                { value: 'COMPLETED', label: 'Completed' },
+                                                { value: 'CANCELLED', label: 'Cancelled' },
+                                            ]}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                            Booking Date
+                                        </label>
+                                        <div
+                                            className="bg-[#F3F4F6] rounded-[15px] text-sm px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 500 }}
+                                        >
+                                            {selectedDate.format('DD MMM YYYY')}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4 items-end">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
+                                            Booking Date
+                                        </label>
+                                        <div
+                                            className="bg-[#F3F4F6] rounded-[15px] text-sm px-4 py-3 text-[#1D1D1D]"
+                                            style={{ fontFamily: FONT_FAMILY, fontWeight: 500 }}
+                                        >
+                                            {selectedDate.format('DD MMM YYYY')}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        className={`flex items-center justify-center gap-2 text-white rounded-[20px] font-semibold transition-colors ${isSaving
+                                            ? 'bg-[#DB2727]/70 cursor-not-allowed'
+                                            : 'bg-[#DB2727] hover:bg-[#C02020]'
+                                            }`}
+                                        style={{
+                                            height: '48px',
+                                            fontFamily: FONT_FAMILY,
+                                            fontWeight: 600,
+                                            fontSize: '16px',
+                                            lineHeight: '24px',
+                                            textAlign: 'center',
+                                        }}
+                                    >
+                                        {isSaving ? (
+                                            <>
+                                                <Loader2 size={20} className="animate-spin" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save size={20} />
+                                                Save
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             )}
-                        </div>
 
-                        <div className="flex gap-4 mt-8">
-                            <button
-                                onClick={handleSave}
-                                className="flex items-center justify-center gap-2 bg-[#DB2727] text-white rounded-[20px] font-semibold hover:bg-[#C02020] transition-colors flex-1"
-                                style={{
-                                    height: '48px',
-                                    fontFamily: FONT_FAMILY,
-                                    fontWeight: 600,
-                                    fontSize: '16px',
-                                    lineHeight: '24px',
-                                    textAlign: 'center',
-                                }}
-                            >
-                                <Save size={20} />
-                                Save
-                            </button>
-
+                            {/* Row 6: Buttons (only in edit mode) */}
                             {!isAvailableSlot && (
-                                <button
-                                    onClick={handleCancelBooking}
-                                    className="flex items-center justify-center gap-2 bg-[#E5E7EB] text-[#DB2727] rounded-[20px] font-semibold hover:bg-[#D1D5DB] transition-colors flex-1"
-                                    style={{
-                                        height: '48px',
-                                        fontFamily: FONT_FAMILY,
-                                        fontWeight: 600,
-                                        fontSize: '16px',
-                                        lineHeight: '24px',
-                                        textAlign: 'center',
-                                    }}
-                                >
-                                    <XCircle size={24} />
-                                    Cancel Booking
-                                </button>
+                                <div className="grid grid-cols-2 gap-4 items-end">
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={isSaving}
+                                        className={`flex items-center justify-center gap-2 text-white rounded-[20px] font-semibold transition-colors ${isSaving
+                                            ? 'bg-[#DB2727]/70 cursor-not-allowed'
+                                            : 'bg-[#DB2727] hover:bg-[#C02020]'
+                                            }`}
+                                        style={{
+                                            height: '48px',
+                                            fontFamily: FONT_FAMILY,
+                                            fontWeight: 600,
+                                            fontSize: '16px',
+                                            lineHeight: '24px',
+                                            textAlign: 'center',
+                                        }}
+                                    >
+                                        {isSaving ? (
+                                            <>
+                                                <Loader2 size={20} className="animate-spin" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save size={20} />
+                                                Save
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={handleCancelBooking}
+                                        disabled={isSaving}
+                                        className={`flex items-center justify-center gap-2 rounded-[20px] font-semibold transition-colors ${isSaving
+                                            ? 'bg-[#E5E7EB]/70 text-[#DB2727]/70 cursor-not-allowed'
+                                            : 'bg-[#E5E7EB] text-[#DB2727] hover:bg-[#D1D5DB]'
+                                            }`}
+                                        style={{
+                                            height: '48px',
+                                            fontFamily: FONT_FAMILY,
+                                            fontWeight: 600,
+                                            fontSize: '16px',
+                                            lineHeight: '24px',
+                                            textAlign: 'center',
+                                        }}
+                                    >
+                                        <XCircle size={24} />
+                                        Cancel Booking
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -1137,6 +1513,13 @@ export default function ServiceCenterDashboard() {
                     color: #9CA3AF !important;
                 }
             `}</style>
+
+            <Toast
+                message={toast.message}
+                type={toast.type}
+                visible={toast.visible}
+                onClose={hideToast}
+            />
         </div>
     );
 }
