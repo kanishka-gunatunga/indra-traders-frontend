@@ -24,6 +24,29 @@ export const getServiceTypes = async (): Promise<string[]> => {
     }
 }
 
+// Get branch details by ID
+export const getBranchById = async (branchId: number): Promise<{ id: number; name: string }> => {
+    try {
+        const res = await axiosInstance.get(`/service-park/branches/${branchId}`);
+        return res.data;
+    } catch (error) {
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string }
+            }
+        };
+        console.error('[ServiceCenterService] Failed to fetch branch details:', {
+            message: axiosError.message,
+            status: axiosError.response?.status,
+            statusText: axiosError.response?.statusText
+        });
+        throw new Error(axiosError.response?.data?.message || 'Failed to fetch branch details');
+    }
+}
+
 // Get service lines (bays) for a branch
 export const getServiceLines = async (branchId: number): Promise<ServiceLine[]> => {
     try {
@@ -197,6 +220,7 @@ export const createBooking = async (data: {
     service_advisor?: string;
     vehicle_make?: string;
     status?: string;
+    service_center?: string; 
 }): Promise<ServiceCenterBooking> => {
     try {
         // Debug: Log the exact payload being sent to API

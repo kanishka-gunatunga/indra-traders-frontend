@@ -97,6 +97,7 @@ export default function ServiceCenterDashboard() {
         stats,
         loading,
         error,
+        branchId,
         branchName,
         createBooking,
         updateBooking
@@ -178,6 +179,11 @@ export default function ServiceCenterDashboard() {
         const slotStatus = getSlotStatus(slot.start);
 
         if (slotStatus.status === null) {
+            // Check if service line is selected before opening create booking modal
+            if (!selectedLineId) {
+                showToast('Please select a Service Line before creating a booking.', 'error');
+                return;
+            }
             setSelectedBooking({
                 slotStart: slot.start,
                 slotEnd: slot.end,
@@ -265,9 +271,34 @@ export default function ServiceCenterDashboard() {
                 showToast('Phone Number is required.', 'error');
                 return;
             }
+            
+            const phoneDigits = formData.phoneNumber.replace(/\s/g, '');
+            const sriLankanPhoneRegex = /^[0]{1}[7]{1}[01245678]{1}[0-9]{7}$/;
+            if (!sriLankanPhoneRegex.test(phoneDigits)) {
+                showToast('Please enter a valid Sri Lankan mobile number (e.g., 07X XXX XXXX).', 'error');
+                return;
+            }
+            
+            if (formData.email.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(formData.email.trim())) {
+                    showToast('Please enter a valid email address.', 'error');
+                    return;
+                }
+            }
+            
             if (!formData.vehicleCode.trim()) {
                 showToast('Vehicle Number is required.', 'error');
                 return;
+            }
+            
+            if (formData.vehicleMake.trim()) {
+                const year = parseInt(formData.vehicleMake.trim(), 10);
+                const currentYear = new Date().getFullYear();
+                if (isNaN(year) || year < 1900 || year > currentYear + 1) {
+                    showToast(`Please enter a valid year between 1900 and ${currentYear + 1}.`, 'error');
+                    return;
+                }
             }
         }
 
@@ -419,7 +450,7 @@ export default function ServiceCenterDashboard() {
                         <div className="flex items-center gap-4">
                             <Image src="/indra-logo.png" alt="Logo" width={48} height={48} className="object-contain w-12 h-12" />
                             <div>
-                                <h1 className="text-xl font-bold text-[#1D1D1D] montserrat">{branchName || 'Service Center'}</h1>
+                                <h1 className="text-xl font-bold text-[#1D1D1D] montserrat"> {branchName ? `${branchName} Service Center` : 'Service Center'}</h1>
                                 <p className="text-[0.8125rem] text-[#575757] montserrat font-medium">Today&#39;s Service Schedule</p>
                             </div>
                         </div>
@@ -754,12 +785,16 @@ export default function ServiceCenterDashboard() {
                                     </label>
                                     {isAvailableSlot ? (
                                         <input
-                                            type="text"
+                                            type="tel"
                                             value={formData.phoneNumber}
-                                            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/[^\d+\s]/g, '');
+                                                setFormData({ ...formData, phoneNumber: value });
+                                            }}
                                             className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
                                             style={INPUT_STYLE}
-                                            placeholder="Enter phone number"
+                                            placeholder="07X XXX XXXX"
+                                            maxLength={15}
                                         />
                                     ) : (
                                         <div
@@ -781,7 +816,7 @@ export default function ServiceCenterDashboard() {
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
                                             style={INPUT_STYLE}
-                                            placeholder="Enter email"
+                                            placeholder="example@email.com"
                                         />
                                     ) : (
                                         <div
@@ -872,12 +907,18 @@ export default function ServiceCenterDashboard() {
                                     </label>
                                     {isAvailableSlot ? (
                                         <input
-                                            type="text"
+                                            type="number"
                                             value={formData.odometer}
                                             onChange={(e) => setFormData({ ...formData, odometer: e.target.value })}
+                                            onKeyDown={(e) => {
+                                                if (['e', 'E', '+', '-'].includes(e.key)) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
                                             className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
                                             style={INPUT_STYLE}
-                                            placeholder="Enter odometer"
+                                            placeholder="Enter odometer (km)"
+                                            min="0"
                                         />
                                     ) : (
                                         <div
@@ -894,12 +935,18 @@ export default function ServiceCenterDashboard() {
                                     </label>
                                     {isAvailableSlot ? (
                                         <input
-                                            type="text"
+                                            type="number"
                                             value={formData.mileage}
                                             onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
+                                            onKeyDown={(e) => {
+                                                if (['e', 'E', '+', '-'].includes(e.key)) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
                                             className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
                                             style={INPUT_STYLE}
-                                            placeholder="Enter mileage"
+                                            placeholder="Enter mileage (km)"
+                                            min="0"
                                         />
                                     ) : (
                                         <div
@@ -960,16 +1007,26 @@ export default function ServiceCenterDashboard() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-[#575757] mb-2" style={LABEL_STYLE}>
-                                        Vehicle Make
+                                        Vehicle Make (Year)
                                     </label>
                                     {isAvailableSlot ? (
                                         <input
-                                            type="text"
+                                            type="number"
                                             value={formData.vehicleMake}
-                                            onChange={(e) => setFormData({ ...formData, vehicleMake: e.target.value })}
+                                            onChange={(e) => {
+                                                const value = e.target.value.slice(0, 4);
+                                                setFormData({ ...formData, vehicleMake: value });
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
                                             className="focus:outline-none focus:ring-2 focus:ring-[#DB2727] w-full modal-input"
                                             style={INPUT_STYLE}
-                                            placeholder="Enter vehicle make"
+                                            placeholder="e.g., 2020"
+                                            min="1900"
+                                            max="2099"
                                         />
                                     ) : (
                                         <div

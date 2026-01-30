@@ -17,18 +17,26 @@ export interface BookingStats {
 }
 
 export function getDisplayStatus(booking: BookingWithStatus): DisplayStatus {
-    switch (booking.status) {
-        case 'PENDING':
-            return "Upcoming";
-        case 'BOOKED':
-            return "In Progress";
-        case 'COMPLETED':
-            return "Completed";
-        case 'CANCELLED':
-            return "Completed";  
-        default:
-            return "Upcoming";
+
+    if (booking.status === 'COMPLETED' || booking.status === 'CANCELLED') {
+        return "Completed";
     }
+
+    const now = new Date();
+
+    const bookingDate = booking.date; 
+    const startDateTime = new Date(`${bookingDate}T${booking.start_time}`);
+    const endDateTime = new Date(`${bookingDate}T${booking.end_time}`);
+    
+    if (now > endDateTime) {
+        return "Completed";
+    }
+    
+    if (now >= startDateTime && now <= endDateTime) {
+        return "In Progress";
+    }
+    
+    return "Upcoming";
 }
 
 export function calculateBookingStats(

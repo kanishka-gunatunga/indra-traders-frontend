@@ -6,6 +6,7 @@ import {
     getServiceLines,
     getBookings,
     getCalendarDots,
+    getBranchById,
     createBooking as createBookingAPI,
     updateBookingStatus as updateBookingStatusAPI
 } from '@/services/serviceCenterService';
@@ -20,7 +21,7 @@ export function useServiceCenterBookings(
 ) {
     const { data: session } = useSession();
     const branchId = session?.user?.branchId ? Number(session.user.branchId) : null;
-    const branchName = session?.user?.branchName || null;
+    const sessionBranchName = session?.user?.branchName || null;
 
     const [serviceTypes, setServiceTypes] = useState<string[]>([]);
     const [serviceLines, setServiceLines] = useState<ServiceLine[]>([]);
@@ -34,6 +35,7 @@ export function useServiceCenterBookings(
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [fetchedBranchName, setFetchedBranchName] = useState<string | null>(null);
 
     const isInitialLoad = useRef(true);
     const totalTimeSlots = calculateTotalTimeSlots();
@@ -50,6 +52,21 @@ export function useServiceCenterBookings(
         };
         fetchServiceTypes();
     }, []);
+
+    // Fetch branch name if not available in session
+    useEffect(() => {
+        if (!branchId || sessionBranchName) return;
+
+        const fetchBranchName = async () => {
+            try {
+                const branch = await getBranchById(branchId);
+                setFetchedBranchName(branch.name);
+            } catch (err) {
+                console.error('[useServiceCenterBookings] Failed to fetch branch name:', err);
+            }
+        };
+        fetchBranchName();
+    }, [branchId, sessionBranchName]);
 
     useEffect(() => {
         if (!branchId) return;
@@ -197,8 +214,20 @@ export function useServiceCenterBookings(
         if (!branchId) throw new Error('Branch ID is required');
 
         try {
+            // Get branch name from session or fetched value
+            const resolvedBranchName = sessionBranchName || fetchedBranchName;
+            
+            console.log('[CreateBooking] Branch info:', {
+                branchId,
+                sessionBranchName,
+                fetchedBranchName,
+                resolvedBranchName,
+                service_center: resolvedBranchName || undefined
+            });
+            
             const newBooking = await createBookingAPI({
                 branch_id: branchId,
+                service_center: resolvedBranchName || undefined,
                 ...data
             });
 
@@ -309,6 +338,9 @@ export function useServiceCenterBookings(
         return dotsMap;
     }, [calendarDotsCache]);
 
+    // Use session branchName if available, otherwise use fetched branchName
+    const branchName = sessionBranchName || fetchedBranchName;
+
     return {
         serviceTypes,
         serviceLines,
@@ -317,6 +349,7 @@ export function useServiceCenterBookings(
         stats,
         loading,
         error,
+        branchId,
         branchName,
         createBooking,
         updateBooking
