@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { fetchScheduledServices, fetchServiceLines } from "@/services/serviceBookingService";
+import { getBranchById } from "@/services/serviceCenterService";
 import {
     determineStatus,
     getThemeFromStatus,
@@ -16,6 +17,7 @@ import {
 export function useScheduledServices() {
     const { data: session } = useSession();
     const branchId = session?.user?.branchId ? Number(session.user.branchId) : null;
+    const sessionBranchName = session?.user?.branchName || null;
 
     const [scheduledServices, setScheduledServices] = useState<ProcessedScheduledService[]>([]);
     const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
@@ -27,8 +29,24 @@ export function useScheduledServices() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [fetchedBranchName, setFetchedBranchName] = useState<string | null>(null);
 
     const isInitialLoad = useRef(true);
+
+    // Fetch branch name if not available in session
+    useEffect(() => {
+        if (!branchId || sessionBranchName) return;
+
+        const fetchBranchName = async () => {
+            try {
+                const branch = await getBranchById(branchId);
+                setFetchedBranchName(branch.name);
+            } catch (err) {
+                console.error('[useScheduledServices] Failed to fetch branch name:', err);
+            }
+        };
+        fetchBranchName();
+    }, [branchId, sessionBranchName]);
 
     useEffect(() => {
         if (!branchId) {
@@ -45,7 +63,7 @@ export function useScheduledServices() {
                 setError(null);
 
                 const today = new Date().toISOString().split('T')[0];
-                
+
                 // Fetch service lines (bays) and scheduled services in parallel
                 const [rawServices, lines] = await Promise.all([
                     fetchScheduledServices(branchId, today),
@@ -55,21 +73,29 @@ export function useScheduledServices() {
                 // Extract bay names from service lines
                 const bayNames = lines.map(line => line.name);
 
-                const processedServices: ProcessedScheduledService[] = rawServices.map(service => {
-                    const status = determineStatus(service);
-                    const theme = getThemeFromStatus(status);
+                
+                const activeServices = rawServices.filter(service => service.status !== "CANCELLED");
+
+                const processedServices: ProcessedScheduledService[] = activeServices.map(service => {
+                    const displayStatus = determineStatus(service);
+                    const theme = getThemeFromStatus(displayStatus);
                     return {
                         ...service,
-                        status,
+                        displayStatus,
                         theme
                     };
                 });
 
-                // Sort services: In Progress → Upcoming → Completed
-                const statusOrder = { "In Progress": 0, "Upcoming": 1, "Completed": 2 };
+                // Sort services: Pending (needs attention) → In Progress → Upcoming → Completed
+                const statusOrder: Record<string, number> = {
+                    "Pending": 0,      // Needs attention first
+                    "In Progress": 1,
+                    "Upcoming": 2,
+                    "Completed": 3
+                };
                 processedServices.sort((a, b) => {
-                    const orderA = statusOrder[a.status] ?? 999;
-                    const orderB = statusOrder[b.status] ?? 999;
+                    const orderA = statusOrder[a.displayStatus] ?? 999;
+                    const orderB = statusOrder[b.displayStatus] ?? 999;
                     return orderA - orderB;
                 });
 
@@ -81,7 +107,7 @@ export function useScheduledServices() {
                 setScheduledServices(processedServices);
                 setAvailableSlots(calculatedSlots);
                 setStats(calculatedStats);
-                
+
                 if (isInitialLoad.current) {
                     isInitialLoad.current = false;
                     setLoading(false);
@@ -107,11 +133,15 @@ export function useScheduledServices() {
         return () => clearInterval(intervalId);
     }, [branchId, session]);
 
+    // Use session branchName if available, otherwise use fetched branchName
+    const branchName = sessionBranchName || fetchedBranchName;
+
     return {
         scheduledServices,
         availableSlots,
         stats,
         loading,
-        error
+        error,
+        branchName
     };
 }

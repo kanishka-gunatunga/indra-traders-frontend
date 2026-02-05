@@ -8,9 +8,10 @@ type ToastProps = {
     type?: "success" | "error";
     visible: boolean;
     onClose: () => void;
+    duration?: number; // Duration in milliseconds
 };
 
-export default function Toast({ message, type = "success", visible, onClose }: ToastProps) {
+export default function Toast({ message, type = "success", visible, onClose, duration }: ToastProps) {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -19,9 +20,16 @@ export default function Toast({ message, type = "success", visible, onClose }: T
 
     useEffect(() => {
         if (!visible) return;
-        const timer = setTimeout(onClose, 3000);
+        
+
+        const calculatedDuration = duration ?? Math.min(
+            Math.max(3000, 3000 + (message.length - 50) * 50),
+            10000
+        );
+        
+        const timer = setTimeout(onClose, calculatedDuration);
         return () => clearTimeout(timer);
-    }, [visible, onClose]);
+    }, [visible, onClose, message.length, duration]);
 
     if (!visible || !isMounted) return null;
 

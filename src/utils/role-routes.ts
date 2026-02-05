@@ -13,6 +13,7 @@ export const ROLE_DASHBOARDS = {
     SALES01: "/sales-agent",
     SALES02: "/sales-agent",
     SALES03: "/sales-agent",
+    SERVICE_CENTER_STAFF: "/service-center/dashboard",
 };
 
 export const ROLE_PERMISSIONS = {
@@ -22,4 +23,5 @@ export const ROLE_PERMISSIONS = {
     SALES01: ["/sales-agent", "/profile"],
     SALES02: ["/sales-agent", "/profile"],
     SALES03: ["/sales-agent", "/profile"],
+    SERVICE_CENTER_STAFF: ["/service-center", "/profile"],
 };
