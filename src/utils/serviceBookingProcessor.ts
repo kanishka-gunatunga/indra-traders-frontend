@@ -1,4 +1,4 @@
-import { AvailableSlot, DashboardStats, ProcessedScheduledService, ScheduledServiceResponse } from "@/types/serviceBooking";
+import { AvailableSlot, DashboardStats, DisplayStatus, ProcessedScheduledService, ScheduledServiceResponse } from "@/types/serviceBooking";
 import { timeToMinutes, minutesToTime, generateTimeSlotStrings } from "@/utils/timeSlotUtils";
 
 const WORKING_HOURS = {
@@ -7,32 +7,52 @@ const WORKING_HOURS = {
     SLOT_DURATION_MINUTES: 30,
 }
 
-export function determineStatus(service: ScheduledServiceResponse): "Completed" | "In Progress" | "Upcoming" {
+
+export function determineStatus(service: ScheduledServiceResponse): DisplayStatus {
+    const dbStatus = service.status;
+
+    if (dbStatus === "COMPLETED") {
+        return "Completed";
+    }
+
+    if (dbStatus === "PENDING") {
+        return "Pending";
+    }
+
+    if (dbStatus === "BOOKED" || !dbStatus) {
+        return getTimeBasedStatus(service);
+    }
+
+    return getTimeBasedStatus(service);
+}
+
+function getTimeBasedStatus(service: ScheduledServiceResponse): DisplayStatus {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
     const currentTime = now.toTimeString().slice(0, 5);
 
-    // If booking is in the past, it's completed
+    // If booking is in the past date
     if (service.booking_date < today) {
-        return "Completed";
+        // Past date but still BOOKED = overdue, show as In Progress
+        return "In Progress";
     }
-    
-    // If booking is in the future, it's upcoming
+
+    // If booking is in the future date
     if (service.booking_date > today) {
         return "Upcoming";
     }
 
     // If booking is today, check the time
     if (service.booking_date === today) {
-        // If current time has passed the end time, it's completed
+        // If current time has passed the end time but still BOOKED = overdue
         if (currentTime >= service.end_time) {
-            return "Completed";
+            return "In Progress"; // Overdue - still show as In Progress
         }
-        // If current time is between start and end time, it's in progress
+        // If current time is between start and end time
         if (currentTime >= service.start_time && currentTime < service.end_time) {
             return "In Progress";
         }
-        // If current time is before start time, it's upcoming
+        // If current time is before start time
         if (currentTime < service.start_time) {
             return "Upcoming";
         }
@@ -41,12 +61,14 @@ export function determineStatus(service: ScheduledServiceResponse): "Completed" 
     return "Upcoming";
 }
 
-export function getThemeFromStatus(status: "Completed" | "In Progress" | "Upcoming"): "green" | "orange" | "white" {
+export function getThemeFromStatus(status: DisplayStatus): "green" | "orange" | "white" | "yellow" {
     switch (status) {
         case "Completed":
             return "green";
         case "In Progress":
             return "orange";
+        case "Pending":
+            return "yellow"; // Yellow/amber for pending - needs attention
         case "Upcoming":
             return "white";
         default:
@@ -54,9 +76,10 @@ export function getThemeFromStatus(status: "Completed" | "In Progress" | "Upcomi
     }
 }
 
-export function calculateStats(services: ProcessedScheduledService[]): DashboardStats{
-    const inProgress = services.filter(s => s.status === "In Progress").length;
-    const upcoming = services.filter(s => s.status === "Upcoming").length; 
+export function calculateStats(services: ProcessedScheduledService[]): DashboardStats {
+    const inProgress = services.filter(s => s.displayStatus === "In Progress").length;
+    const upcoming = services.filter(s => s.displayStatus === "Upcoming").length;
+    // Total scheduled = all active bookings (BOOKED + PENDING, excludes CANCELLED)
     const totalScheduled = services.length;
     const availableSlots = 0; //TODO: Implement this
 
@@ -68,7 +91,7 @@ export function calculateStats(services: ProcessedScheduledService[]): Dashboard
     }
 }
 
-export function formatTime12Hour(time: string): string{
+export function formatTime12Hour(time: string): string {
     const [hours, minutes] = time.split(':').map(Number);
     const period = hours >= 12 ? 'PM' : 'AM';
     const hour12 = hours % 12 || 12;
@@ -76,7 +99,7 @@ export function formatTime12Hour(time: string): string{
 }
 
 export function calculateAvailableSlots(
-    services: ProcessedScheduledService[], 
+    services: ProcessedScheduledService[],
     allBays: string[] = []
 ): AvailableSlot[] {
     // Get unique bays from services, or use all available bays if no services exist
@@ -90,18 +113,18 @@ export function calculateAvailableSlots(
     );
 
     const availableSlots: AvailableSlot[] = [];
-    for(const bay of baysToProcess){
+    for (const bay of baysToProcess) {
         // Filter out slots that are occupied by services for this bay
         const baySlots = allSlots.filter(slot => !services.some(s => s.bay === bay && s.start_time <= slot && s.end_time > slot));
-        for(const slot of baySlots){
+        for (const slot of baySlots) {
             const slotEndTime = minutesToTime(timeToMinutes(slot) + WORKING_HOURS.SLOT_DURATION_MINUTES);
             availableSlots.push({
                 time: formatTime12Hour(slot),  // Convert to 12-hour format
-                duration: `${formatTime12Hour(slot)} - ${formatTime12Hour(slotEndTime)}`,  
+                duration: `${formatTime12Hour(slot)} - ${formatTime12Hour(slotEndTime)}`,
                 bay: bay
             });
         }
     }
 
-    return availableSlots;  
+    return availableSlots;
 }

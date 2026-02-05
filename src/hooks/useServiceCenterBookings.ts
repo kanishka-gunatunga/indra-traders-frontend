@@ -19,7 +19,8 @@ export function useServiceCenterBookings(
     selectedLineId: number | null,
     selectedServiceType: string | null
 ) {
-    const { data: session } = useSession();
+    const { data: session, status: sessionStatus } = useSession();
+    const isSessionLoading = sessionStatus === 'loading';
     const branchId = session?.user?.branchId ? Number(session.user.branchId) : null;
     const sessionBranchName = session?.user?.branchName || null;
 
@@ -142,6 +143,11 @@ export function useServiceCenterBookings(
     }, [branchId, selectedDate, selectedLineId, selectedServiceType]);
 
     useEffect(() => {
+        
+        if (isSessionLoading) {
+            return;
+        }
+
         if (!branchId) {
             setLoading(false);
             return;
@@ -191,7 +197,7 @@ export function useServiceCenterBookings(
         }, 30000);
 
         return () => clearInterval(intervalId);
-    }, [selectedDate, branchId, selectedLineId, selectedServiceType, totalTimeSlots]);
+    }, [selectedDate, branchId, selectedLineId, selectedServiceType, totalTimeSlots, isSessionLoading, sessionStatus]);
 
     const createBooking = async (data: {
         line_id: number;
@@ -216,7 +222,7 @@ export function useServiceCenterBookings(
         try {
             // Get branch name from session or fetched value
             const resolvedBranchName = sessionBranchName || fetchedBranchName;
-            
+
             console.log('[CreateBooking] Branch info:', {
                 branchId,
                 sessionBranchName,
@@ -224,7 +230,7 @@ export function useServiceCenterBookings(
                 resolvedBranchName,
                 service_center: resolvedBranchName || undefined
             });
-            
+
             const newBooking = await createBookingAPI({
                 branch_id: branchId,
                 service_center: resolvedBranchName || undefined,

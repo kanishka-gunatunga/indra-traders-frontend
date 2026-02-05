@@ -65,6 +65,8 @@ export interface ServiceCenterBooking {
     status: DatabaseStatus;
     line_id: number | null;
     service_type: string | null;  // "REPAIR" | "PAINT" | "ADDON"
+    branch_id?: number | null;
+    branch_name?: string | null;
 }
 
 

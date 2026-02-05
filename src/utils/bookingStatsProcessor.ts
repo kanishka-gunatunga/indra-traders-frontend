@@ -4,9 +4,9 @@ export type DisplayStatus = "Completed" | "In Progress" | "Upcoming";
 
 export interface BookingWithStatus {
     status: DatabaseStatus;
-    date: string;  
-    start_time: string;  
-    end_time: string;  
+    date: string;
+    start_time: string;
+    end_time: string;
 }
 
 export interface BookingStats {
@@ -24,18 +24,18 @@ export function getDisplayStatus(booking: BookingWithStatus): DisplayStatus {
 
     const now = new Date();
 
-    const bookingDate = booking.date; 
+    const bookingDate = booking.date;
     const startDateTime = new Date(`${bookingDate}T${booking.start_time}`);
     const endDateTime = new Date(`${bookingDate}T${booking.end_time}`);
-    
+
     if (now > endDateTime) {
         return "Completed";
     }
-    
+
     if (now >= startDateTime && now <= endDateTime) {
         return "In Progress";
     }
-    
+
     return "Upcoming";
 }
 
@@ -43,29 +43,28 @@ export function calculateBookingStats(
     bookings: BookingWithStatus[],
     totalTimeSlots: number
 ): BookingStats {
-    const processedBookings = bookings.map(booking => ({
+
+    const activeBookings = bookings.filter(
+        b => b.status === 'BOOKED' || b.status === 'PENDING'
+    );
+
+    const processedBookings = activeBookings.map(booking => ({
         ...booking,
         displayStatus: getDisplayStatus(booking)
     }));
-    
+
     const inProgress = processedBookings.filter(
         b => b.displayStatus === "In Progress"
     ).length;
-    
+
     const upcoming = processedBookings.filter(
         b => b.displayStatus === "Upcoming"
     ).length;
-    
-    const totalScheduled = bookings.filter(
-        b => b.status !== 'CANCELLED'
-    ).length;
-    
-    const bookedSlots = bookings.filter(
-        b => b.status !== 'CANCELLED'
-    ).length;
-    
-    const availableSlots = Math.max(0, totalTimeSlots - bookedSlots);
-    
+
+    const totalScheduled = activeBookings.length;
+
+    const availableSlots = Math.max(0, totalTimeSlots - activeBookings.length);
+
     return {
         totalScheduled,
         inProgress,

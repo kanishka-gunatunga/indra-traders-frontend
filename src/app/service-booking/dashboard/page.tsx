@@ -14,7 +14,8 @@ import {
     Info,
     Loader2,
     AlertCircle,
-    Calendar
+    Calendar,
+    AlertTriangle
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useSession } from "next-auth/react";
@@ -37,9 +38,9 @@ const AutoScrollColumn = ({ children }: { children: React.ReactNode }) => {
 
             if (maxScroll <= 0) return;
 
-           
+
             if (currentScroll >= maxScroll - 5) {
-                
+
                 timeoutId = setTimeout(() => {
                     scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
                     timeoutId = setTimeout(scrollStep, READ_TIME);
@@ -72,7 +73,7 @@ const AutoScrollColumn = ({ children }: { children: React.ReactNode }) => {
 
 export default function ServiceBookingDashboard() {
 
-    const { scheduledServices, availableSlots, stats, loading, error } = useScheduledServices();
+    const { scheduledServices, availableSlots, stats, loading, error, branchName } = useScheduledServices();
 
     const { data: session } = useSession();
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -115,6 +116,7 @@ export default function ServiceBookingDashboard() {
         switch (theme) {
             case 'green': return "bg-[#A7FFA7] border-[#039855]"; // Completed
             case 'orange': return "bg-[#FFDAA3] border-[#FF961B]"; // In Progress
+            case 'yellow': return "bg-[#FFF3CD] border-[#FFD93D]"; // Pending - needs attention
             case 'white': return "bg-[#FFFFFF99] border-[#999999]"; // Upcoming
             default: return "bg-[#FFFFFF99] border-[#999999]";
         }
@@ -123,6 +125,7 @@ export default function ServiceBookingDashboard() {
     const getStatusBadge = (status: string) => {
         if (status === 'Completed') return <div className="flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full text-green-700 text-[0.75rem] font-bold shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Completed</div>
         if (status === 'In Progress') return <div className="flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full text-orange-700 text-[0.75rem] font-bold shadow-sm"><Clock className="w-3.5 h-3.5" /> In Progress</div>
+        if (status === 'Pending') return <div className="flex items-center gap-1 bg-white/60 px-3 py-1 rounded-full text-amber-700 text-[0.75rem] font-bold shadow-sm"><AlertTriangle className="w-3.5 h-3.5" /> Pending</div>
         return <div className="flex items-center gap-1 text-gray-400 text-[0.75rem] font-semibold"><Calendar className="w-3.5 h-3.5" /> Upcoming</div>
     };
 
@@ -174,7 +177,7 @@ export default function ServiceBookingDashboard() {
             </div>
         );
     }
-    
+
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-[#F0F2F5] px-4">
@@ -209,8 +212,7 @@ export default function ServiceBookingDashboard() {
                     <div className="flex items-center gap-4">
                         <Image src="/indra-logo.png" alt="Logo" width={48} height={48} className="object-contain w-[3rem] h-[3rem]" />
                         <div>
-                            {/* TODO: Program the service park name */}
-                            <h1 className="text-xl font-bold text-[#1D1D1D] montserrat">Colombo Service Park</h1>
+                            <h1 className="text-xl font-bold text-[#1D1D1D] montserrat">{branchName ? `${branchName} Service Park` : 'Service Park'}</h1>
                             <p className="text-[0.8125rem] text-[#575757] montserrat font-medium">Today&#39;s Service Schedule</p>
                         </div>
                     </div>
@@ -280,7 +282,7 @@ export default function ServiceBookingDashboard() {
                                                         </div>
                                                         <p className="text-[0.75rem] montserrat font-semibold text-[#575757]">{item.customer}</p>
                                                     </div>
-                                                    <span className="text-[0.625rem] montserrat font-semibold">{getStatusBadge(item.status)}</span>
+                                                    <span className="text-[0.625rem] montserrat font-semibold">{getStatusBadge(item.displayStatus)}</span>
                                                 </div>
 
                                                 <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-3">

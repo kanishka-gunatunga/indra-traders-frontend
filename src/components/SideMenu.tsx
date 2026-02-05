@@ -2,17 +2,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import {Role} from "@/types/role";
+import { Role } from "@/types/role";
 import Image from "next/image";
 import Link from "next/link";
-import React, {useState} from "react";
+import React, { useState } from "react";
 import Modal from "@/components/Modal";
 import VerificationDropdown from "@/components/VerificationDropdown";
-import {CreateComplaintInput} from "@/types/complaint.types";
-import {useCreateComplaint} from "@/hooks/useComplaint";
-import {useCurrentUser} from "@/utils/auth";
-import {usePathname, useRouter} from "next/navigation";
-import {signOut} from "next-auth/react";
+import { CreateComplaintInput } from "@/types/complaint.types";
+import { useCreateComplaint } from "@/hooks/useComplaint";
+import { useCurrentUser } from "@/utils/auth";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 const SideMenu = () => {
 
@@ -85,26 +85,26 @@ const SideMenu = () => {
     };
 
     const handleInputChange = (field: keyof CreateComplaintInput, value: string) => {
-        setFormData((prev) => ({...prev, [field]: value}));
+        setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
 
     const handleLogout = async () => {
-        await signOut({redirect: false});
+        await signOut({ redirect: false });
         router.push("/login");
     };
 
 
     const complainCategories = [
-        {value: "service_issue", label: "Service Issue"},
-        {value: "product_quality", label: "Product Quality"},
-        {value: "billing_error", label: "Billing Error"},
+        { value: "service_issue", label: "Service Issue" },
+        { value: "product_quality", label: "Product Quality" },
+        { value: "billing_error", label: "Billing Error" },
     ];
 
     const preferredSolutions = [
-        {value: "refund", label: "Refund"},
-        {value: "replacement", label: "Replacement"},
-        {value: "repair", label: "Repair"},
+        { value: "refund", label: "Refund" },
+        { value: "replacement", label: "Replacement" },
+        { value: "repair", label: "Repair" },
     ];
 
     return (
@@ -170,8 +170,8 @@ const SideMenu = () => {
                     <Link href="/call-agent/chat-bot">
                         <div
                             className={`${getLinkClasses("/chat-bot")} relative flex items-center justify-center`}>
-                                <span
-                                    className="absolute top-3 right-3 border border-[#FBF9F9] w-2 h-2 bg-[#DB2727] rounded-full"/>
+                            <span
+                                className="absolute top-3 right-3 border border-[#FBF9F9] w-2 h-2 bg-[#DB2727] rounded-full" />
                             <svg
                                 width="24"
                                 height="24"
@@ -247,13 +247,13 @@ const SideMenu = () => {
                 {hasRole(["ADMIN"]) && (
                     <Link href="/admin/star-rating">
                         <div className={getLinkClasses("/admin/star-rating")}>
-                        <Image
-                            src={"/images/Features-list.svg"}
-                            alt="List icon"
-                            width={24}
-                            height={24}
-                            className={pathname === "/admin/star-rating" ? "brightness-0 invert" : ""}
-                        />
+                            <Image
+                                src={"/images/Features-list.svg"}
+                                alt="List icon"
+                                width={24}
+                                height={24}
+                                className={pathname === "/admin/star-rating" ? "brightness-0 invert" : ""}
+                            />
                         </div>
                     </Link>
                 )}
@@ -268,6 +268,25 @@ const SideMenu = () => {
                                 height={24}
                                 className={pathname === "/admin/bank-leasing" ? "brightness-0 invert" : ""}
                             />
+                        </div>
+                    </Link>
+                )}
+
+                {hasRole(["ADMIN"]) && (
+                    <Link href="/admin/service-booking-reports">
+                        <div className={getLinkClasses("/admin/service-booking-reports")}>
+                            <svg
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M19 9H17V7C17 5.9 16.1 5 15 5H5C3.9 5 3 5.9 3 7V17C3 18.1 3.9 19 5 19H15C16.1 19 17 18.1 17 17V15H19C19.55 15 20 14.55 20 14V10C20 9.45 19.55 9 19 9ZM15 17H5V7H15V17ZM17 13H19V11H17V13ZM14 11H8V13H14V11ZM14 9H8V11H14V9ZM14 15H8V17H14V15Z"
+                                    fill={pathname === "/admin/service-booking-reports" ? "#FFFFFF" : "#575757"}
+                                />
+                            </svg>
                         </div>
                     </Link>
                 )}
@@ -418,20 +437,20 @@ const SideMenu = () => {
                                     </div>
                                 </label>
                                 <VerificationDropdown label="Preferred Solution"
-                                                      placeholder="Select Preferred Solution"
-                                                      value={formData.preferred_solution || ""}
-                                                      onChange={(value: string) => handleInputChange("preferred_solution", value)}
-                                                      options={preferredSolutions}
-                                                      isIcon={false}/>
+                                    placeholder="Select Preferred Solution"
+                                    value={formData.preferred_solution || ""}
+                                    onChange={(value: string) => handleInputChange("preferred_solution", value)}
+                                    options={preferredSolutions}
+                                    isIcon={false} />
                             </div>
 
                             <div className="flex flex-col space-y-2 font-medium text-gray-900">
                                 <span
                                     className="text-[#1D1D1D] font-medium text-[17px] montserrat">Complaint Description</span>
                                 <textarea placeholder="Complaint Description" rows={5}
-                                          value={formData.description || ""}
-                                          onChange={(e) => handleInputChange("description", e.target.value)}
-                                          className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700"/>
+                                    value={formData.description || ""}
+                                    onChange={(e) => handleInputChange("description", e.target.value)}
+                                    className="w-full px-4 py-4 rounded-3xl bg-white/80 backdrop-blur text-sm placeholder-[#575757] focus:outline-none focus:ring-2 focus:ring-red-700" />
                             </div>
                         </div>
                     </div>

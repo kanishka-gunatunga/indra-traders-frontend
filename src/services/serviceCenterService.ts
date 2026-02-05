@@ -140,7 +140,98 @@ export const getCalendarDots = async (
     }
 }
 
-// Legacy function - kept for backward compatibility
+/** Paginated bookings for reports. branchId optional = all branches. */
+export interface BookingsForReportsParams {
+    branchId?: number | null;
+    startDate: string;
+    endDate: string;
+    lineId?: number | null;
+    serviceType?: string | null;
+    page: number;
+    limit: number;
+}
+
+export interface BookingsForReportsResponse {
+    data: ServiceCenterBooking[];
+    total: number;
+}
+
+export const getBookingsForReports = async (
+    params: BookingsForReportsParams
+): Promise<BookingsForReportsResponse> => {
+    try {
+        const search = new URLSearchParams();
+        search.set('startDate', params.startDate);
+        search.set('endDate', params.endDate);
+        search.set('page', params.page.toString());
+        search.set('limit', params.limit.toString());
+        if (params.branchId != null && params.branchId !== undefined) {
+            search.set('branchId', params.branchId.toString());
+        }
+        if (params.lineId != null && params.lineId !== undefined) {
+            search.set('lineId', params.lineId.toString());
+        }
+        if (params.serviceType != null && params.serviceType !== undefined && params.serviceType !== '') {
+            search.set('serviceType', params.serviceType);
+        }
+
+        const res = await axiosInstance.get(`/service-center/bookings/reports?${search}`);
+
+        if (Array.isArray(res.data)) {
+            console.warn('[ServiceCenterService] Backend returned array instead of paginated object. Backend update needed for pagination.');
+            return {
+                data: res.data,
+                total: res.data.length 
+            };
+        }
+        
+        return res.data;
+    } catch (error) {
+        const axiosError = error as {
+            message?: string;
+            response?: {
+                status?: number;
+                statusText?: string;
+                data?: { message?: string } | string
+            }
+        };
+        
+        let errorMessage = 'Failed to fetch report bookings';
+        const status = axiosError.response?.status;
+        
+        if (axiosError.response?.data) {
+            if (typeof axiosError.response.data === 'string') {
+                errorMessage = axiosError.response.data;
+            } else if (typeof axiosError.response.data === 'object' && axiosError.response.data.message) {
+                errorMessage = axiosError.response.data.message;
+            } else if (typeof axiosError.response.data === 'object' && axiosError.response.data.error) {
+                errorMessage = axiosError.response.data.error;
+            }
+        } else if (axiosError.message) {
+            errorMessage = axiosError.message;
+        }
+        
+        if (status === 403) {
+            if (!errorMessage.toLowerCase().includes('access') && !errorMessage.toLowerCase().includes('permission')) {
+                errorMessage = `Access denied: ${errorMessage}`;
+            }
+        } else if (status === 404) {
+            errorMessage = 'Endpoint not found. Please ensure the backend route is implemented.';
+        } else if (status === 400) {
+            errorMessage = `Invalid request: ${errorMessage}`;
+        }
+        
+        console.error('[ServiceCenterService] Failed to fetch report bookings:', {
+            message: errorMessage,
+            status: status,
+            statusText: axiosError.response?.statusText,
+            responseData: axiosError.response?.data
+        });
+        
+        throw new Error(errorMessage);
+    }
+};
+
 export const getAllBookingsForCalendar = async (
     branchId: number,
     startDate?: string,
@@ -223,7 +314,7 @@ export const createBooking = async (data: {
     service_center?: string; 
 }): Promise<ServiceCenterBooking> => {
     try {
-        // Debug: Log the exact payload being sent to API
+      
         console.log('[ServiceCenterService] Creating booking with data:', JSON.stringify(data, null, 2));
 
         const res = await axiosInstance.post('/service-center/bookings', data);

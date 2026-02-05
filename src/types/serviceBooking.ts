@@ -1,4 +1,10 @@
-export interface ScheduledServiceResponse{
+// Database status from the backend
+export type DatabaseStatus = "PENDING" | "BOOKED" | "COMPLETED" | "CANCELLED";
+
+// Display status for the UI
+export type DisplayStatus = "Completed" | "In Progress" | "Upcoming" | "Pending";
+
+export interface ScheduledServiceResponse {
     time: string;
     cab: string;
     customer: string;
@@ -9,20 +15,21 @@ export interface ScheduledServiceResponse{
     start_time: string;
     end_time: string;
     booking_date: string;
+    status: DatabaseStatus; 
 }
 
-export interface ProcessedScheduledService extends ScheduledServiceResponse{
-    status: "Completed" | "In Progress" | "Upcoming";
-    theme: "green" | "orange" | "white";
+export interface ProcessedScheduledService extends ScheduledServiceResponse {
+    displayStatus: DisplayStatus; 
+    theme: "green" | "orange" | "white" | "yellow";
 }
 
-export interface AvailableSlot{
+export interface AvailableSlot {
     time: string;
     duration: string;
     bay: string;
 }
 
-export interface DashboardStats{
+export interface DashboardStats {
     totalScheduled: number;
     inProgress: number;
     upcoming: number;

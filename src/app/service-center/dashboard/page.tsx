@@ -139,25 +139,43 @@ export default function ServiceCenterDashboard() {
         );
     };
 
-    const getSlotStatus = (slotStart: string): SlotStatus => {
-        const booking = bookings.find(b => b.start_time === slotStart);
+    // Helper to normalize time format (handles both "HH:mm" and "HH:mm:ss")
+    const normalizeTime = (time: string): string => {
+        if (!time) return '';
+        return time.substring(0, 5); 
+    };
 
-        if (!booking) {
+
+    const getSlotStatus = (slotStart: string): SlotStatus => {
+        // Find ALL bookings at this time slot
+        const slotBookings = bookings.filter(b => normalizeTime(b.start_time) === slotStart);
+
+        if (slotBookings.length === 0) {
             return { status: null, vehicleCode: null }
         }
 
-        return {
-            status: booking.status,
-            vehicleCode: booking.vehicle_no,
+        // Prioritize ACTIVE bookings (BOOKED, PENDING) over COMPLETED/CANCELLED
+        const activeBooking = slotBookings.find(b => b.status === 'BOOKED' || b.status === 'PENDING');
+
+        if (activeBooking) {
+            return {
+                status: activeBooking.status,
+                vehicleCode: activeBooking.vehicle_no,
+            }
         }
+
+        return { status: null, vehicleCode: null }
     };
 
     const getBookingDetails = (slotStart: string): BookingDetails | null => {
-        const booking = bookings.find(b => b.start_time === slotStart);
+        
+        const slotBookings = bookings.filter(b => normalizeTime(b.start_time) === slotStart);
 
-        if (!booking) {
+        if (slotBookings.length === 0) {
             return null;
         }
+
+        const booking = slotBookings.find(b => b.status === 'BOOKED' || b.status === 'PENDING') || slotBookings[0];
 
         return {
             vehicleCode: booking.vehicle_no || '',
@@ -210,7 +228,9 @@ export default function ServiceCenterDashboard() {
         } else {
             const bookingDetails = getBookingDetails(slot.start);
             if (bookingDetails) {
-                const booking = bookings.find(b => b.start_time === slot.start);
+                
+                const slotBookings = bookings.filter(b => normalizeTime(b.start_time) === slot.start);
+                const booking = slotBookings.find(b => b.status === 'BOOKED' || b.status === 'PENDING') || slotBookings[0];
                 setSelectedBooking({
                     slotStart: slot.start,
                     slotEnd: slot.end,
@@ -271,14 +291,14 @@ export default function ServiceCenterDashboard() {
                 showToast('Phone Number is required.', 'error');
                 return;
             }
-            
+
             const phoneDigits = formData.phoneNumber.replace(/\s/g, '');
             const sriLankanPhoneRegex = /^[0]{1}[7]{1}[01245678]{1}[0-9]{7}$/;
             if (!sriLankanPhoneRegex.test(phoneDigits)) {
                 showToast('Please enter a valid Sri Lankan mobile number (e.g., 07X XXX XXXX).', 'error');
                 return;
             }
-            
+
             if (formData.email.trim()) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(formData.email.trim())) {
@@ -286,12 +306,12 @@ export default function ServiceCenterDashboard() {
                     return;
                 }
             }
-            
+
             if (!formData.vehicleCode.trim()) {
                 showToast('Vehicle Number is required.', 'error');
                 return;
             }
-            
+
             if (formData.vehicleMake.trim()) {
                 const year = parseInt(formData.vehicleMake.trim(), 10);
                 const currentYear = new Date().getFullYear();
