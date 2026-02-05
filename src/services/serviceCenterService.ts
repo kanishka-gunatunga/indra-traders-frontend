@@ -192,7 +192,7 @@ export const getBookingsForReports = async (
             response?: {
                 status?: number;
                 statusText?: string;
-                data?: { message?: string } | string
+                data?: { message?: string; error?: string } | string
             }
         };
         
@@ -202,10 +202,13 @@ export const getBookingsForReports = async (
         if (axiosError.response?.data) {
             if (typeof axiosError.response.data === 'string') {
                 errorMessage = axiosError.response.data;
-            } else if (typeof axiosError.response.data === 'object' && axiosError.response.data.message) {
-                errorMessage = axiosError.response.data.message;
-            } else if (typeof axiosError.response.data === 'object' && axiosError.response.data.error) {
-                errorMessage = axiosError.response.data.error;
+            } else if (typeof axiosError.response.data === 'object') {
+                const responseData = axiosError.response.data as { message?: string; error?: string };
+                if (responseData.message) {
+                    errorMessage = responseData.message;
+                } else if (responseData.error) {
+                    errorMessage = responseData.error;
+                }
             }
         } else if (axiosError.message) {
             errorMessage = axiosError.message;
