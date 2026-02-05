@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 import Image from "next/image";
-import DashboardCard, {CardItemProps} from "@/components/DashboardCard";
-import React, {useState} from "react";
+import Link from "next/link";
+import DashboardCard, { CardItemProps } from "@/components/DashboardCard";
+import React, { useState } from "react";
 import ComplainModal from "@/components/ComplainModal";
 import InquiriesModal from "@/components/InquiriesModal";
 // import VehicleSalesModal from "@/components/VehicleSalesModal";
@@ -75,11 +76,11 @@ const customerDetails = [
 ];
 
 const tabs = [
-    {label: "Customer Calls", active: true},
-    {label: "Vehicle Sales", active: false},
-    {label: "Service Park", active: false},
-    {label: "Spare Parts", active: false},
-    {label: "Fast Track", active: false},
+    { label: "Customer Calls", active: true },
+    { label: "Vehicle Sales", active: false },
+    { label: "Service Park", active: false },
+    { label: "Spare Parts", active: false },
+    { label: "Fast Track", active: false },
 ];
 
 
@@ -112,19 +113,19 @@ const mockVehicleData = {
 
 
 const vehicleDetails = [
-    {label: "Millage:", value: "210,000km"},
-    {label: "No. of Owners:", value: "2"},
-    {label: "Vehicle No:", value: "Brand New"},
-    {label: "Color:", value: "Rallye Red"},
-    {label: "Capacity:", value: "2800cc"},
-    {label: "Model:", value: "2020 Toyota Hilux GR S"},
-    {label: "Fuel:", value: "Diesel"},
+    { label: "Millage:", value: "210,000km" },
+    { label: "No. of Owners:", value: "2" },
+    { label: "Vehicle No:", value: "Brand New" },
+    { label: "Color:", value: "Rallye Red" },
+    { label: "Capacity:", value: "2800cc" },
+    { label: "Model:", value: "2020 Toyota Hilux GR S" },
+    { label: "Fuel:", value: "Diesel" },
     {
         label: "Transmission:",
         value: "Continuously Variable Transmission (CVT)",
     },
-    {label: "Year:", value: "2020"},
-    {label: "Grade:", value: "GR S"},
+    { label: "Year:", value: "2020" },
+    { label: "Grade:", value: "GR S" },
 ];
 
 
@@ -135,9 +136,9 @@ const mockServiceData = {
     branch: "Colombo",
     line: "Line A",
     repairs: [
-        {name: "Oil Change", price: 5000},
-        {name: "Brake Pad Replacement", price: 15000},
-        {name: "Tire Rotation", price: 3000},
+        { name: "Oil Change", price: 5000 },
+        { name: "Brake Pad Replacement", price: 15000 },
+        { name: "Tire Rotation", price: 3000 },
     ],
 };
 
@@ -145,9 +146,9 @@ const mockSparePartsData = {
     invoiceNo: "INV34556",
     date: "12 Dec 2024",
     parts: [
-        {name: "Brake Fluid - BF-DOT4", units: 2, compatibility: "Hydraulic Brake Systems", price: 5500},
-        {name: "Engine Oil - EO-5W30", units: 4, compatibility: "Petrol And Diesel Engines", price: 6800},
-        {name: "Coolant - CC-50/50", units: 3, compatibility: "Radiator Systems", price: 3200},
+        { name: "Brake Fluid - BF-DOT4", units: 2, compatibility: "Hydraulic Brake Systems", price: 5500 },
+        { name: "Engine Oil - EO-5W30", units: 4, compatibility: "Petrol And Diesel Engines", price: 6800 },
+        { name: "Coolant - CC-50/50", units: 3, compatibility: "Radiator Systems", price: 3200 },
     ],
 };
 
@@ -325,6 +326,30 @@ export default function Dashboard() {
         },
     ];
 
+    const bydSalesData: CardItemProps[] = [
+        {
+            primaryText: "BYD Atto 3",
+            secondaryText: "CAB-1234",
+            date: "15 Sep 2025",
+        },
+        {
+            primaryText: "BYD Dolphin",
+            secondaryText: "CAB-5678",
+            date: "12 Sep 2025",
+        },
+        {
+            primaryText: "BYD Seal",
+            secondaryText: "CAB-9012",
+            date: "10 Sep 2025",
+        },
+    ];
+
+    const [salesType, setSalesType] = useState<'vehicle' | 'byd'>('vehicle');
+
+    const handleSalesToggle = (type: 'vehicle' | 'byd') => {
+        setSalesType(type);
+    };
+
 
     return (
         <div
@@ -341,7 +366,7 @@ export default function Dashboard() {
                         <div className="flex items-center space-x-3">
                             {/*<FiPhone size={24} className="text-red-700" />*/}
                             <div className="h-10 w-10">
-                                <Image src="/tel.png" alt="" width={200} height={200}/>
+                                <Image src="/tel.png" alt="" width={200} height={200} />
                             </div>
 
                             <div>
@@ -349,8 +374,8 @@ export default function Dashboard() {
                                 <p className="text-[#575757] text-[17px] flex items-center space-x-1">
                                     <span>Today’s her birthday</span>
                                     <span role="img" aria-label="birthday cake"><Image src="/cake.png" alt=""
-                                                                                       width={200} height={200}
-                                                                                       className="w-4 h-4"/></span>
+                                        width={200} height={200}
+                                        className="w-4 h-4" /></span>
                                 </p>
                             </div>
                         </div>
@@ -372,11 +397,11 @@ export default function Dashboard() {
                             className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
                             {/*<MdWarningAmber size={24} className="text-red-700"/>*/}
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                 xmlns="http://www.w3.org/2000/svg">
+                                xmlns="http://www.w3.org/2000/svg">
                                 <path
                                     d="M1 21L12 2L23 21H1ZM4.45 19H19.55L12 6L4.45 19ZM12 18C12.2833 18 12.521 17.904 12.713 17.712C12.905 17.52 13.0007 17.2827 13 17C12.9993 16.7173 12.9033 16.48 12.712 16.288C12.5207 16.096 12.2833 16 12 16C11.7167 16 11.4793 16.096 11.288 16.288C11.0967 16.48 11.0007 16.7173 11 17C10.9993 17.2827 11.0953 17.5203 11.288 17.713C11.4807 17.9057 11.718 18.0013 12 18ZM11 15H13V10H11V15Z"
-                                    fill="#575757"/>
-                                <circle cx="17" cy="7" r="4.75" fill="#DB2727" stroke="#FBF9F9" strokeWidth="1.5"/>
+                                    fill="#575757" />
+                                <circle cx="17" cy="7" r="4.75" fill="#DB2727" stroke="#FBF9F9" strokeWidth="1.5" />
                             </svg>
                         </button>
                     </div>
@@ -390,13 +415,13 @@ export default function Dashboard() {
                             className="w-10 h-10 bg-white rounded-full shadow flex items-center justify-center">
                             {/*<MdWarningAmber size={24} className="text-red-700"/>*/}
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                 xmlns="http://www.w3.org/2000/svg">
+                                xmlns="http://www.w3.org/2000/svg">
                                 <path
                                     d="M7 7H6C5.46957 7 4.96086 7.21071 4.58579 7.58579C4.21071 7.96086 4 8.46957 4 9V18C4 18.5304 4.21071 19.0391 4.58579 19.4142C4.96086 19.7893 5.46957 20 6 20H15C15.5304 20 16.0391 19.7893 16.4142 19.4142C16.7893 19.0391 17 18.5304 17 18V17"
-                                    stroke="#575757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    stroke="#575757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 <path
                                     d="M16 4.99998L19 7.99998M20.385 6.58499C20.7788 6.19114 21.0001 5.65697 21.0001 5.09998C21.0001 4.543 20.7788 4.00883 20.385 3.61498C19.9912 3.22114 19.457 2.99988 18.9 2.99988C18.343 2.99988 17.8088 3.22114 17.415 3.61498L9 12V15H12L20.385 6.58499Z"
-                                    stroke="#575757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    stroke="#575757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         </button>
                     </div>
@@ -404,7 +429,7 @@ export default function Dashboard() {
 
                     {/* Customer Details Cards */}
                     <section className="grid grid-cols-4 gap-6">
-                        {customerDetails.map(({title, value}, idx) => (
+                        {customerDetails.map(({ title, value }, idx) => (
                             <div
                                 key={idx}
                                 className="relative bg-[#FFFFFF] backdrop-blur-[10] rounded-[20px] p-5 flex flex-col gap-4"
@@ -431,10 +456,10 @@ export default function Dashboard() {
                                     <span
                                         className="font-medium text-[#575757] text-[17px] flex flex-row items-center gap-1">{value}
                                         <span><svg width="20" height="21" viewBox="0 0 20 21" fill="none"
-                                                   xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M15 8.03186L10 13.0319L5 8.03186H15Z" fill="#575757"/>
-                                    </svg>
-                                    </span></span>
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M15 8.03186L10 13.0319L5 8.03186H15Z" fill="#575757" />
+                                        </svg>
+                                        </span></span>
                                 </div>
                             </div>
                         ))}
@@ -460,14 +485,91 @@ export default function Dashboard() {
                             viewAllLink="/spare-parts"
                             onItemClick={openComplainModal}
                         />
-                        <DashboardCard
-                            title="Recent Vehicle Sales"
-                            icon="/dashboard/car-line.svg"
-                            backgroundColor="#00A93F"
-                            data={fastTrackData}
-                            viewAllLink="/fast-track"
-                            onItemClick={openVehicleSalesModal}
-                        />
+                        <div className="relative h-[437px] w-[417px] rounded-[20px] shadow-[#D8D8D8] shadow-md border border-[#D8D8D8] backdrop-blur-[25px]">
+                            {/* Card Header with Toggle */}
+                            <div
+                                className="flex h-[69px] items-center px-4 rounded-t-[20px] py-3 transition-colors duration-300"
+                                style={{ backgroundColor: salesType === 'vehicle' ? '#00A93F' : '#D35400' }}
+                            >
+                                <div className="flex w-full items-center gap-4 bg-white/20 p-1 rounded-lg">
+                                    <button
+                                        onClick={() => handleSalesToggle('vehicle')}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all duration-300 font-semibold text-sm ${salesType === 'vehicle'
+                                            ? 'bg-white text-[#00A93F] shadow-sm'
+                                            : 'text-white hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <Image
+                                            src="/dashboard/car-line.svg"
+                                            alt="Vehicle"
+                                            width={20}
+                                            height={20}
+                                            className={salesType === 'vehicle' ? 'brightness-100 invert-[.5] sepia-[1] saturate-[50] hue-rotate-[100deg]' : 'brightness-0 invert'}
+                                            style={salesType === 'vehicle' ? { filter: 'invert(37%) sepia(93%) saturate(1352%) hue-rotate(101deg) brightness(91%) contrast(106%)' } : {}}
+                                        />
+                                        Vehicle Sales
+                                    </button>
+                                    <button
+                                        onClick={() => handleSalesToggle('byd')}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all duration-300 font-semibold text-sm ${salesType === 'byd'
+                                            ? 'bg-white text-[#D35400] shadow-sm'
+                                            : 'text-white hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <Image
+                                            src="/dashboard/car-line.svg"
+                                            alt="BYD"
+                                            width={20}
+                                            height={20}
+                                            className={salesType === 'byd' ? 'brightness-100 invert-[.5] sepia-[1] saturate-[50] hue-rotate-[10deg]' : 'brightness-0 invert'}
+                                            style={salesType === 'byd' ? { filter: 'invert(37%) sepia(61%) saturate(3065%) hue-rotate(13deg) brightness(91%) contrast(106%)' } : {}}
+                                        />
+                                        BYD Sales
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Card Content */}
+                            <div className="flex flex-col gap-2 p-4">
+                                {(salesType === 'vehicle' ? fastTrackData : bydSalesData).map((item, index) => (
+                                    <div key={index} className="flex w-full flex-col gap-1 rounded-lg bg-[#F5F5F5] p-3">
+                                        <div className="flex justify-between">
+                                            <span className="text-lg font-semibold text-[#1D1D1D]">
+                                                {item.primaryText}
+                                            </span>
+                                            <span className="text-base font-semibold text-[#1D1D1D]">{item.date}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            {item.status ? (
+                                                <span className={`rounded-[23px] px-4 py-1 text-sm font-medium text-white ${item.status === 'won' ? 'bg-[#039855]' : 'bg-[#8D27DB]'}`}>
+                                                    {item.secondaryText}
+                                                </span>
+                                            ) : (
+                                                <span className="text-base font-normal text-[#575757]">
+                                                    {item.secondaryText}
+                                                </span>
+                                            )}
+                                            <button
+                                                onClick={() => openVehicleSalesModal()}
+                                                className="text-base font-normal text-[#195FFC] hover:underline"
+                                            >
+                                                View
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* View All Link */}
+                            <div className="absolute bottom-5 left-0 right-0 text-center px-2 pt-4 border-t border-[#D8D8D8]">
+                                <Link
+                                    href={salesType === 'vehicle' ? "/fast-track" : "/byd-sales"}
+                                    className="font-montserrat text-lg font-medium text-[#195FFC] hover:underline"
+                                >
+                                    View All {salesType === 'vehicle' ? 'Vehicle Sales' : 'BYD Sales'}
+                                </Link>
+                            </div>
+                        </div>
                         <DashboardCard
                             title="Recent Service Bookings"
                             icon="/dashboard/spanner-outline.svg"
@@ -494,7 +596,7 @@ export default function Dashboard() {
                         />
                     </section>
                 </div>
-                <ComplainModal isOpen={isModalOpen} onClose={closeComplainModal}/>
+                <ComplainModal isOpen={isModalOpen} onClose={closeComplainModal} />
                 <InquiriesModal
                     isOpen={isInquiryModalOpen}
                     onClose={closeInquiryModal}
@@ -532,14 +634,14 @@ export default function Dashboard() {
                         <div className="flex flex-row gap-2">
                             <h2 className="text-[22px] font-semibold text-[#000000] montserrat">2025 Honda Civic Hatchback</h2>
                             <div className="flex flex-row items-center gap-3 mt-1">
-                            <span
-                                className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
-                                Sales person: Guy Hawkins
-                            </span>
+                                <span
+                                    className="bg-[#DFDFDF] rounded-[20px] px-4 py-1 text-[15px] font-medium text-[#1D1D1D]">
+                                    Sales person: Guy Hawkins
+                                </span>
                                 <span
                                     className="bg-[#039855] rounded-[20px] px-4 py-1 text-[15px] font-medium text-white">
-                                Purchase: 12 Dec 2024
-                            </span>
+                                    Purchase: 12 Dec 2024
+                                </span>
                             </div>
                         </div>
                         <div className="w-full flex justify-center mt-8 gap-6">
@@ -548,7 +650,7 @@ export default function Dashboard() {
                                 {/* Main vehicle image */}
                                 <div
                                     className="w-[600px] max-[1250px]:w-[500px] h-[331px] lg:h-[400px] border border-gray-200 bg-white/80 backdrop-blur-[50px] rounded-[30px] shadow-md flex items-center justify-center bg-cover bg-center"
-                                    style={{backgroundImage: `url("/images/main-vehicle.png")`}}
+                                    style={{ backgroundImage: `url("/images/main-vehicle.png")` }}
                                 />
 
                                 {/* Small images grid */}
@@ -566,7 +668,7 @@ export default function Dashboard() {
                                               ${idx === 1 ? "" : ""}
                                               ${idx === 2 ? "" : ""}
                                               ${idx === 3 ? "rounded-tr-[30px] lg:rounded-r-[30px]" : ""}`}
-                                            style={{backgroundImage: `url(${img})`}}
+                                            style={{ backgroundImage: `url(${img})` }}
                                         />
                                     ))}
                                 </div>
@@ -574,9 +676,9 @@ export default function Dashboard() {
 
                             {/* Right: Vehicle details */}
                             <div className="flex-1 px-4 lg:px-10 flex flex-col">
-              <span className="text-[20px] font-semibold tracking-wide">
-                Vehicle Details
-              </span>
+                                <span className="text-[20px] font-semibold tracking-wide">
+                                    Vehicle Details
+                                </span>
                                 <div className="text-[23px] mb-3 font-semibold tracking-wide text-[#DB2727] mt-5">
                                     Rs. 22,400,000
                                 </div>

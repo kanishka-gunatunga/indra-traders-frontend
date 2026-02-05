@@ -4,10 +4,10 @@
 "use client"
 import Header from "@/components/Header";
 import Image from "next/image";
-import React, {useState} from "react";
-import {useCurrentUser} from "@/utils/auth";
-import {useActivityLogs} from "@/hooks/useActivityLogs";
-import {ActivityLogFilters} from "@/services/logService";
+import React, { useState } from "react";
+import { useCurrentUser } from "@/utils/auth";
+import { useActivityLogs } from "@/hooks/useActivityLogs";
+import { ActivityLogFilters } from "@/services/logService";
 import dayjs from "dayjs";
 import Modal from "@/components/Modal";
 
@@ -86,10 +86,10 @@ export default function ActivityLog() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [tempFilters, setTempFilters] = useState<ActivityLogFilters>({});
 
-    const {data: logs, isLoading, isError} = useActivityLogs(filters);
+    const { data: logs, isLoading, isError } = useActivityLogs(filters);
 
     const openFilterModal = () => {
-        setTempFilters({...filters});
+        setTempFilters({ ...filters });
         setIsFilterOpen(true);
     };
 
@@ -100,7 +100,7 @@ export default function ActivityLog() {
 
     // Handle Input Changes in Modal
     const handleTempChange = (field: keyof ActivityLogFilters, value: any) => {
-        setTempFilters((prev) => ({...prev, [field]: value}));
+        setTempFilters((prev) => ({ ...prev, [field]: value }));
     };
 
     // Apply: Commit temp filters to main state
@@ -119,11 +119,11 @@ export default function ActivityLog() {
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-                <Header
-                    name={user?.full_name || "Sophie Eleanor"}
-                    location={user?.branch || "Bambalapitiya"}
-                    title="Activity Log"
-                />
+                {/*<Header*/}
+                {/*    name={user?.full_name || "Sophie Eleanor"}*/}
+                {/*    location={user?.branch || "Bambalapitiya"}*/}
+                {/*    title="Activity Log"*/}
+                {/*/>*/}
 
                 {/* Activity Log Section */}
                 <section
@@ -132,7 +132,7 @@ export default function ActivityLog() {
                         <span className="font-semibold text-[22px]">Activity Log</span>
 
                         <button onClick={openFilterModal}
-                                className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
+                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center">
                             <Image
                                 src={"/images/admin/flowbite_filter-outline.svg"}
                                 width={24}
@@ -188,14 +188,14 @@ export default function ActivityLog() {
                                                 className="w-1/7 px-3 py-2">{dayjs(item.created_at).format("hh:mm A")}</div>
                                             <div className="w-1/7 px-3 py-2"><span
                                                 className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                                              {item.user_role}
+                                                {item.user_role}
                                             </span></div>
                                             <div className="w-1/7 px-3 py-2 relative">
                                                 {item.user?.full_name || "Unknown"}
                                             </div>
                                             <div className="w-1/7 px-3 py-2">{item.module} - {item.action_type}</div>
                                             <div className="w-2/7 px-3 py-2 truncate"
-                                                 title={item.description}>{item.description}</div>
+                                                title={item.description}>{item.description}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -411,7 +411,7 @@ export default function ActivityLog() {
                                                 viewBox="0 0 20 20"
                                             >
                                                 <path
-                                                    d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                                                    d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                                             </svg>
                                         </div>
                                     </div>
@@ -440,11 +440,10 @@ export default function ActivityLog() {
                                                 )
                                             }
                                             className={`h-12 rounded-[15px] text-xs font-bold uppercase tracking-wide transition-all border shadow-sm
-                                ${
-                                                tempFilters.module === mod
+                                ${tempFilters.module === mod
                                                     ? "bg-[#DB2727] text-white border-[#DB2727] shadow-red-200 ring-2 ring-offset-1 ring-[#DB2727]/30"
                                                     : "bg-white text-gray-600 border-gray-300 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800"
-                                            }`}
+                                                }`}
                                         >
                                             {mod.replace("_", " ")}
                                         </button>
@@ -461,8 +460,8 @@ export default function ActivityLog() {
                             >
                                 {/* Optional: Add a trash icon for visual cue */}
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2}
-                                     stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                    stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                                 Clear All Filters
                             </button>

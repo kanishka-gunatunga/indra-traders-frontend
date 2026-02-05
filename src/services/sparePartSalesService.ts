@@ -5,12 +5,13 @@ import axiosInstance from "@/utils/axiosinstance";
 export const SparePartSalesService = {
     createSale: (data: any) => axiosInstance.post("/spare-part-sales", data),
 
-    listSales: (status?: string, userId?: number, userRole?: string) =>
+    listSales: (status?: string, userId?: number, userRole?: string, filters?: any) =>
         axiosInstance.get("/spare-part-sales", {
             params: {
                 ...(status ? { status } : {}),
                 ...(userId ? { userId } : {}),
-                ...(userRole ? { userRole } : {})
+                ...(userRole ? { userRole } : {}),
+                ...filters
             },
         }),
 

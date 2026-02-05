@@ -292,10 +292,10 @@
 
 
 "use client";
-import React, {useState, useRef, useEffect, useMemo} from "react";
-import {ChevronDown} from "lucide-react";
-import {useActiveBanks} from "@/hooks/useLeasing";
-import {calculateLeasingDetails} from "@/utils/leasing";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
+import { useActiveBanks } from "@/hooks/useLeasing";
+import { calculateLeasingDetails } from "@/utils/leasing";
 
 interface LeasingCalculatorProps {
     vehiclePrice?: number;
@@ -310,9 +310,9 @@ interface LeasingCalculatorProps {
 }
 
 
-export default function LeasingCalculator({vehiclePrice = 0, onCalculationSuccess}: LeasingCalculatorProps) {
+export default function LeasingCalculator({ vehiclePrice = 0, onCalculationSuccess }: LeasingCalculatorProps) {
 
-    const {data: banks = [], isLoading} = useActiveBanks();
+    const { data: banks = [], isLoading } = useActiveBanks();
 
     console.log("--------bank details", banks);
 
@@ -321,9 +321,11 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
     const [selectedMonth, setSelectedMonth] = useState<number>(24);
     const [customRate, setCustomRate] = useState<string>("");
     const [downPayment, setDownPayment] = useState<string>("");
+    const [priceInput, setPriceInput] = useState<string>(vehiclePrice ? vehiclePrice.toString() : "");
+    const [promoCode, setPromoCode] = useState<string>("");
 
     const selectedBank = useMemo(() =>
-            banks.find((b) => b.bank_name === selectedBankName),
+        banks.find((b) => b.bank_name === selectedBankName),
         [banks, selectedBankName]);
 
 
@@ -348,7 +350,7 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
 
 
     // Results State
-    const [results, setResults] = useState({monthly: 0, total: 0});
+    const [results, setResults] = useState({ monthly: 0, total: 0 });
 
     // UI Dropdown States
     const [isBankOpen, setIsBankOpen] = useState(false);
@@ -362,6 +364,10 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
             setSelectedMonth(monthOptions[0]);
         }
     }, [selectedBank, monthOptions, selectedMonth]);
+
+    useEffect(() => {
+        setPriceInput(vehiclePrice ? vehiclePrice.toString() : "");
+    }, [vehiclePrice]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -378,7 +384,7 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
     }, []);
 
     const formatCurrency = (amount: number) => {
-        return `LKR ${amount.toLocaleString("en", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        return `LKR ${amount.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const getActiveRate = () => {
@@ -390,12 +396,13 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
 
 
     const handleCalculate = () => {
+        const vPrice = parseFloat(priceInput) || 0;
         const dpValue = parseFloat(downPayment) || 0;
         const rateValue = getActiveRate();
 
-        const {monthly, total} = calculateLeasingDetails(vehiclePrice, dpValue, rateValue, selectedMonth);
+        const { monthly, total } = calculateLeasingDetails(vPrice, dpValue, rateValue, selectedMonth);
 
-        setResults({monthly, total});
+        setResults({ monthly, total });
 
         if (onCalculationSuccess) {
             onCalculationSuccess({
@@ -428,7 +435,7 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
                         >
                             {isLoading ? "Loading..." : selectedBankName}
                             <ChevronDown
-                                className={`w-5 h-5 text-[#575757] transition-transform ${isBankOpen ? 'rotate-180' : ''}`}/>
+                                className={`w-5 h-5 text-[#575757] transition-transform ${isBankOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isBankOpen && (
@@ -453,7 +460,7 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
                                         className="px-4 py-3 text-left text-[14px] hover:bg-gray-100 transition-colors border-t border-gray-100 text-[#1D1D1D]"
                                     >
                                         {bank.bank_name} <span
-                                        className="text-xs text-gray-400 ml-1">({bank.interest_rate}%)</span>
+                                            className="text-xs text-gray-400 ml-1">({bank.interest_rate}%)</span>
                                     </button>
                                 ))}
                             </div>
@@ -468,7 +475,7 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
                         >
                             {selectedMonth} months
                             <ChevronDown
-                                className={`w-5 h-5 text-[#575757] transition-transform ${isMonthOpen ? 'rotate-180' : ''}`}/>
+                                className={`w-5 h-5 text-[#575757] transition-transform ${isMonthOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isMonthOpen && (
@@ -497,72 +504,104 @@ export default function LeasingCalculator({vehiclePrice = 0, onCalculationSucces
                 className="w-full bg-white/40 backdrop-blur-[25px] rounded-[30px] p-6 md:p-8 shadow-inner border border-white/50">
                 <table className="w-full border-collapse">
                     <thead>
-                    <tr className="border-b-[1.5px] border-[#CCCCCC]">
-                        <th className="text-left pb-4 text-[18px] font-medium text-[#575757] w-1/2">Payment Details</th>
-                        <th className="text-center pb-4 text-[18px] font-medium text-[#575757] w-1/2">Amount</th>
-                    </tr>
+                        <tr className="border-b-[1.5px] border-[#CCCCCC]">
+                            <th className="text-left pb-4 text-[18px] font-medium text-[#575757] w-1/2">Payment Details</th>
+                            <th className="text-center pb-4 text-[18px] font-medium text-[#575757] w-1/2">Amount</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    {/* Down Payment Row */}
-                    <tr className="group">
-                        <td className="py-5 text-[18px] font-medium text-[#1D1D1D]">Down Payment</td>
-                        <td className="py-5 text-center">
-                            <div className="flex justify-center">
-                                <input
-                                    type="number"
-                                    value={downPayment}
-                                    onChange={(e) => setDownPayment(e.target.value)}
-                                    placeholder="Enter Down Payment"
-                                    className="w-[220px] h-[60px] px-4 py-2 bg-white rounded-[45px] text-[16px] font-medium text-[#1D1D1D] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#DB2727] text-center shadow-sm"
-                                />
-                            </div>
-                        </td>
-                    </tr>
+                        {/* Vehicle Price Row */}
+                        <tr className="group">
+                            <td className="py-5 text-[18px] font-medium text-[#1D1D1D]">Vehicle Price</td>
+                            <td className="py-5 text-center">
+                                <div className="flex justify-center">
+                                    <input
+                                        type="number"
+                                        value={priceInput}
+                                        onChange={(e) => setPriceInput(e.target.value)}
+                                        placeholder="Enter Vehicle Price"
+                                        className="w-[220px] h-[60px] px-4 py-2 bg-white rounded-[45px] text-[16px] font-medium text-[#1D1D1D] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#DB2727] text-center shadow-sm"
+                                    />
+                                </div>
+                            </td>
+                        </tr>
 
-                    {/* Interest Rate Row */}
-                    <tr>
-                        <td className="py-5 text-[18px] font-medium text-[#1D1D1D]">
-                            Interest Rate {selectedBank &&
-                            <span className="text-sm font-normal text-[#DB2727] ml-2">({selectedBank.bank_name})</span>}
-                        </td>
-                        <td className="py-5 text-center">
-                            <div className="flex justify-center items-center h-[46px]">
-                                {selectedBank ? (
-                                    <div
-                                        className="w-[220px] px-4 py-2 bg-[#E6E6E6] rounded-[18px] text-[18px] font-semibold text-[#575757] text-right shadow-inner flex items-center justify-end">
-                                        {selectedBank.interest_rate}%
-                                    </div>
-                                ) : (
-                                    <div className="relative w-[220px]">
-                                        <input
-                                            type="number"
-                                            value={customRate}
-                                            onChange={(e) => setCustomRate(e.target.value)}
-                                            placeholder="Enter Custom Rate"
-                                            className="w-full h-[46px] px-4 py-2 bg-white rounded-[45px] text-[16px] font-medium text-[#1D1D1D] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#DB2727] text-center shadow-sm pr-8"
-                                        />
-                                        {/*<span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">%</span>*/}
-                                    </div>
-                                )}
-                            </div>
-                        </td>
-                    </tr>
+                        {/* Down Payment Row */}
+                        <tr className="group">
+                            <td className="py-5 text-[18px] font-medium text-[#1D1D1D]">Down Payment</td>
+                            <td className="py-5 text-center">
+                                <div className="flex justify-center">
+                                    <input
+                                        type="number"
+                                        value={downPayment}
+                                        onChange={(e) => setDownPayment(e.target.value)}
+                                        placeholder="Enter Down Payment"
+                                        className="w-[220px] h-[60px] px-4 py-2 bg-white rounded-[45px] text-[16px] font-medium text-[#1D1D1D] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#DB2727] text-center shadow-sm"
+                                    />
+                                </div>
+                            </td>
+                        </tr>
 
-                    {/* Monthly Installment Row */}
-                    <tr className="border-b-[1.5px] border-[#575757]">
-                        <td className="py-5 text-[18px] font-medium text-[#1D1D1D]">Monthly Installment</td>
-                        <td className="py-5 text-[18px] font-medium text-[#1D1D1D] text-center">
-                            {formatCurrency(results.monthly)}
-                        </td>
-                    </tr>
+                        {/* Promo Code Row */}
+                        <tr className="group">
+                            <td className="py-5 text-[18px] font-medium text-[#1D1D1D]">Promo Code</td>
+                            <td className="py-5 text-center">
+                                <div className="flex justify-center">
+                                    <input
+                                        type="text"
+                                        value={promoCode}
+                                        onChange={(e) => setPromoCode(e.target.value)}
+                                        placeholder="Enter Promo Code"
+                                        className="w-[220px] h-[60px] px-4 py-2 bg-white rounded-[45px] text-[16px] font-medium text-[#1D1D1D] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#DB2727] text-center shadow-sm"
+                                    />
+                                </div>
+                            </td>
+                        </tr>
 
-                    {/* Total Payable Row */}
-                    <tr className="border-b-[1.5px] border-t-[1.5px] border-[#575757]">
-                        <td className="py-5 text-[18px] font-bold text-[#1D1D1D]">Total Payable Amount</td>
-                        <td className="py-5 text-[18px] font-bold text-[#1D1D1D] text-center">
-                            {formatCurrency(results.total)}
-                        </td>
-                    </tr>
+                        {/* Interest Rate Row */}
+                        <tr>
+                            <td className="py-5 text-[18px] font-medium text-[#1D1D1D]">
+                                Interest Rate {selectedBank &&
+                                    <span className="text-sm font-normal text-[#DB2727] ml-2">({selectedBank.bank_name})</span>}
+                            </td>
+                            <td className="py-5 text-center">
+                                <div className="flex justify-center items-center h-[46px]">
+                                    {selectedBank ? (
+                                        <div
+                                            className="w-[220px] px-4 py-2 bg-[#E6E6E6] rounded-[18px] text-[18px] font-semibold text-[#575757] text-right shadow-inner flex items-center justify-end">
+                                            {selectedBank.interest_rate}%
+                                        </div>
+                                    ) : (
+                                        <div className="relative w-[220px]">
+                                            <input
+                                                type="number"
+                                                value={customRate}
+                                                onChange={(e) => setCustomRate(e.target.value)}
+                                                placeholder="Enter Custom Rate"
+                                                className="w-full h-[46px] px-4 py-2 bg-white rounded-[45px] text-[16px] font-medium text-[#1D1D1D] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#DB2727] text-center shadow-sm pr-8"
+                                            />
+                                            {/*<span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">%</span>*/}
+                                        </div>
+                                    )}
+                                </div>
+                            </td>
+                        </tr>
+
+                        {/* Monthly Installment Row */}
+                        <tr className="border-b-[1.5px] border-[#575757]">
+                            <td className="py-5 text-[18px] font-medium text-[#1D1D1D]">Monthly Installment</td>
+                            <td className="py-5 text-[18px] font-medium text-[#1D1D1D] text-center">
+                                {formatCurrency(results.monthly)}
+                            </td>
+                        </tr>
+
+                        {/* Total Payable Row */}
+                        <tr className="border-b-[1.5px] border-t-[1.5px] border-[#575757]">
+                            <td className="py-5 text-[18px] font-bold text-[#1D1D1D]">Total Payable Amount</td>
+                            <td className="py-5 text-[18px] font-bold text-[#1D1D1D] text-center">
+                                {formatCurrency(results.total)}
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
 

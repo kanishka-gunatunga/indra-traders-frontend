@@ -5,22 +5,46 @@
 import Header from "@/components/Header";
 import Modal from "@/components/Modal";
 import Image from "next/image";
-import React, {useMemo, useState} from "react";
-import {useComplaints} from "@/hooks/useComplaint";
-import {Complaint} from "@/types/complaint.types";
-import {useRouter} from "next/navigation";
+import React, { useMemo, useState } from "react";
+import { useComplaints } from "@/hooks/useComplaint";
+import { useDebounce } from "@/hooks/useDebounce";
+import { Complaint } from "@/types/complaint.types";
+import { useRouter } from "next/navigation";
+import { useNearestReminders } from "@/hooks/useReminder";
+import { useCurrentUser } from "@/utils/auth";
 
-const category = ["ITPL", "ISP", "IMS", "IFT"];
+const category = ["ITPL", "ISP", "IMS", "IFT", "BYD"];
 const status = ["New", "In Review", "Processing", "Approval", "Completed"];
 
 export default function Complains() {
 
     const router = useRouter();
 
-    const {data: complaints, isLoading, isError} = useComplaints();
+    const user = useCurrentUser();
+
+    // Search State
+    const [searchUserQuery, setSearchUserQuery] = useState("");
+    const [isSearchUserActive, setIsSearchUserActive] = useState(false);
+    const debouncedSearch = useDebounce(searchUserQuery, 500);
+
+    const { data: complaints, isLoading, isError } = useComplaints({
+        search: debouncedSearch
+    });
+    const { data: reminderData } = useNearestReminders();
+
+    // Demo data for Upcoming Events
+    const upcomingEventsData = [
+        { customerName: "John Doe", date: "2024-10-25", eventType: "Customer Birthday" },
+        { customerName: "Alice Smith", date: "2024-10-28", eventType: "Service Due" },
+        { customerName: "Robert Brown", date: "2024-11-01", eventType: "Warranty Expiry" },
+        { customerName: "Emily White", date: "2024-11-05", eventType: "Customer Birthday" },
+        { customerName: "Michael Green", date: "2024-11-10", eventType: "Insurance Renewal" },
+    ];
 
     const [isFilterComplainsModalOpen, setIsFilterComplainsModalOpen] =
         useState(false);
+
+
 
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -46,11 +70,11 @@ export default function Complains() {
         <div
             className="relative w-full min-h-screen bg-[#E6E6E6B2]/70 backdrop-blur-md text-gray-900 montserrat overflow-x-hidden">
             <main className="pt-30 px-16 ml-16 max-w-[1440px] mx-auto flex flex-col gap-8">
-                <Header
-                    name="Sophie Eleanor"
-                    location="Bambalapitiya"
-                    title="All Complains"
-                />
+                {/*<Header*/}
+                {/*    name={user?.full_name || "Sophie Eleanor"}*/}
+                {/*    // location={user?.branch || "Bambalapitiya"}*/}
+                {/*    title="All Complains"*/}
+                {/*/>*/}
 
                 {/* All Complains Section */}
                 <section
@@ -58,17 +82,43 @@ export default function Complains() {
                     <div className="w-full flex justify-between items-center">
                         <span className="font-semibold text-[22px]">All Complains</span>
 
-                        <button
-                            className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
-                            onClick={() => setIsFilterComplainsModalOpen(true)}
-                        >
-                            <Image
-                                src={"/images/admin/flowbite_filter-outline.svg"}
-                                width={24}
-                                height={24}
-                                alt="Filter icon"
-                            />
-                        </button>
+
+                        <div className="flex gap-5">
+                            <div className="relative flex items-center justify-end">
+                                <input
+                                    type="text"
+                                    value={searchUserQuery}
+                                    onChange={(e) => setSearchUserQuery(e.target.value)}
+                                    onBlur={() => !searchUserQuery && setIsSearchUserActive(false)}
+                                    placeholder={`Search Complains...`}
+                                    className={`
+                                    bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-500
+                                    rounded-full border border-gray-300 outline-none
+                                    transition-all duration-300 ease-in-out h-10 text-sm
+                                    ${isSearchUserActive ? 'w-64 px-4 opacity-100 mr-2 border' : 'w-0 px-0 opacity-0 border-none'}
+                                `}
+                                    autoFocus={isSearchUserActive}
+                                />
+                                <button
+                                    onClick={() => setIsSearchUserActive(!isSearchUserActive)}
+                                    className={`ml-auto text-white text-base font-medium rounded-full z-10 transition-transform duration-200 cursor-pointer ${isSearchUserActive ? 'scale-90' : ''}`}
+                                >
+                                    <Image src="/search.svg" alt="search" height={36} width={36}
+                                        className="h-12 w-12" />
+                                </button>
+                            </div>
+                            <button
+                                className="w-12 h-12 bg-white rounded-full shadow flex items-center justify-center"
+                                onClick={() => setIsFilterComplainsModalOpen(true)}
+                            >
+                                <Image
+                                    src={"/images/admin/flowbite_filter-outline.svg"}
+                                    width={24}
+                                    height={24}
+                                    alt="Filter icon"
+                                />
+                            </button>
+                        </div>
                     </div>
 
                     {isLoading ? (
@@ -127,6 +177,74 @@ export default function Complains() {
 
                     )}
                 </section>
+
+                <section className="relative flex flex-wrap w-full mb-5 gap-3 justify-center items-center">
+                    <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
+                        <span className="font-semibold text-[22px]">Next Action</span>
+                        <div className="h-full mt-5 overflow-y-auto no-scrollbar pr-2">
+                            {/* Table header */}
+                            <div className="flex font-medium text-[#575757] min-w-[400px]">
+                                <div className="w-1/3 px-2">Ticket No.</div>
+                                <div className="w-1/3 px-2">Customer Name</div>
+                                <div className="w-1/3 px-2">Contact No.</div>
+                                {/*<div className="w-1/4 px-2">Date</div>*/}
+                            </div>
+                            <hr className="border-gray-300 my-4" />
+
+                            <div className="h-[100] max-h-[300px] overflow-y-auto no-scrollbar">
+                                {/* Table rows */}
+                                {reminderData && reminderData.length > 0 ? (
+                                    reminderData.map((item: any, idx: number) => (
+                                        <div
+                                            key={idx}
+                                            className={`flex ${idx > 0 ? "mt-3" : ""
+                                                } font-medium text-black min-w-[400px] hover:bg-white/50 p-2 rounded-lg transition-colors cursor-pointer`}
+                                            onClick={() => router.push(`/admin/complains/${item.complaintId}`)}
+                                        >
+                                            <div className="w-1/3 px-2 truncate">{item.complaint?.ticket_no || "N/A"}</div>
+                                            <div className="w-1/3 px-2 truncate">{item.complaint?.customer?.customer_name || "N/A"}</div>
+                                            <div className="w-1/3 px-2 truncate">{item.complaint?.contact_no || item.complaint?.customer?.phone_number || "N/A"}</div>
+                                            {/*<div className="w-1/4 px-2 text-sm text-gray-600">{new Date(item.task_date).toLocaleDateString()}</div>*/}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-gray-500 py-4">No upcoming actions</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex flex-col flex-1 bg-[#FFFFFF4D] bg-opacity-30 border border-[#E0E0E0] rounded-[45px] px-9 py-10">
+                        <span className="font-semibold text-[22px]">Upcoming Events</span>
+                        <div className="h-full mt-5 overflow-y-auto no-scrollbar pr-2">
+                            {/* Table header */}
+                            <div className="flex font-medium text-[#575757] min-w-[400px]">
+                                <div className="w-1/3 px-2">Customer Name</div>
+                                <div className="w-1/3 px-2">Date</div>
+                                <div className="w-1/3 px-2">Event Type</div>
+                            </div>
+                            <hr className="border-gray-300 my-4" />
+
+                            <div className="h-[100] max-h-[300px] overflow-y-auto no-scrollbar">
+                                {/* Table rows */}
+                                {upcomingEventsData && upcomingEventsData.length > 0 ? (
+                                    upcomingEventsData.map((item, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`flex ${idx > 0 ? "mt-3" : ""
+                                                } font-medium text-black min-w-[400px] hover:bg-white/50 p-2 rounded-lg transition-colors`}
+                                        >
+                                            <div className="w-1/3 px-2">{item.customerName}</div>
+                                            <div className="w-1/3 px-2">{item.date}</div>
+                                            <div className="w-1/3 px-2">{item.eventType}</div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center text-gray-500 py-4">No upcoming events</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
 
             {/* Complain Filter Modal */}
@@ -137,19 +255,17 @@ export default function Complains() {
                     actionButton={{
                         label: "Apply",
                         onClick: () => {
-                            console.log("Selected Categories:", selectedCategories);
-                            console.log("Selected Statuses:", selectedStatuses);
-                            setSelectedCategories([]);
-                            setSelectedStatuses([]);
+                            // console.log("Selected Categories:", selectedCategories);
+                            // console.log("Selected Statuses:", selectedStatuses);
                             setIsFilterComplainsModalOpen(false);
                         },
                     }}
                 >
                     {/* --- Category --- */}
                     <div className="w-full">
-            <span className="font-montserrat font-semibold text-lg leading-[100%]">
-              Category
-            </span>
+                        <span className="font-montserrat font-semibold text-lg leading-[100%]">
+                            Category
+                        </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
                             {category.map((type) => {
                                 const isSelected = selectedCategories.includes(type);
@@ -157,11 +273,10 @@ export default function Complains() {
                                     <div
                                         key={type}
                                         className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                            ${
-                                            isSelected
+                            ${isSelected
                                                 ? "bg-blue-500 text-white border-none"
                                                 : ""
-                                        }`}
+                                            }`}
                                         onClick={() => {
                                             if (isSelected) {
                                                 setSelectedCategories(
@@ -181,9 +296,9 @@ export default function Complains() {
 
                     {/* --- Status --- */}
                     <div className="w-full mt-5">
-            <span className="font-montserrat font-semibold text-lg leading-[100%]">
-              Status
-            </span>
+                        <span className="font-montserrat font-semibold text-lg leading-[100%]">
+                            Status
+                        </span>
                         <div className="w-full mt-5 flex gap-3 flex-wrap">
                             {status.map((source) => {
                                 const isSelected = selectedStatuses.includes(source);
@@ -191,11 +306,10 @@ export default function Complains() {
                                     <div
                                         key={source}
                                         className={`inline-flex items-center justify-center px-8 py-2 rounded-4xl border-b-[0.88px] bg-[#DFDFDF] opacity-[1] cursor-pointer
-                            ${
-                                            isSelected
+                            ${isSelected
                                                 ? "bg-blue-500 text-white border-none"
                                                 : ""
-                                        }`}
+                                            }`}
                                         onClick={() => {
                                             if (isSelected) {
                                                 setSelectedStatuses(

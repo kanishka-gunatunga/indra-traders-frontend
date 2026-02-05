@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
-import {SparePartSalesService} from "@/services/sparePartSalesService";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { SparePartSalesService } from "@/services/sparePartSalesService";
 
-export const useSpareSales = (status?: string, userId?: number, userRole?: string) =>
+export const useSpareSales = (status?: string, userId?: number, userRole?: string, filters?: any) =>
     useQuery({
-        queryKey: ["spareSales", status, userId, userRole],
-        queryFn: () => SparePartSalesService.listSales(status, userId, userRole).then((res) => res.data),
+        queryKey: ["spareSales", status, userId, userRole, filters],
+        queryFn: () => SparePartSalesService.listSales(status, userId, userRole, filters).then((res) => res.data),
         refetchInterval: 1000,
+        placeholderData: keepPreviousData,
     });
 
 export const useSpareCreateSale = () => {
@@ -16,7 +17,7 @@ export const useSpareCreateSale = () => {
     return useMutation({
         mutationFn: SparePartSalesService.createSale,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["spareSales"]});
+            queryClient.invalidateQueries({ queryKey: ["spareSales"] });
         },
     });
 };
@@ -32,10 +33,10 @@ export const useSpareSaleByTicket = (ticket: string) =>
 export const useAssignToSpareSales = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({id, salesUserId}: { id: number; salesUserId: number }) =>
-            SparePartSalesService.assignToSales(id, {salesUserId}),
+        mutationFn: ({ id, salesUserId }: { id: number; salesUserId: number }) =>
+            SparePartSalesService.assignToSales(id, { salesUserId }),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["spareSales"]});
+            queryClient.invalidateQueries({ queryKey: ["spareSales"] });
         },
     });
 };
@@ -43,10 +44,10 @@ export const useAssignToSpareSales = () => {
 export const useAssignToMe = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({id, userId}: { id: number; userId: number }) =>
-            SparePartSalesService.assignToMe(id, {userId}),
+        mutationFn: ({ id, userId }: { id: number; userId: number }) =>
+            SparePartSalesService.assignToMe(id, { userId }),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["spareSales"]});
+            queryClient.invalidateQueries({ queryKey: ["spareSales"] });
         },
     });
 };
@@ -55,11 +56,11 @@ export const useUpdateSaleStatus = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, status}: { id: number; status: "WON" | "LOST" }) =>
-            SparePartSalesService.updateStatus(id, {status}),
+        mutationFn: ({ id, status }: { id: number; status: "WON" | "LOST" }) =>
+            SparePartSalesService.updateStatus(id, { status }),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({queryKey: ["spareSales"]});
-            queryClient.invalidateQueries({queryKey: ["spareSale", variables.id]});
+            queryClient.invalidateQueries({ queryKey: ["spareSales"] });
+            queryClient.invalidateQueries({ queryKey: ["spareSale", variables.id] });
         },
     });
 };
@@ -70,7 +71,7 @@ export const useCreateFollowup = () => {
     return useMutation({
         mutationFn: SparePartSalesService.createFollowup,
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({queryKey: ["spareFollowups", variables.spare_part_sale_id]});
+            queryClient.invalidateQueries({ queryKey: ["spareFollowups", variables.spare_part_sale_id] });
         },
     });
 };
@@ -80,7 +81,7 @@ export const useCreateReminder = () => {
     return useMutation({
         mutationFn: SparePartSalesService.createReminder,
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({queryKey: ["spareReminders", variables.spare_part_sale_id]});
+            queryClient.invalidateQueries({ queryKey: ["spareReminders", variables.spare_part_sale_id] });
         },
     });
 };
@@ -113,12 +114,12 @@ export const useUpdatePriority = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, priority}: { id: number; priority: number }) =>
-            SparePartSalesService.updatePriority(id, {priority}),
+        mutationFn: ({ id, priority }: { id: number; priority: number }) =>
+            SparePartSalesService.updatePriority(id, { priority }),
 
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({queryKey: ["spareSales"]});
-            queryClient.invalidateQueries({queryKey: ["spareSale", variables.id]});
+            queryClient.invalidateQueries({ queryKey: ["spareSales"] });
+            queryClient.invalidateQueries({ queryKey: ["spareSale", variables.id] });
         },
     });
 };
@@ -127,12 +128,12 @@ export const useUpdatePriority = () => {
 export const usePromoteSale = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({id, userId}: { id: number; userId: number }) =>
+        mutationFn: ({ id, userId }: { id: number; userId: number }) =>
             SparePartSalesService.promote(id, userId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["spareSales"]});
-            queryClient.invalidateQueries({queryKey: ["spareSale"]});
-            queryClient.invalidateQueries({queryKey: ["saleHistory"]});
+            queryClient.invalidateQueries({ queryKey: ["spareSales"] });
+            queryClient.invalidateQueries({ queryKey: ["spareSale"] });
+            queryClient.invalidateQueries({ queryKey: ["saleHistory"] });
         },
     });
 };

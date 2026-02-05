@@ -154,7 +154,7 @@ export async function middleware(req: any) {
     const config = SALES_DEPT_CONFIG[userDept];
 
     if (config) {
-      if (!pathname.startsWith(config.allowedPath)) {
+      if (!pathname.startsWith(config.allowedPath) && !pathname.startsWith("/profile")) {
         return NextResponse.redirect(new URL(config.dashboard, req.url));
       }
     }

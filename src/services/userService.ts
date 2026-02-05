@@ -13,6 +13,7 @@ export const userService = {
         user_role?: string;
         department?: string;
         branch?: string;
+        search?: string;
     }) => {
         const params = new URLSearchParams(filters as any).toString();
         const res = await axiosInstance.get(`/users${params ? `?${params}` : ""}`);
@@ -43,4 +44,14 @@ export const userService = {
         const res = await axiosInstance.delete(`/users/${id}`);
         return res.data;
     },
+
+    getProfile: async () => {
+        const res = await axiosInstance.get("/users/profile");
+        return res.data;
+    },
+
+    updateProfile: async (data: any) => {
+        const res = await axiosInstance.put("/users/profile", data);
+        return res.data;
+    }
 };

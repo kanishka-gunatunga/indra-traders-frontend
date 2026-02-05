@@ -1,4 +1,6 @@
-import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
     addServiceToBranch,
     assignToSalesAgent,
@@ -29,7 +31,8 @@ import {
     deletePackage,
     deleteService,
     updateBranch, deleteBranch, getBranchCatalog, validatePromo, getPromos, getDailyBookings, submitBooking,
-    getBookingAvailability
+    getBookingAvailability,
+    getScheduledServices, getBookingById, cancelBooking, rescheduleBooking
 } from "@/services/serviceParkService";
 
 
@@ -39,14 +42,15 @@ export const useVehicleHistories = () =>
         queryFn: listVehicleHistories,
     });
 
-export const useVehicleSales = (status?: string, userId?: number, userRole?: string) =>
+export const useVehicleSales = (status?: string, userId?: number, userRole?: string, filters?: any) =>
     useQuery({
-        queryKey: ["servicePark", "saleDetails", status, userId, userRole],
+        queryKey: ["servicePark", "saleDetails", status, userId, userRole, filters],
         queryFn: async () => {
-            const res = await listVehicleSales(status, userId, userRole);
+            const res = await listVehicleSales(status, userId, userRole, filters);
             return res.data;
         },
         refetchInterval: 1000,
+        placeholderData: keepPreviousData,
     });
 
 export const useSaleDetailsByTicketNumber = (ticketNumber: string) =>
@@ -91,7 +95,7 @@ export const useServiceIntake = () => {
     return useMutation({
         mutationFn: handleServiceIntake,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["servicePark", "vehicleHistories"]});
+            queryClient.invalidateQueries({ queryKey: ["servicePark", "vehicleHistories"] });
         },
     });
 };
@@ -102,7 +106,7 @@ export const useAssignToSale = () => {
     return useMutation({
         mutationFn: createAssignToSale,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["servicePark", "vehicleHistories"]});
+            queryClient.invalidateQueries({ queryKey: ["servicePark", "vehicleHistories"] });
         },
     });
 };
@@ -111,10 +115,10 @@ export const useAssignToSale = () => {
 export const useAssignToSalesAgent = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({saleId, userId}: { saleId: number; userId: number }) =>
+        mutationFn: ({ saleId, userId }: { saleId: number; userId: number }) =>
             assignToSalesAgent(saleId, userId),
-        onSuccess: (_, {saleId}) => {
-            queryClient.invalidateQueries({queryKey: ["servicePark", "saleDetails", saleId]});
+        onSuccess: (_, { saleId }) => {
+            queryClient.invalidateQueries({ queryKey: ["servicePark", "saleDetails", saleId] });
         },
     });
 };
@@ -124,10 +128,10 @@ export const useUpdateSaleStatus = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, status}: { id: number; status: "WON" | "LOST" }) => updateStatus(id, {status}),
+        mutationFn: ({ id, status }: { id: number; status: "WON" | "LOST" }) => updateStatus(id, { status }),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({queryKey: ["servicePark"]});
-            queryClient.invalidateQueries({queryKey: ["servicePark", variables.id]});
+            queryClient.invalidateQueries({ queryKey: ["servicePark"] });
+            queryClient.invalidateQueries({ queryKey: ["servicePark", variables.id] });
         },
     });
 };
@@ -137,7 +141,7 @@ export const useCreateFollowup = () => {
     return useMutation({
         mutationFn: createFollowup,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["servicePark", "followups"]});
+            queryClient.invalidateQueries({ queryKey: ["servicePark", "followups"] });
         },
     });
 };
@@ -147,7 +151,7 @@ export const useCreateReminder = () => {
     return useMutation({
         mutationFn: createReminder,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["servicePark", "reminders"]});
+            queryClient.invalidateQueries({ queryKey: ["servicePark", "reminders"] });
         },
     });
 };
@@ -156,12 +160,12 @@ export const useUpdatePriority = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, priority}: { id: number; priority: number }) =>
-            updatePriority(id, {priority}),
+        mutationFn: ({ id, priority }: { id: number; priority: number }) =>
+            updatePriority(id, { priority }),
 
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({queryKey: ["serviceParks"]});
-            queryClient.invalidateQueries({queryKey: ["servicePark", variables.id]});
+            queryClient.invalidateQueries({ queryKey: ["serviceParks"] });
+            queryClient.invalidateQueries({ queryKey: ["servicePark", variables.id] });
         },
     });
 };
@@ -170,12 +174,12 @@ export const useUpdatePriority = () => {
 export const usePromoteSale = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({id, userId}: { id: number; userId: number }) =>
+        mutationFn: ({ id, userId }: { id: number; userId: number }) =>
             promote(id, userId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["serviceParks"]});
-            queryClient.invalidateQueries({queryKey: ["servicePark"]});
-            queryClient.invalidateQueries({queryKey: ["saleHistory"]});
+            queryClient.invalidateQueries({ queryKey: ["serviceParks"] });
+            queryClient.invalidateQueries({ queryKey: ["servicePark"] });
+            queryClient.invalidateQueries({ queryKey: ["saleHistory"] });
         },
     });
 };
@@ -222,7 +226,7 @@ export const useCreateService = () => {
     return useMutation({
         mutationFn: createService,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "services"]});
+            queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "services"] });
         },
     });
 };
@@ -241,7 +245,7 @@ export const useCreateBranch = () => {
     return useMutation({
         mutationFn: createBranch,
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branches"]});
+            queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "branches"] });
         },
     });
 };
@@ -249,11 +253,11 @@ export const useCreateBranch = () => {
 export const useAddServiceToBranch = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({branchId, data}: { branchId: number; data: { service_id: number; custom_price: number } }) =>
+        mutationFn: ({ branchId, data }: { branchId: number; data: { service_id: number; custom_price: number } }) =>
             addServiceToBranch(branchId, data),
         onSuccess: (_, variables) => {
             // Invalidate specific branch details to reflect updated pricing
-            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branch", variables.branchId]});
+            queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "branch", variables.branchId] });
         },
     });
 };
@@ -261,11 +265,11 @@ export const useAddServiceToBranch = () => {
 export const useCreateServiceLine = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({branchId, data}: { branchId: number; data: { name: string; type: string; advisor: number } }) =>
+        mutationFn: ({ branchId, data }: { branchId: number; data: { name: string; type: string; advisor: number } }) =>
             createServiceLine(branchId, data),
         onSuccess: (_, variables) => {
             // Invalidate specific branch details to show new line
-            queryClient.invalidateQueries({queryKey: ["serviceParkConfig", "branch", variables.branchId]});
+            queryClient.invalidateQueries({ queryKey: ["serviceParkConfig", "branch", variables.branchId] });
         },
     });
 };
@@ -381,6 +385,48 @@ export const useSubmitBooking = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['dailyBookings'] });
             queryClient.invalidateQueries({ queryKey: ['bookingAvailability'] });
+        },
+    });
+};
+
+export const useScheduledServices = (branchId?: number | null, date?: string, page: number = 1) => {
+    return useQuery({
+        queryKey: ['scheduledServices', branchId, date, page],
+        queryFn: () => getScheduledServices(branchId, date, page),
+        refetchInterval: 5000,
+        placeholderData: keepPreviousData
+    });
+};
+
+export const useServiceBooking = (id: number) => {
+    return useQuery({
+        queryKey: ['serviceBooking', id],
+        queryFn: () => getBookingById(id),
+        enabled: !!id
+    });
+};
+
+export const useCancelBooking = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: cancelBooking,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['scheduledServices'] });
+            queryClient.invalidateQueries({ queryKey: ['dailyBookings'] });
+            queryClient.invalidateQueries({ queryKey: ['bookingAvailability'] });
+        },
+    });
+};
+
+export const useRescheduleBooking = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: any }) => rescheduleBooking(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['scheduledServices'] });
+            queryClient.invalidateQueries({ queryKey: ['dailyBookings'] });
+            queryClient.invalidateQueries({ queryKey: ['bookingAvailability'] });
+            queryClient.invalidateQueries({ queryKey: ['serviceBooking'] });
         },
     });
 };

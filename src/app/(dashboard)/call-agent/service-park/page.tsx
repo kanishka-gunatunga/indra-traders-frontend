@@ -54,7 +54,7 @@ export const assignToSaleSchema = z.object({
     additional_note: z.string().optional(),
 });
 
-export const unavailableServiceSchema = z.object({
+const unavailableServiceSchema = z.object({
     unavailable_repair: z.string().optional(),
     unavailable_paint: z.string().optional(),
     unavailable_add_on: z.string().optional(),
@@ -473,7 +473,7 @@ const ServicePark = () => {
                     showToast("Unavailable service added successfully", "success");
                     resetUnavailable();
                 },
-                onError: (error) => {
+                onError: (error: any) => {
                     console.error("Error creating unavailable vehicle sale:", error);
                 },
             });

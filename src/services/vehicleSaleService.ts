@@ -4,12 +4,13 @@ import axiosInstance from "@/utils/axiosinstance";
 export const VehicleSaleService = {
     create: (data: any) => axiosInstance.post("/vehicle-sales", data),
 
-    getAll: (status?: string, userId?: number, userRole?: string) =>
+    getAll: (status?: string, userId?: number, userRole?: string, filters?: any) =>
         axiosInstance.get("/vehicle-sales", {
             params: {
                 ...(status ? { status } : {}),
                 ...(userId ? { userId } : {}),
-                ...(userRole ? { userRole } : {})
+                ...(userRole ? { userRole } : {}),
+                ...filters
             },
         }),
 
@@ -20,10 +21,10 @@ export const VehicleSaleService = {
         axiosInstance.get(`/vehicle-sales/ticket/${ticketNumber}`),
 
     assign: (id: number, salesUserId: number) =>
-        axiosInstance.put(`/vehicle-sales/${id}/assign`, {salesUserId}),
+        axiosInstance.put(`/vehicle-sales/${id}/assign`, { salesUserId }),
 
     updateStatus: (id: number, status: string) =>
-        axiosInstance.put(`/vehicle-sales/${id}/status`, {status}),
+        axiosInstance.put(`/vehicle-sales/${id}/status`, { status }),
 
     delete: (id: number) => axiosInstance.delete(`/vehicle-sales/${id}`),
 
@@ -49,7 +50,7 @@ export const VehicleSaleService = {
 
     reminderDelete: (id: number) => axiosInstance.delete(`/vehicle-sales-reminders/${id}`),
 
-    getNearestReminders :(userId: number) =>
+    getNearestReminders: (userId: number) =>
         axiosInstance.get(`/vehicle-sales/sales-user/${userId}/reminders/nearest`),
 
     updatePriority(id: number, data: { priority: number }) {

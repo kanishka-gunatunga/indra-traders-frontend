@@ -63,12 +63,13 @@ export const FastTrackService = {
     //     return axiosInstance.get("/fast-track/sales", { params }).then(r => r.data);
     // },
 
-    listSales(status?: string, userId?: number, userRole?: string) {
+    listSales(status?: string, userId?: number, userRole?: string, filters?: any) {
         return axiosInstance.get("/fast-track/sales", {
             params: {
                 ...(status ? { status } : {}),
                 ...(userId ? { userId } : {}),
-                ...(userRole ? { userRole } : {})
+                ...(userRole ? { userRole } : {}),
+                ...filters
             },
         }).then(r => r.data);
     },

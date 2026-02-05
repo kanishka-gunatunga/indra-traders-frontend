@@ -13,7 +13,12 @@ export const ComplaintReminderService = {
         return res.data;
     },
 
-    create: async (data:any) => {
+    getNearest: async () => {
+        const res = await axiosInstance.get("/complaint-reminders/nearest");
+        return res.data;
+    },
+
+    create: async (data: any) => {
         const res = await axiosInstance.post("/complaint-reminders", data);
         return res.data;
     },
