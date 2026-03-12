@@ -85,11 +85,11 @@ const ServiceParkModal = ({ isOpen, onClose, serviceData }: ServiceParkModalProp
             </div>
 
             {/* Repairs List */}
-            <div className="flex flex-col flex-1 mt-4">
+            <div className="flex flex-col mt-4 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
                 {serviceData.repairs.map((repair, index) => (
-                    <div key={index} className="flex justify-between items-center py-2">
+                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
                         <span className="font-medium text-[18px] text-[#1D1D1D]">{repair.name}</span>
-                        <span className="font-medium text-[18px] text-[#1D1D1D]">LKR {repair.price.toLocaleString()}</span>
+                        <span className="font-medium text-[18px] text-[#1D1D1D] whitespace-nowrap ml-4">LKR {repair.price.toLocaleString()}</span>
                     </div>
                 ))}
             </div>

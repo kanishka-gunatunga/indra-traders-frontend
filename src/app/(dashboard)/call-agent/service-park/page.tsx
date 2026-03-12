@@ -3,10 +3,10 @@
 
 "use client"
 import Image from "next/image";
-import React, {useEffect, useRef, useState} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import FormField from "@/components/FormField";
 import z from "zod";
-import {useForm} from "react-hook-form";
+import { useForm } from "react-hook-form";
 import {
     useAssignToSale, useAvailablePromos,
     useBranchCatalog,
@@ -15,16 +15,18 @@ import {
     useValidatePromo,
     useBranches
 } from "@/hooks/useServicePark";
-import {zodResolver} from "@hookform/resolvers/zod";
+import { useCustomerInvoices, useVehicleJobs, useJobDetails } from "@/hooks/useHistory";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Modal from "@/components/Modal";
-import {useCreateUnavailableService} from "@/hooks/useUnavailable";
+import { useCreateUnavailableService } from "@/hooks/useUnavailable";
 import Toast from "@/components/Toast";
-import {useToast} from "@/hooks/useToast";
-import {useCurrentUser} from "@/utils/auth";
-import {useServiceCart, CartItem} from "@/hooks/useServiceCart";
-import {useDispatch, useSelector} from 'react-redux';
-import {useRouter} from 'next/navigation';
-import {setBookingData} from "@/redux/slices/bookingSlice";
+import { useToast } from "@/hooks/useToast";
+import { useCurrentUser } from "@/utils/auth";
+import { useServiceCart, CartItem } from "@/hooks/useServiceCart";
+import { useDispatch, useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import { setBookingData } from "@/redux/slices/bookingSlice";
+import ServiceParkModal from "@/components/ServiceBookingModal";
 
 
 export const vehicleHistorySchema = z.object({
@@ -66,13 +68,74 @@ export type ServiceParkHistoryFormData = z.infer<typeof vehicleHistorySchema>;
 export type ServiceParkSaleFormData = z.infer<typeof assignToSaleSchema>;
 export type UnavailableServiceFormData = z.infer<typeof unavailableServiceSchema>;
 
+interface LastService {
+    date: string;
+    invoice: string;
+    vehicle: string;
+}
+
+interface JobHistoryItem {
+    date: string;
+    job_id: string;
+    [key: string]: any;
+}
+
 
 const ServicePark = () => {
+    const {
+        register: registerVehicle,
+        handleSubmit: handleVehicleSubmit,
+        reset: resetVehicle,
+        setValue: setVehicleValue,
+        watch: watchVehicle,
+        formState: { errors: vehicleErrors },
+        getValues
+    } = useForm<z.infer<typeof vehicleHistorySchema>>({
+        resolver: zodResolver(vehicleHistorySchema),
+        defaultValues: {
+            vehicle_no: "",
+            odometer: "",
+            owner_name: "",
+            contact_no: "",
+            email: "",
+            address: "",
+            mileage: "",
+            oil_type: "",
+            service_center: "",
+            service_advisor: "",
+        },
+    });
 
-    const lastServicesData = [
-        {date: '12 Dec 2024', invoice: 'INV34556', vehicle: "Nissan GT-R (R35)"},
-        {date: '12 Dec 2024', invoice: 'INV34556', vehicle: "Nissan GT-R (R35)"},
-    ];
+
+    const vehicleHistorySchemaValues = watchVehicle();
+    const { data: customerHistory } = useCustomerInvoices(
+        vehicleHistorySchemaValues.contact_no?.length === 10 ? vehicleHistorySchemaValues.contact_no : ""
+    );
+    const { data: vehicleHistory } = useVehicleJobs(vehicleHistorySchemaValues.vehicle_no || "");
+
+    const latestJobId = vehicleHistory?.jobs?.[0]?.job_id || "";
+    const { data: latestJobDetail } = useJobDetails(latestJobId);
+
+    useEffect(() => {
+        if (customerHistory?.customers?.[0]?.customer_name) {
+            setVehicleValue("owner_name", customerHistory.customers[0].customer_name.trim());
+        }
+    }, [customerHistory, setVehicleValue]);
+
+    useEffect(() => {
+        if (latestJobDetail) {
+            setVehicleValue("mileage", latestJobDetail.mileage?.toString() || "");
+            if (latestJobDetail.service_center) {
+                setVehicleValue("service_center", latestJobDetail.service_center);
+            }
+        }
+    }, [latestJobDetail, setVehicleValue]);
+
+    const lastServicesData = vehicleHistory?.jobs?.map((job: JobHistoryItem) => ({
+        date: new Date(job.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        invoice: job.job_id,
+        vehicle: `${vehicleHistory.make} ${vehicleHistory.model}`
+    })) || [];
 
     const initialPackageData = [
         {
@@ -104,22 +167,22 @@ const ServicePark = () => {
     ];
 
     const vehicleMakeOptions = [
-        {value: "Nissan", label: "Nissan"},
-        {value: "Toyota", label: "Toyota"},
-        {value: "Honda", label: "Honda"},
+        { value: "Nissan", label: "Nissan" },
+        { value: "Toyota", label: "Toyota" },
+        { value: "Honda", label: "Honda" },
     ];
     const vehicleModelOptions = [
-        {value: "GT-R", label: "GT-R"},
-        {value: "Civic", label: "Civic"},
+        { value: "GT-R", label: "GT-R" },
+        { value: "Civic", label: "Civic" },
     ];
-    const manufactureYearOptions = Array.from({length: 15}, (_, i) => {
+    const manufactureYearOptions = Array.from({ length: 15 }, (_, i) => {
         const year = (2025 - i).toString();
-        return {value: year, label: year};
+        return { value: year, label: year };
     });
     const serviceCategoryOptions = [
-        {value: "Repair", label: "Repair"},
-        {value: "Maintenance", label: "Maintenance"},
-        {value: "Inspection", label: "Inspection"},
+        { value: "Repair", label: "Repair" },
+        { value: "Maintenance", label: "Maintenance" },
+        { value: "Inspection", label: "Inspection" },
     ];
 
     const [vehicleCustomerData, setVehicleCustomerData] = useState<{
@@ -181,15 +244,21 @@ const ServicePark = () => {
 
     const [loadingCategory, setLoadingCategory] = useState<string | null>(null);
 
-    const {data: catalog, isLoading: loadingCatalog} = useBranchCatalog(selectedBranchId);
+    const [isServiceDetailModalOpen, setIsServiceDetailModalOpen] = useState(false);
+    const [modalJobId, setModalJobId] = useState<string>("");
+
+    const { data: catalog, isLoading: loadingCatalog } = useBranchCatalog(selectedBranchId);
     const validatePromoMutation = useValidatePromo();
-    const {data: promoList, isLoading: loadingPromos} = useAvailablePromos();
+    const { data: promoList, isLoading: loadingPromos } = useAvailablePromos();
+
+    const { data: modalJobDetail, isLoading: loadingModalJobDetail } = useJobDetails(modalJobId);
 
     const [allServicesView, setAllServicesView] = useState<"Services" | "Packages">("Services");
 
 
     const [searchServiceQuery, setSearchServiceQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
     const [isServiceSearchActive, setIsServiceSearchActive] = useState(false);
 
     const sourceData = allServicesView === "Services"
@@ -227,6 +296,23 @@ const ServicePark = () => {
         setCurrentPage(1);
     }, [allServicesView, searchQuery]);
 
+    const HISTORY_PER_PAGE = 5;
+    const totalHistoryPages = Math.ceil(lastServicesData.length / HISTORY_PER_PAGE);
+    const paginatedHistoryData = lastServicesData.slice(
+        (currentHistoryPage - 1) * HISTORY_PER_PAGE,
+        currentHistoryPage * HISTORY_PER_PAGE
+    );
+
+    const handleHistoryPageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalHistoryPages) {
+            setCurrentHistoryPage(newPage);
+        }
+    };
+
+    useEffect(() => {
+        setCurrentHistoryPage(1);
+    }, [vehicleHistorySchemaValues.vehicle_no]); // Reset to page 1 when vehicle changes
+
 
     const handleAddServiceClick = () => {
         setAllServicesView("Services");
@@ -257,28 +343,6 @@ const ServicePark = () => {
     // const addOnsTotal = getCategoryTotal(groupedItems.addOns);
 
 
-    const {
-        register: registerVehicle,
-        handleSubmit: handleVehicleSubmit,
-        reset: resetVehicle,
-        setValue: setVehicleValue,
-        formState: {errors: vehicleErrors},
-        getValues
-    } = useForm<z.infer<typeof vehicleHistorySchema>>({
-        resolver: zodResolver(vehicleHistorySchema),
-        defaultValues: {
-            vehicle_no: "",
-            odometer: "",
-            owner_name: "",
-            contact_no: "",
-            email: "",
-            address: "",
-            mileage: "",
-            oil_type: "",
-            service_center: "",
-            service_advisor: "",
-        },
-    });
 
     console.log("-------- err:", vehicleErrors);
 
@@ -287,7 +351,7 @@ const ServicePark = () => {
         register: registerSale,
         handleSubmit: handleSaleSubmit,
         reset: resetSale,
-        formState: {errors: saleErrors},
+        formState: { errors: saleErrors },
     } = useForm<z.infer<typeof assignToSaleSchema>>({
         resolver: zodResolver(assignToSaleSchema),
         defaultValues: {
@@ -305,7 +369,7 @@ const ServicePark = () => {
     const {
         register: registerUnavailable,
         handleSubmit: handleSubmitUnavailable,
-        formState: {errors: unavailableErrors},
+        formState: { errors: unavailableErrors },
         reset: resetUnavailable,
     } = useForm<z.infer<typeof unavailableServiceSchema>>({
         resolver: zodResolver(unavailableServiceSchema),
@@ -323,9 +387,9 @@ const ServicePark = () => {
 
     const { data: branches, isLoading: loadingBranches } = useBranches();
 
-    const {toast, showToast, hideToast} = useToast();
+    const { toast, showToast, hideToast } = useToast();
 
-    const {mutate: createUnavailableServiceMutation, isPending: isUnavailablePending} = useCreateUnavailableService();
+    const { mutate: createUnavailableServiceMutation, isPending: isUnavailablePending } = useCreateUnavailableService();
 
 
     const branchOptions = branches?.map((branch: any) => ({
@@ -547,7 +611,7 @@ const ServicePark = () => {
     const handleSelectPackage = (index: number) => {
         setPackageData(prevData => {
             const newData = [...prevData];
-            newData[index] = {...newData[index], action: !newData[index].action};
+            newData[index] = { ...newData[index], action: !newData[index].action };
             return newData;
         });
     };
@@ -555,7 +619,7 @@ const ServicePark = () => {
     const handleSelectMaintenance = (index: number) => {
         setMaintenanceData(prevData => {
             const newData = [...prevData];
-            newData[index] = {...newData[index], action: !newData[index].action};
+            newData[index] = { ...newData[index], action: !newData[index].action };
             return newData;
         });
     };
@@ -563,7 +627,7 @@ const ServicePark = () => {
     const handleSelectAllServices = (index: number) => {
         setAllServicesData(prevData => {
             const newData = [...prevData];
-            newData[index] = {...newData[index], action: !newData[index].action};
+            newData[index] = { ...newData[index], action: !newData[index].action };
             return newData;
         });
     };
@@ -595,6 +659,39 @@ const ServicePark = () => {
 
         router.push('/call-agent/service-park/book');
     };
+
+    const handleServiceClick = (jobId: string) => {
+        setModalJobId(jobId);
+        setIsServiceDetailModalOpen(true);
+    };
+
+    const mappedServiceData = React.useMemo(() => {
+        if (!modalJobDetail) return null;
+
+        const repairs = [
+            ...(modalJobDetail.labor?.map((l: any) => ({
+                name: l.description,
+                price: parseFloat(l.rate) * parseFloat(l.hours)
+            })) || []),
+            ...(modalJobDetail.materials?.map((m: any) => ({
+                name: m.description,
+                price: parseFloat(m.unit_price) * parseFloat(m.quantity)
+            })) || [])
+        ];
+
+        return {
+            invoiceNo: modalJobDetail.invoice_no || modalJobDetail.job_id,
+            date: modalJobDetail.date ? new Date(modalJobDetail.date).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            }) : "N/A",
+            serviceAdvisor: "N/A",
+            branch: modalJobDetail.service_center || "N/A",
+            line: "N/A",
+            repairs
+        };
+    }, [modalJobDetail]);
 
 
     return (
@@ -764,8 +861,8 @@ const ServicePark = () => {
                                             aria-label={isPackageExpanded ? "Collapse package details" : "Expand package details"}
                                             className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
                                             <Image src="/expand-arrow.svg" alt="search" height={36}
-                                                   width={36}
-                                                   className={`h-12 w-12 transition-transform duration-300 ease-in-out ${isPackageExpanded ? 'rotate-180' : ''}`}/>
+                                                width={36}
+                                                className={`h-12 w-12 transition-transform duration-300 ease-in-out ${isPackageExpanded ? 'rotate-180' : ''}`} />
                                         </button>
                                     </div>
                                 </div>
@@ -773,32 +870,32 @@ const ServicePark = () => {
                                     <div id="package-table-content" className="overflow-x-auto animate-slide-down mt-8">
                                         <table className="w-full text-black">
                                             <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                                <th className="py-5 px-4 text-left">Package Name</th>
-                                                <th className="py-5 px-4 text-left">Description</th>
-                                                <th className="py-5 px-4 text-left">Estimate Price</th>
-                                                <th className="py-5 px-4 text-left min-w-40">Action</th>
-                                            </tr>
+                                                <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                    <th className="py-5 px-4 text-left">Package Name</th>
+                                                    <th className="py-5 px-4 text-left">Description</th>
+                                                    <th className="py-5 px-4 text-left">Estimate Price</th>
+                                                    <th className="py-5 px-4 text-left min-w-40">Action</th>
+                                                </tr>
                                             </thead>
                                             <tbody>
-                                            {packageData.map((item, index) => (
-                                                <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                    <td className="py-4 px-4"><a>{item.name}</a></td>
-                                                    <td className="py-4 px-4 items-center flex"><span
-                                                        className="mr-2">{item.description}</span>
-                                                        <button
-                                                            className="font-medium rounded-full">
-                                                            <Image src="/info.svg" alt="info" height={36}
-                                                                   width={36} className="h-5 w-5"/>
-                                                        </button>
-                                                    </td>
-                                                    <td className="py-4 px-4">{item.estimatePrice}</td>
-                                                    <td className="py-4 px-4">
-                                                        <button onClick={() => handleSelectPackage(index)}
+                                                {packageData.map((item, index) => (
+                                                    <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
+                                                        <td className="py-4 px-4"><a>{item.name}</a></td>
+                                                        <td className="py-4 px-4 items-center flex"><span
+                                                            className="mr-2">{item.description}</span>
+                                                            <button
+                                                                className="font-medium rounded-full">
+                                                                <Image src="/info.svg" alt="info" height={36}
+                                                                    width={36} className="h-5 w-5" />
+                                                            </button>
+                                                        </td>
+                                                        <td className="py-4 px-4">{item.estimatePrice}</td>
+                                                        <td className="py-4 px-4">
+                                                            <button onClick={() => handleSelectPackage(index)}
                                                                 className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}>{!item.action ? "Select" : "Selected"}</button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                             </tbody>
                                         </table>
                                     </div>
@@ -820,7 +917,7 @@ const ServicePark = () => {
                                             <button
                                                 className="ml-auto text-white text-base font-medium rounded-full animate-fade-in">
                                                 <Image src="/search.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
+                                                    width={36} className="h-12 w-12" />
                                             </button>
                                         )}
                                         <button
@@ -830,8 +927,8 @@ const ServicePark = () => {
                                             aria-label={isServicesExpanded ? "Collapse service details" : "Expand service details"}
                                             className="ml-auto text-white text-base font-medium rounded-full">
                                             <Image src="/expand-arrow.svg" alt="search" height={36}
-                                                   width={36}
-                                                   className={`h-12 w-12 transition-transform duration-300 ease-in-out ${isServicesExpanded ? 'rotate-180' : ''}`}/>
+                                                width={36}
+                                                className={`h-12 w-12 transition-transform duration-300 ease-in-out ${isServicesExpanded ? 'rotate-180' : ''}`} />
                                         </button>
                                     </div>
                                 </div>
@@ -840,25 +937,25 @@ const ServicePark = () => {
                                     <div id="service-table-content" className="overflow-x-auto animate-slide-down mt-8">
                                         <table className="w-full text-black">
                                             <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                                <th className="py-5 px-4 text-left">Maintenance Services</th>
-                                                <th className="py-5 px-4 text-left">Service Type</th>
-                                                <th className="py-5 px-4 text-left">Estimate Price</th>
-                                                <th className="py-5 px-4 text-left min-w-40">Action</th>
-                                            </tr>
+                                                <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                    <th className="py-5 px-4 text-left">Maintenance Services</th>
+                                                    <th className="py-5 px-4 text-left">Service Type</th>
+                                                    <th className="py-5 px-4 text-left">Estimate Price</th>
+                                                    <th className="py-5 px-4 text-left min-w-40">Action</th>
+                                                </tr>
                                             </thead>
                                             <tbody>
-                                            {maintenanceData.map((item, index) => (
-                                                <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                    <td className="py-4 px-4"><a>{item.serviceName}</a></td>
-                                                    <td className="py-4 px-4 items-center flex">{item.serviceType}</td>
-                                                    <td className="py-4 px-4">{item.estimatePrice}</td>
-                                                    <td className="py-4 px-4">
-                                                        <button onClick={() => handleSelectMaintenance(index)}
+                                                {maintenanceData.map((item, index) => (
+                                                    <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
+                                                        <td className="py-4 px-4"><a>{item.serviceName}</a></td>
+                                                        <td className="py-4 px-4 items-center flex">{item.serviceType}</td>
+                                                        <td className="py-4 px-4">{item.estimatePrice}</td>
+                                                        <td className="py-4 px-4">
+                                                            <button onClick={() => handleSelectMaintenance(index)}
                                                                 className={`px-6 py-2 rounded-[20] cursor-pointer ${!item.action ? "bg-[#DFDFDF] text-[#1D1D1D]" : "bg-[#DB2727] text-[#FFFFFF]"}`}>{!item.action ? "Select" : "Selected"}</button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                             </tbody>
                                         </table>
                                     </div>
@@ -897,7 +994,7 @@ const ServicePark = () => {
                                                 className={`ml-auto text-white text-base font-medium rounded-full z-10 transition-transform duration-200 cursor-pointer ${isServiceSearchActive ? 'scale-90' : ''}`}
                                             >
                                                 <Image src="/search.svg" alt="search" height={36} width={36}
-                                                       className="h-12 w-12"/>
+                                                    className="h-12 w-12" />
                                             </button>
                                         </div>
 
@@ -905,30 +1002,28 @@ const ServicePark = () => {
                                             onClick={() => setIsServiceAvailabilityModalOpen(true)}
                                             className="ml-auto text-white text-base font-medium rounded-full cursor-pointer">
                                             <Image src="/repair.svg" alt="search" height={36}
-                                                   width={36} className="h-12 w-12"/>
+                                                width={36} className="h-12 w-12" />
                                         </button>
 
                                         <div id="toggle-buttons"
-                                             className="flex justify-center bg-[#FFFFFF] rounded-full">
+                                            className="flex justify-center bg-[#FFFFFF] rounded-full">
                                             <button
                                                 type="button"
                                                 onClick={() => setAllServicesView("Services")}
-                                                className={`py-1 px-4 cursor-pointer rounded-full text-base transition-colors ${
-                                                    allServicesView === "Services"
+                                                className={`py-1 px-4 cursor-pointer rounded-full text-base transition-colors ${allServicesView === "Services"
                                                         ? "bg-[#DB2727] text-white font-medium"
                                                         : "bg-[#FFFFFF] text-[#1D1D1D] font-medium"
-                                                }`}
+                                                    }`}
                                             >
                                                 Services
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setAllServicesView("Packages")}
-                                                className={`py-1 px-4 cursor-pointer rounded-full text-base transition-colors ${
-                                                    allServicesView === "Packages"
+                                                className={`py-1 px-4 cursor-pointer rounded-full text-base transition-colors ${allServicesView === "Packages"
                                                         ? "bg-[#DB2727] text-white font-medium"
                                                         : "bg-[#FFFFFF] text-[#1D1D1D] font-medium"
-                                                }`}
+                                                    }`}
                                             >
                                                 Packages
                                             </button>
@@ -940,71 +1035,70 @@ const ServicePark = () => {
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-black">
                                         <thead>
-                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                            <th className="py-5 px-4 text-left">Maintenance Services</th>
-                                            <th className="py-5 px-4 text-left">{allServicesView === "Services" ? "Service Type" : "Description"}</th>
-                                            <th className="py-5 px-4 text-left">Estimate Price</th>
-                                            <th className="py-5 px-4 text-left min-w-40">Action</th>
-                                        </tr>
+                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                <th className="py-5 px-4 text-left">Maintenance Services</th>
+                                                <th className="py-5 px-4 text-left">{allServicesView === "Services" ? "Service Type" : "Description"}</th>
+                                                <th className="py-5 px-4 text-left">Estimate Price</th>
+                                                <th className="py-5 px-4 text-left min-w-40">Action</th>
+                                            </tr>
                                         </thead>
                                         <tbody>
 
-                                        {paginatedData.length > 0 ? (
-                                            paginatedData.map((item: any, index: number) => {
-                                                const typeMap: any = {
-                                                    'REPAIR': 'Repair',
-                                                    'PAINT': 'Paint',
-                                                    'Maintenance': 'Maintenance',
-                                                    'ADDON': 'AddOn'
-                                                };
+                                            {paginatedData.length > 0 ? (
+                                                paginatedData.map((item: any, index: number) => {
+                                                    const typeMap: any = {
+                                                        'REPAIR': 'Repair',
+                                                        'PAINT': 'Paint',
+                                                        'Maintenance': 'Maintenance',
+                                                        'ADDON': 'AddOn'
+                                                    };
 
-                                                const isService = allServicesView === "Services";
-                                                const cartType = isService ? (typeMap[item.type] || 'Repair') : 'Package';
-                                                const isActive = isSelected(item.id, cartType);
+                                                    const isService = allServicesView === "Services";
+                                                    const cartType = isService ? (typeMap[item.type] || 'Repair') : 'Package';
+                                                    const isActive = isSelected(item.id, cartType);
 
-                                                // Display values
-                                                const name = item.name;
-                                                const description = isService ? item.type : (
-                                                    <div className="flex items-center">
-                                                        <span
-                                                            className="mr-2 truncate max-w-[200px]">{item.short_description}</span>
-                                                        <button
-                                                            className="font-medium rounded-full hover:bg-gray-200 p-1 transition">
-                                                            <Image src="/info.svg" alt="info" height={20} width={20}/>
-                                                        </button>
-                                                    </div>
-                                                );
-                                                const price = isService ? item.price : item.total_price;
-
-                                                return (
-                                                    <tr key={item.id || index}
-                                                        className="text-lg font-medium text-[#1D1D1D] hover:bg-white/40 transition-colors border-b border-gray-200 last:border-0">
-                                                        <td className="py-4 px-4"><a>{name}</a></td>
-                                                        <td className="py-4 px-4">{description}</td>
-                                                        <td className="py-4 px-4">LKR {price.toLocaleString()}</td>
-                                                        <td className="py-4 px-4">
+                                                    // Display values
+                                                    const name = item.name;
+                                                    const description = isService ? item.type : (
+                                                        <div className="flex items-center">
+                                                            <span
+                                                                className="mr-2 truncate max-w-[200px]">{item.short_description}</span>
                                                             <button
-                                                                onClick={() => handleToggleItem(item, cartType)}
-                                                                className={`px-6 py-2 rounded-[20px] cursor-pointer transition-all duration-200 ${
-                                                                    !isActive
-                                                                        ? "bg-[#DFDFDF] text-[#1D1D1D] hover:bg-gray-300"
-                                                                        : "bg-[#DB2727] text-[#FFFFFF] hover:bg-red-700 shadow-md"
-                                                                }`}
-                                                            >
-                                                                {!isActive ? "Select" : "Selected"}
+                                                                className="font-medium rounded-full hover:bg-gray-200 p-1 transition">
+                                                                <Image src="/info.svg" alt="info" height={20} width={20} />
                                                             </button>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
-                                        ) : (
-                                            <tr>
-                                                <td colSpan={4} className="py-10 text-center text-gray-500">
-                                                    No {allServicesView.toLowerCase()} found
-                                                    matching &quot;{searchQuery}&quot;.
-                                                </td>
-                                            </tr>
-                                        )}
+                                                        </div>
+                                                    );
+                                                    const price = isService ? item.price : item.total_price;
+
+                                                    return (
+                                                        <tr key={item.id || index}
+                                                            className="text-lg font-medium text-[#1D1D1D] hover:bg-white/40 transition-colors border-b border-gray-200 last:border-0">
+                                                            <td className="py-4 px-4"><a>{name}</a></td>
+                                                            <td className="py-4 px-4">{description}</td>
+                                                            <td className="py-4 px-4">LKR {price.toLocaleString()}</td>
+                                                            <td className="py-4 px-4">
+                                                                <button
+                                                                    onClick={() => handleToggleItem(item, cartType)}
+                                                                    className={`px-6 py-2 rounded-[20px] cursor-pointer transition-all duration-200 ${!isActive
+                                                                            ? "bg-[#DFDFDF] text-[#1D1D1D] hover:bg-gray-300"
+                                                                            : "bg-[#DB2727] text-[#FFFFFF] hover:bg-red-700 shadow-md"
+                                                                        }`}
+                                                                >
+                                                                    {!isActive ? "Select" : "Selected"}
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={4} className="py-10 text-center text-gray-500">
+                                                        No {allServicesView.toLowerCase()} found
+                                                        matching &quot;{searchQuery}&quot;.
+                                                    </td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1021,15 +1115,14 @@ const ServicePark = () => {
                                             </button>
 
                                             <div className="flex items-center space-x-2">
-                                                {Array.from({length: totalPages}, (_, i) => i + 1).map((page) => (
+                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                                                     <button
                                                         key={page}
                                                         onClick={() => handlePageChange(page)}
-                                                        className={`w-8 h-8 text-[13px] rounded-lg font-semibold transition-all cursor-pointer duration-200 ${
-                                                            currentPage === page
+                                                        className={`w-8 h-8 text-[13px] rounded-lg font-semibold transition-all cursor-pointer duration-200 ${currentPage === page
                                                                 ? "bg-[#DB2727] text-white shadow-md transform scale-105"
                                                                 : "bg-white/30 text-[#333333] hover:bg-white/60"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {page}
                                                     </button>
@@ -1066,40 +1159,40 @@ const ServicePark = () => {
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-black">
                                             <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                                <th className="py-5 px-4 text-left">Category</th>
-                                                <th className="py-5 px-4 text-left">Points (Loyalty programme)</th>
-                                                <th className="py-5 px-4 text-left">Promo Codes</th>
-                                            </tr>
+                                                <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                    <th className="py-5 px-4 text-left">Category</th>
+                                                    <th className="py-5 px-4 text-left">Points (Loyalty programme)</th>
+                                                    <th className="py-5 px-4 text-left">Promo Codes</th>
+                                                </tr>
                                             </thead>
                                             <tbody>
-                                            {loadingPromos && (
-                                                <tr>
-                                                    <td colSpan={4} className="text-center py-4">Loading promotions...
-                                                    </td>
-                                                </tr>
-                                            )}
-                                            {!loadingPromos && promoList?.map((item: any, index: number) => (
-                                                <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                    <td className="py-4 px-4 text-[#1D1D1D]">{item.category}</td>
-                                                    <td className="py-4 px-4 text-[#1D1D1D]">{item.points}</td>
-                                                    <td className="py-4 px-4 items-center flex"><span
-                                                        className="mr-8">{item.code}</span>
-                                                        <button
-                                                            onClick={() => handleCopy(item.code, index)}
-                                                            className="font-medium rounded-full">
-                                                            <Image src="/copy.svg" alt="info" height={36}
-                                                                   width={36} className="h-5 w-5"/>
-                                                        </button>
-                                                        {copiedIndex === index && (
-                                                            <span
-                                                                className="absolute right-40 transform -translate-y-1/2 ml-2 bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                                                        Copied!
-                                                    </span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                {loadingPromos && (
+                                                    <tr>
+                                                        <td colSpan={4} className="text-center py-4">Loading promotions...
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                {!loadingPromos && promoList?.map((item: any, index: number) => (
+                                                    <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
+                                                        <td className="py-4 px-4 text-[#1D1D1D]">{item.category}</td>
+                                                        <td className="py-4 px-4 text-[#1D1D1D]">{item.points}</td>
+                                                        <td className="py-4 px-4 items-center flex"><span
+                                                            className="mr-8">{item.code}</span>
+                                                            <button
+                                                                onClick={() => handleCopy(item.code, index)}
+                                                                className="font-medium rounded-full">
+                                                                <Image src="/copy.svg" alt="info" height={36}
+                                                                    width={36} className="h-5 w-5" />
+                                                            </button>
+                                                            {copiedIndex === index && (
+                                                                <span
+                                                                    className="absolute right-40 transform -translate-y-1/2 ml-2 bg-gray-700 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                                                    Copied!
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                             </tbody>
                                         </table>
                                     </div>
@@ -1120,17 +1213,17 @@ const ServicePark = () => {
                                             <button
                                                 className="ml-auto text-white text-base font-medium rounded-full">
                                                 <Image src="/message.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
+                                                    width={36} className="h-12 w-12" />
                                             </button>
                                             <button
                                                 className="ml-auto text-white text-base font-medium rounded-full">
                                                 <Image src="/whatsapp.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
+                                                    width={36} className="h-12 w-12" />
                                             </button>
                                             <button
                                                 className="ml-auto text-white text-base font-medium rounded-full">
                                                 <Image src="/mail.svg" alt="search" height={36}
-                                                       width={36} className="h-12 w-12"/>
+                                                    width={36} className="h-12 w-12" />
                                             </button>
                                         </div>
                                     </div>
@@ -1139,185 +1232,185 @@ const ServicePark = () => {
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-black">
                                             <thead>
-                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
-                                                <th className="py-5 px-4 text-left">Services</th>
-                                                <th className="py-5 px-4 text-right justify-items-end">Estimate Total
-                                                    Price
-                                                </th>
-                                            </tr>
+                                                <tr className="border-b-2 border-[#CCCCCC] text-[#575757] justify-between font-medium text-lg">
+                                                    <th className="py-5 px-4 text-left">Services</th>
+                                                    <th className="py-5 px-4 text-right justify-items-end">Estimate Total
+                                                        Price
+                                                    </th>
+                                                </tr>
                                             </thead>
                                             <tbody>
 
-                                            {Object.entries(groupedItems).map(([key, items]) => {
-                                                if (items.length === 0) return null;
+                                                {Object.entries(groupedItems).map(([key, items]) => {
+                                                    if (items.length === 0) return null;
 
-                                                const isExpanded = expandedSections[key];
-                                                const categoryTotal = items.reduce((sum, item) => sum + item.price, 0);
+                                                    const isExpanded = expandedSections[key];
+                                                    const categoryTotal = items.reduce((sum, item) => sum + item.price, 0);
 
-                                                return (
-                                                    <React.Fragment key={key}>
-                                                        <tr
-                                                            onClick={() => toggleSection(key)}
-                                                            className="bg-white/20">
-                                                            <td
-                                                                className="py-3 px-4 font-semibold text-[#1D1D1D] text-[18px] tracking-wide items-center flex opacity-70 gap-2">
-                                                                <svg
-                                                                    className={`w-5 h-5 text-[#1D1D1D] cursor-pointer transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : ''}`}
-                                                                    fill="none"
-                                                                    stroke="currentColor"
-                                                                    viewBox="0 0 24 24"
-                                                                >
-                                                                    <path strokeLinecap="round" strokeLinejoin="round"
-                                                                          strokeWidth={2} d="M19 9l-7 7-7-7"/>
-                                                                </svg>
-                                                                {categoryTitles[key]}
+                                                    return (
+                                                        <React.Fragment key={key}>
+                                                            <tr
+                                                                onClick={() => toggleSection(key)}
+                                                                className="bg-white/20">
+                                                                <td
+                                                                    className="py-3 px-4 font-semibold text-[#1D1D1D] text-[18px] tracking-wide items-center flex opacity-70 gap-2">
+                                                                    <svg
+                                                                        className={`w-5 h-5 text-[#1D1D1D] cursor-pointer transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : ''}`}
+                                                                        fill="none"
+                                                                        stroke="currentColor"
+                                                                        viewBox="0 0 24 24"
+                                                                    >
+                                                                        <path strokeLinecap="round" strokeLinejoin="round"
+                                                                            strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                    {categoryTitles[key]}
 
-                                                                <span
-                                                                    className="font-medium text-[14px] text-[#575757]">
-                                                                    ({items.length} services)
-                                                                  </span>
-                                                            </td>
-
-                                                            <td className="py-3 px-4 text-right font-semibold text-[#1D1D1D] text-[18px] opacity-80">
-                                                                LKR {categoryTotal.toLocaleString()}
-                                                            </td>
-                                                        </tr>
-
-                                                        {isExpanded && items.map((item) => (
-                                                            <tr key={`${item.type}-${item.id}`}
-                                                                className="group border-b border-gray-200/50 last:border-0 hover:bg-red-50/30 transition-colors duration-200 animate-slide-down">
-                                                                <td className="py-3 px-4 font-medium text-[#575757] text-[16px] pl-12">
-                                                                    {item.name}
+                                                                    <span
+                                                                        className="font-medium text-[14px] text-[#575757]">
+                                                                        ({items.length} services)
+                                                                    </span>
                                                                 </td>
 
-                                                                <td className="py-3 px-4 text-right pr-6">
-                                                                    <div
-                                                                        className="flex items-center justify-end gap-4">
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                removeItem(item.id, item.type)
-                                                                            }}
-                                                                            className="opacity-0 group-hover:opacity-100 cursor-pointer transform translate-x-2 group-hover:translate-x-0 transition-all duration-200 p-1 hover:bg-red-100 rounded-full"
-                                                                            title="Remove item"
-                                                                            aria-label={`Remove ${item.name}`}
-                                                                        >
-                                                                            <Image
-                                                                                src="/close.svg"
-                                                                                alt="remove"
-                                                                                width={32}
-                                                                                height={32}
-                                                                                className="w-7 h-7 opacity-100"
-                                                                            />
-                                                                        </button>
-                                                                        <span
-                                                                            className="text-[#575757] text-[16px] font-medium group-hover:mr-2 transition-all duration-200">
-                                                                            LKR {item.price.toLocaleString()}
-                                                                        </span>
-                                                                    </div>
+                                                                <td className="py-3 px-4 text-right font-semibold text-[#1D1D1D] text-[18px] opacity-80">
+                                                                    LKR {categoryTotal.toLocaleString()}
                                                                 </td>
                                                             </tr>
-                                                        ))}
-                                                    </React.Fragment>
-                                                );
-                                            })}
 
-                                            <tr>
-                                                <td>‎</td>
-                                                <td>‎</td>
-                                            </tr>
-                                            <tr className="border-y-1 border-[#575757]">
-                                                <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D] mt-8">Estimate
-                                                    Price
-                                                </td>
-                                                <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D] mt-8">
-                                                    LKR {totals.subTotal.toLocaleString()}
-                                                </td>
-                                            </tr>
+                                                            {isExpanded && items.map((item) => (
+                                                                <tr key={`${item.type}-${item.id}`}
+                                                                    className="group border-b border-gray-200/50 last:border-0 hover:bg-red-50/30 transition-colors duration-200 animate-slide-down">
+                                                                    <td className="py-3 px-4 font-medium text-[#575757] text-[16px] pl-12">
+                                                                        {item.name}
+                                                                    </td>
 
-                                            {!activePromo && (
+                                                                    <td className="py-3 px-4 text-right pr-6">
+                                                                        <div
+                                                                            className="flex items-center justify-end gap-4">
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    removeItem(item.id, item.type)
+                                                                                }}
+                                                                                className="opacity-0 group-hover:opacity-100 cursor-pointer transform translate-x-2 group-hover:translate-x-0 transition-all duration-200 p-1 hover:bg-red-100 rounded-full"
+                                                                                title="Remove item"
+                                                                                aria-label={`Remove ${item.name}`}
+                                                                            >
+                                                                                <Image
+                                                                                    src="/close.svg"
+                                                                                    alt="remove"
+                                                                                    width={32}
+                                                                                    height={32}
+                                                                                    className="w-7 h-7 opacity-100"
+                                                                                />
+                                                                            </button>
+                                                                            <span
+                                                                                className="text-[#575757] text-[16px] font-medium group-hover:mr-2 transition-all duration-200">
+                                                                                LKR {item.price.toLocaleString()}
+                                                                            </span>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+
                                                 <tr>
-                                                    <td className="py-4 px-4">
-                                                        <div className="flex items-center gap-4 max-w-md">
-                                                            <input
-                                                                type="text"
-                                                                value={promoInput}
-                                                                onChange={(e) => setPromoInput(e.target.value)}
-                                                                placeholder="Enter Promo Code"
-                                                                disabled={isPromoValidating}
-                                                                className="border-none focus:border-none focus:outline-none w-full bg-transparent placeholder-gray-400"
-                                                            />
-                                                        </div>
+                                                    <td>‎</td>
+                                                    <td>‎</td>
+                                                </tr>
+                                                <tr className="border-y-1 border-[#575757]">
+                                                    <td className="py-4 px-4 font-bold text-lg text-[#1D1D1D] mt-8">Estimate
+                                                        Price
                                                     </td>
-                                                    <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
+                                                    <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D] mt-8">
+                                                        LKR {totals.subTotal.toLocaleString()}
+                                                    </td>
+                                                </tr>
+
+                                                {!activePromo && (
+                                                    <tr>
+                                                        <td className="py-4 px-4">
+                                                            <div className="flex items-center gap-4 max-w-md">
+                                                                <input
+                                                                    type="text"
+                                                                    value={promoInput}
+                                                                    onChange={(e) => setPromoInput(e.target.value)}
+                                                                    placeholder="Enter Promo Code"
+                                                                    disabled={isPromoValidating}
+                                                                    className="border-none focus:border-none focus:outline-none w-full bg-transparent placeholder-gray-400"
+                                                                />
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold">
+                                                            <button
+                                                                onClick={handleApplyGlobalPromo}
+                                                                disabled={isPromoValidating || !promoInput}
+                                                                className="font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2 hover:bg-gray-800 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                {isPromoValidating ? "..." : "Apply"}
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                )}
+
+
+                                                <tr className="">
+                                                    <td className="py-4 px-4 font-semibold text-[19px] text-[#1D1D1D] mt-8">
+                                                        Total Discount
+                                                    </td>
+                                                    <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D] mt-8">
+                                                    </td>
+                                                </tr>
+                                                <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                                    <td className="py-4 px-4 text-[#1D1D1D]">Sub Total</td>
+                                                    <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR {totals.subTotal.toLocaleString()}</td>
+                                                </tr>
+
+                                                {activePromo && (
+                                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                                        <td className="py-4 px-4 text-[#1D1D1D]">Applied Promo Code</td>
+                                                        <td className="py-4 px-4 text-right text-[#1D1D1D] gap-3 flex items-center justify-end">
+                                                            <span>{activePromo.code}</span>
+                                                            <button
+                                                                onClick={removePromo}
+                                                                className="text-red-500 underline text-sm hover:text-red-700 font-medium"
+                                                            >
+                                                                <Image src="/close.svg" alt="" width={32} height={32}
+                                                                    className="w-10 h-10" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                )}
+
+                                                <>
+                                                    <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
+                                                        <td className="py-4 px-4 text-[#1D1D1D]">Discount Amount</td>
+                                                        <td className="py-4 px-4 text-right text-red-600">
+                                                            {totals.discount > 0 ? `- LKR ${totals.discount.toLocaleString()}` : "LKR 0"}
+                                                        </td>
+                                                    </tr>
+                                                </>
+
+
+                                                <tr className="border-t-1 border-[#575757]">
+                                                    <td className="py-4 px-4 font-bold text-xl text-[#DB2727] mt-8">
+                                                        Final Estimate Price
+                                                    </td>
+                                                    <td className="py-4 px-4 font-bold text-xl text-right text-[#DB2727] mt-8">
+                                                        LKR {totals.total.toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                                <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
+                                                    <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium"></td>
+                                                    <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold ">
                                                         <button
-                                                            onClick={handleApplyGlobalPromo}
-                                                            disabled={isPromoValidating || !promoInput}
-                                                            className="font-bold text-[#FFFFFF] bg-[#1D1D1D] rounded-[20] px-16 py-2 hover:bg-gray-800 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        >
-                                                            {isPromoValidating ? "..." : "Apply"}
+                                                            onClick={handleBookNow}
+                                                            className="font-bold text-[#FFFFFF] bg-[#DB2727] cursor-pointer rounded-[20] px-14 py-2">
+                                                            Book Now
                                                         </button>
                                                     </td>
                                                 </tr>
-                                            )}
-
-
-                                            <tr className="">
-                                                <td className="py-4 px-4 font-semibold text-[19px] text-[#1D1D1D] mt-8">
-                                                    Total Discount
-                                                </td>
-                                                <td className="py-4 px-4 font-bold text-lg text-right text-[#1D1D1D] mt-8">
-                                                </td>
-                                            </tr>
-                                            <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
-                                                <td className="py-4 px-4 text-[#1D1D1D]">Sub Total</td>
-                                                <td className="py-4 px-4 text-right text-[#1D1D1D]">LKR {totals.subTotal.toLocaleString()}</td>
-                                            </tr>
-
-                                            {activePromo && (
-                                                <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
-                                                    <td className="py-4 px-4 text-[#1D1D1D]">Applied Promo Code</td>
-                                                    <td className="py-4 px-4 text-right text-[#1D1D1D] gap-3 flex items-center justify-end">
-                                                        <span>{activePromo.code}</span>
-                                                        <button
-                                                            onClick={removePromo}
-                                                            className="text-red-500 underline text-sm hover:text-red-700 font-medium"
-                                                        >
-                                                            <Image src="/close.svg" alt="" width={32} height={32}
-                                                                   className="w-10 h-10"/>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            )}
-
-                                            <>
-                                                <tr className="text-lg font-medium justify-between text-[#1D1D1D] space-y-2">
-                                                    <td className="py-4 px-4 text-[#1D1D1D]">Discount Amount</td>
-                                                    <td className="py-4 px-4 text-right text-red-600">
-                                                        {totals.discount > 0 ? `- LKR ${totals.discount.toLocaleString()}` : "LKR 0"}
-                                                    </td>
-                                                </tr>
-                                            </>
-
-
-                                            <tr className="border-t-1 border-[#575757]">
-                                                <td className="py-4 px-4 font-bold text-xl text-[#DB2727] mt-8">
-                                                    Final Estimate Price
-                                                </td>
-                                                <td className="py-4 px-4 font-bold text-xl text-right text-[#DB2727] mt-8">
-                                                    LKR {totals.total.toLocaleString()}
-                                                </td>
-                                            </tr>
-                                            <tr className="text-lg font-medium justify-between text-[#1D1D1D] px-6 pb-6">
-                                                <td className="py-2 px-3 pb-2 text-[#1D1D1D] font-medium"></td>
-                                                <td className="py-2 px-3 pb-2 text-right text-[#1D1D1D] font-semibold ">
-                                                    <button
-                                                        onClick={handleBookNow}
-                                                        className="font-bold text-[#FFFFFF] bg-[#DB2727] cursor-pointer rounded-[20] px-14 py-2">
-                                                        Book Now
-                                                    </button>
-                                                </td>
-                                            </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -1328,7 +1421,7 @@ const ServicePark = () => {
 
                         <section
                             className="relative bg-[#FFFFFF4D] bg-opacity-30 rounded-[45px] px-14 py-10 flex justify-between items-center">
-                            <form className="flex flex-col" style={{width: "-webkit-fill-available"}}>
+                            <form className="flex flex-col" style={{ width: "-webkit-fill-available" }}>
                                 <div className="flex-1 space-y-6">
                                     <div className="flex flex-row items-center justify-between">
                                         <h2 className="font-semibold text-[22px] text-[#000000] mb-6">Assign to
@@ -1346,8 +1439,8 @@ const ServicePark = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                                         <div>
                                             <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Ticket Number</span>
+                                                <span
+                                                    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Ticket Number</span>
                                                 <div className="relative">
                                                     <input
                                                         type="text"
@@ -1360,8 +1453,8 @@ const ServicePark = () => {
                                         </div>
                                         <div>
                                             <label className="flex flex-col space-y-2 font-medium text-gray-900">
-                                    <span
-                                        className="text-[#1D1D1D] font-medium text-[17px] montserrat">Date</span>
+                                                <span
+                                                    className="text-[#1D1D1D] font-medium text-[17px] montserrat">Date</span>
                                                 <div className="relative">
                                                     <input
                                                         type="date"
@@ -1456,21 +1549,31 @@ const ServicePark = () => {
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-black">
                                         <thead>
-                                        <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
-                                            <th className="py-5 px-4 text-left">Date</th>
-                                            <th className="py-5 px-4 text-left">Invoice No</th>
-                                            <th className="py-5 px-4 text-left">Vehicle</th>
-                                        </tr>
+                                            <tr className="border-b-2 border-[#CCCCCC] text-[#575757] font-medium text-lg">
+                                                <th className="py-5 px-4 text-left">Date</th>
+                                                <th className="py-5 px-4 text-left">Invoice No</th>
+                                                <th className="py-5 px-4 text-left">Vehicle</th>
+                                            </tr>
                                         </thead>
                                         <tbody>
-
-                                        {lastServicesData.map((service, index) => (
-                                            <tr key={index} className="text-lg font-medium text-[#1D1D1D]">
-                                                <td className="py-4 px-4 text-[#1D1D1D]">{service.date}</td>
-                                                <td className="py-4 px-4 text-[#1D1D1D]">{service.invoice}</td>
-                                                <td className="py-4 px-4 text-[#1D1D1D]">{service.vehicle}</td>
-                                            </tr>
-                                        ))}
+                                            {paginatedHistoryData.map((service: LastService, index: number) => (
+                                                <tr
+                                                    key={index}
+                                                    className="text-lg font-medium text-[#1D1D1D] hover:bg-white/20 cursor-pointer transition-colors"
+                                                    onClick={() => handleServiceClick(service.invoice)}
+                                                >
+                                                    <td className="py-4 px-4 text-[#1D1D1D]">{service.date}</td>
+                                                    <td className="py-4 px-4 text-[#1D1D1D]">{service.invoice}</td>
+                                                    <td className="py-4 px-4 text-[#1D1D1D]">{service.vehicle}</td>
+                                                </tr>
+                                            ))}
+                                            {paginatedHistoryData.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={3} className="py-10 text-center text-gray-500">
+                                                        No service history available
+                                                    </td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1479,27 +1582,29 @@ const ServicePark = () => {
                                 <div className="flex justify-center mt-8">
                                     <div className="flex items-center space-x-2">
                                         <button
-                                            className="flex justify-center items-center h-8 px-4 rounded-md bg-white/30 text-gray-400 font-medium">Prev
+                                            onClick={() => handleHistoryPageChange(currentHistoryPage - 1)}
+                                            disabled={currentHistoryPage === 1}
+                                            className={`flex justify-center items-center h-8 px-4 rounded-md bg-white/30 font-medium ${currentHistoryPage === 1 ? 'text-gray-400 opacity-50 cursor-not-allowed' : 'text-[#333333]'}`}
+                                        >
+                                            Prev
                                         </button>
                                         <div className="flex items-center space-x-2">
-                                            <button
-                                                className="w-8 h-8 text-[13px] rounded-lg bg-[#DB2727] text-white font-semibold">1
-                                            </button>
-                                            <button
-                                                className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">2
-                                            </button>
-                                            <button
-                                                className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">3
-                                            </button>
-                                            <button
-                                                className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">4
-                                            </button>
-                                            <button
-                                                className="w-8 h-8 text-[13px] rounded-lg bg-white/30 text-[#333333] font-semibold">5
-                                            </button>
+                                            {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map((pageNum) => (
+                                                <button
+                                                    key={pageNum}
+                                                    onClick={() => handleHistoryPageChange(pageNum)}
+                                                    className={`w-8 h-8 text-[13px] rounded-lg font-semibold transition-colors ${currentHistoryPage === pageNum ? 'bg-[#DB2727] text-white' : 'bg-white/30 text-[#333333] hover:bg-white/50'}`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            ))}
                                         </div>
                                         <button
-                                            className="flex text-sm justify-center items-center h-8 px-4 rounded-md bg-white/30 text-[#333333] font-medium font-poppins">Next
+                                            onClick={() => handleHistoryPageChange(currentHistoryPage + 1)}
+                                            disabled={currentHistoryPage === totalHistoryPages || totalHistoryPages === 0}
+                                            className={`flex text-sm justify-center items-center h-8 px-4 rounded-md bg-white/30 font-medium font-poppins ${currentHistoryPage === totalHistoryPages || totalHistoryPages === 0 ? 'text-gray-400 opacity-50 cursor-not-allowed' : 'text-[#333333]'}`}
+                                        >
+                                            Next
                                         </button>
                                     </div>
                                 </div>
@@ -1524,7 +1629,7 @@ const ServicePark = () => {
                                     <div className="mb-8">
                                         <div className="flex flex-col justify-center items-center">
                                             <Image src="/search.gif" alt="search" width={128} height={128}
-                                                   className="w-32 h-32"/>
+                                                className="w-32 h-32" />
                                             <div className="text-center">
                                                 <h2 className="font-semibold text-xl text-[#000000]">Oops! That that service
                                                     is
@@ -1574,6 +1679,12 @@ const ServicePark = () => {
                             </Modal>
                         )
                     }
+
+                    <ServiceParkModal
+                        isOpen={isServiceDetailModalOpen}
+                        onClose={() => setIsServiceDetailModalOpen(false)}
+                        serviceData={mappedServiceData}
+                    />
                 </div>
             </div>
         </>
