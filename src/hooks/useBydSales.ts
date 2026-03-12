@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { BydSaleService } from "@/services/bydSaleService";
+import { BydSaleService, fetchBydUnavailableSales } from "@/services/bydSaleService";
 
 export const useBydSales = (status?: string, userId?: number, userRole?: string, filters?: any) => {
     return useQuery({
@@ -181,7 +181,6 @@ export const useCreateBydUnavailableSale = () => {
     });
 };
 
-import { fetchBydUnavailableSales } from "@/services/bydSaleService";
 
 export const useBydUnavailableSales = (page = 1, limit = 10, filters = {}) => {
     return useQuery({

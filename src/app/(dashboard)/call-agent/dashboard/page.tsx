@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +12,8 @@ import ServiceParkModal from "@/components/ServiceBookingModal";
 import SparePartsModal from "@/components/SparePartsModal";
 import FastTrackModal from "@/components/FastTrackModal";
 import DetailsModal from "@/components/DetailsModal";
+import { useVehicleJobs, useJobDetails } from "@/hooks/useHistory";
+import { CardItemProps as DashboardCardItemProps } from "@/components/DashboardCard";
 
 const customerDetails = [
     {
@@ -188,6 +191,12 @@ export default function Dashboard() {
     const [selectedSpareParts, setSelectedSpareParts] = useState<typeof mockSparePartsData | null>(null);
     const [isFastTrackModalOpen, setIsFastTrackModalOpen] = useState(false);
     const [selectedFastTrack, setSelectedFastTrack] = useState<typeof mockFastTrackData | null>(null);
+    const [modalJobId, setModalJobId] = useState<string>("");
+
+    // const vehicleNo = customerDetails.find(d => d.title === "Vehicle Number")?.value || "CAS-0069";
+    const vehicleNo = "";
+    const { data: vehicleHistory } = useVehicleJobs(vehicleNo);
+    const { data: modalJobDetail } = useJobDetails(modalJobId);
 
     const openComplainModal = () => setIsModalOpen(true);
     const closeComplainModal = () => setIsModalOpen(false);
@@ -213,8 +222,8 @@ export default function Dashboard() {
         setSelectedVehicle(null);
     };
 
-    const openServiceParkModal = () => {
-        setSelectedService(mockServiceData);
+    const openServiceParkModal = (item: DashboardCardItemProps) => {
+        setModalJobId(item.primaryText);
         setIsServiceParkModalOpen(true);
     };
 
@@ -268,23 +277,18 @@ export default function Dashboard() {
         },
     ];
 
-    const serviceBookingsData: CardItemProps[] = [
-        {
-            primaryText: "INV34556",
-            secondaryText: "CAB-8241",
-            date: "08 Sep 2025",
-        },
-        {
-            primaryText: "INV96453",
-            secondaryText: "CAA-7354",
-            date: "08 Sep 2025",
-        },
-        {
-            primaryText: "INV08863",
-            secondaryText: "AAA-1586",
-            date: "08 Sep 2025",
-        },
-    ];
+    const serviceBookingsData: DashboardCardItemProps[] = React.useMemo(() => {
+        if (!vehicleHistory?.jobs) return [];
+        return vehicleHistory.jobs.map((job: any) => ({
+            primaryText: job.job_id,
+            secondaryText: vehicleNo,
+            date: new Date(job.date).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            })
+        }));
+    }, [vehicleHistory, vehicleNo]);
 
 
     const sparePartsData: CardItemProps[] = [
@@ -345,6 +349,34 @@ export default function Dashboard() {
     ];
 
     const [salesType, setSalesType] = useState<'vehicle' | 'byd'>('vehicle');
+
+    const mappedServiceData = React.useMemo(() => {
+        if (!modalJobDetail) return null;
+
+        const repairs = [
+            ...(modalJobDetail.labor?.map((l: any) => ({
+                name: l.description,
+                price: parseFloat(l.rate) * parseFloat(l.hours)
+            })) || []),
+            ...(modalJobDetail.materials?.map((m: any) => ({
+                name: m.description,
+                price: parseFloat(m.unit_price) * parseFloat(m.quantity)
+            })) || [])
+        ];
+
+        return {
+            invoiceNo: modalJobDetail.invoice_no || modalJobDetail.job_id,
+            date: modalJobDetail.date ? new Date(modalJobDetail.date).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            }) : "N/A",
+            serviceAdvisor: "N/A",
+            branch: modalJobDetail.service_center || "N/A",
+            line: "N/A",
+            repairs
+        };
+    }, [modalJobDetail]);
 
     const handleSalesToggle = (type: 'vehicle' | 'byd') => {
         setSalesType(type);
@@ -530,7 +562,7 @@ export default function Dashboard() {
                             </div>
 
                             {/* Card Content */}
-                            <div className="flex flex-col gap-2 p-4">
+                            <div className="flex flex-col gap-2 p-4 overflow-y-auto max-h-[320px] custom-scrollbar pr-2">
                                 {(salesType === 'vehicle' ? fastTrackData : bydSalesData).map((item, index) => (
                                     <div key={index} className="flex w-full flex-col gap-1 rounded-lg bg-[#F5F5F5] p-3">
                                         <div className="flex justify-between">
@@ -551,7 +583,7 @@ export default function Dashboard() {
                                             )}
                                             <button
                                                 onClick={() => openVehicleSalesModal()}
-                                                className="text-base font-normal text-[#195FFC] hover:underline"
+                                                className="text-base font-normal text-[#195FFC] hover:underline cursor-pointer"
                                             >
                                                 View
                                             </button>
@@ -563,8 +595,8 @@ export default function Dashboard() {
                             {/* View All Link */}
                             <div className="absolute bottom-5 left-0 right-0 text-center px-2 pt-4 border-t border-[#D8D8D8]">
                                 <Link
-                                    href={salesType === 'vehicle' ? "/fast-track" : "/byd-sales"}
-                                    className="font-montserrat text-lg font-medium text-[#195FFC] hover:underline"
+                                    href={salesType === 'vehicle' ? "/call-agent/vehicle-sales" : "/call-agent/byd-sales"}
+                                    className="font-montserrat text-lg font-medium text-[#195FFC] hover:underline cursor-pointer"
                                 >
                                     View All {salesType === 'vehicle' ? 'Vehicle Sales' : 'BYD Sales'}
                                 </Link>
@@ -575,7 +607,7 @@ export default function Dashboard() {
                             icon="/dashboard/spanner-outline.svg"
                             backgroundColor="#9C1EFC"
                             data={serviceBookingsData}
-                            viewAllLink="/service-bookings"
+                            viewAllLink="/call-agent/service-park"
                             onItemClick={openServiceParkModal}
                         />
                         <DashboardCard
@@ -583,7 +615,7 @@ export default function Dashboard() {
                             icon="/dashboard/setting-line.svg"
                             backgroundColor="#F74E00"
                             data={sparePartsData}
-                            viewAllLink="/spare-parts"
+                            viewAllLink="/call-agent/spare-parts"
                             onItemClick={openSparePartsModal}
                         />
                         <DashboardCard
@@ -591,7 +623,7 @@ export default function Dashboard() {
                             icon="/dashboard/car-search.svg"
                             backgroundColor="#DB2784"
                             data={fastTrackData}
-                            viewAllLink="/fast-track"
+                            viewAllLink="/call-agent/fast-track"
                             onItemClick={openFastTrackModal}
                         />
                     </section>
@@ -610,7 +642,7 @@ export default function Dashboard() {
                 <ServiceParkModal
                     isOpen={isServiceParkModalOpen}
                     onClose={closeServiceParkModal}
-                    serviceData={selectedService}
+                    serviceData={mappedServiceData}
                 />
                 <SparePartsModal
                     isOpen={isSparePartsModalOpen}
